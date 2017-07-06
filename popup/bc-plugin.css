@@ -1,0 +1,12 @@
+html, body {
+  height: 120px;
+  width: 120px;
+  margin: 0;
+  text-align:center;
+}
+
+.popup-http {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
