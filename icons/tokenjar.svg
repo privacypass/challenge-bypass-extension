@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="9035 6304 84 101">
+  <defs>
+    <style>
+      .cls-1 {
+        clip-path: url(#clip-Artboard_3);
+      }
+
+      .cls-2, .cls-4 {
+        fill: #fff;
+      }
+
+      .cls-2 {
+        stroke: #333;
+        stroke-width: 5px;
+      }
+
+      .cls-3 {
+        fill: #f68a5a;
+      }
+    </style>
+    <clipPath id="clip-Artboard_3">
+      <rect x="9035" y="6304" width="84" height="101"/>
+    </clipPath>
+  </defs>
+  <g id="Artboard_3" data-name="Artboard – 3" class="cls-1">
+    <rect class="cls-4" x="9035" y="6304" width="84" height="101"/>
+    <path id="Union_19" data-name="Union 19" class="cls-2" d="M9.122,78.591A9.122,9.122,0,0,1,0,69.469V16.139A9.122,9.122,0,0,1,9.122,7.017h9.122V0H52.628V7.017H61.75a9.122,9.122,0,0,1,9.122,9.122V69.469a9.122,9.122,0,0,1-9.122,9.122Z" transform="translate(9042 6320.771)"/>
+    <rect id="Rectangle_145" data-name="Rectangle 145" class="cls-2" width="54.733" height="11.227" transform="translate(9050.719 6309.544)"/>
+    <path id="Path_57" data-name="Path 57" class="cls-3" d="M7109.5,3277.567s11.37,10.4,29.205,3.26,28.374-5.665,28.374-5.665v34.688c0,7.87-4.19,7.057-4.34,7.1s-45.994.029-46.1,0-7.134.719-7.134-4.127Z" transform="translate(1939.447 3076.526)"/>
+    <circle id="Ellipse_18" data-name="Ellipse 18" class="cls-4" cx="5.964" cy="5.964" r="5.964" transform="translate(9089.716 6357.26)"/>
+    <circle id="Ellipse_19" data-name="Ellipse 19" class="cls-4" cx="3.158" cy="3.158" r="3.158" transform="translate(9083.4 6369.189)"/>
+  </g>
+</svg>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="bc-plugin.css"/>
+  </head>
+
+<body>
+  <div class="popup-http">
+    <div class="header">
+      <span><img id="tokenjar" src="../icons/tokenjar.svg"></span>
+      <h1>Token Store</h1>
+      <a href="https://github.com/cloudflare/challenge-bypass-extension" target="_blank" class="header-link">View on GitHub</a>
+    </div>
+    <span>
+    	<script src="bc-plugin.js"></script>
+    	<p id="stored">Tokens: ...</p>
+    </span>
+  </div>
+    
+  <div class="button">
+    <a href="http://captcha.website" target="_blank"><button type='button' class="button-style" formaction="captcha.website">Get more tokens</button></a>
+  </div>
+  
+  <div class="button">
+  	<button type='button' class="button-style" id='clear'>Clear stored tokens</button>
+  </div>
+</body>
+
+</html>
