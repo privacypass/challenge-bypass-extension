@@ -1,30 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="9152 6304 84 101">
-  <defs>
-    <style>
-      .cls-1 {
-        clip-path: url(#clip-Artboard_4);
-      }
-
-      .cls-2, .cls-3 {
-        fill: #fff;
-      }
-
-      .cls-2 {
-        stroke: #333;
-        stroke-width: 5px;
-      }
-    </style>
-    <clipPath id="clip-Artboard_4">
-      <rect x="9152" y="6304" width="84" height="101"/>
-    </clipPath>
-  </defs>
-  <g id="Artboard_4" data-name="Artboard – 4" class="cls-1">
-    <rect class="cls-3" x="9152" y="6304" width="84" height="101"/>
-    <g id="Group_54" data-name="Group 54" transform="translate(-127 -244.456)">
-      <path id="Union_19" data-name="Union 19" class="cls-2" d="M9.122,78.591A9.122,9.122,0,0,1,0,69.469V16.139A9.122,9.122,0,0,1,9.122,7.017h9.122V0H52.628V7.017H61.75a9.122,9.122,0,0,1,9.122,9.122V69.469a9.122,9.122,0,0,1-9.122,9.122Z" transform="translate(9286 6565.227)"/>
-      <rect id="Rectangle_145" data-name="Rectangle 145" class="cls-2" width="54.733" height="11.227" transform="translate(9294.719 6554)"/>
-      <circle id="Ellipse_18" data-name="Ellipse 18" class="cls-3" cx="5.964" cy="5.964" r="5.964" transform="translate(9333.716 6601.716)"/>
-      <circle id="Ellipse_19" data-name="Ellipse 19" class="cls-3" cx="3.158" cy="3.158" r="3.158" transform="translate(9327.4 6613.645)"/>
-    </g>
-  </g>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 21.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 70.9 89.8" style="enable-background:new 0 0 70.9 89.8;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:url(#Union_23_1_);}
+</style>
+<linearGradient id="Union_23_1_" gradientUnits="userSpaceOnUse" x1="-127.0103" y1="138.4257" x2="-127.9103" y2="137.4257" gradientTransform="matrix(70.872 0 0 -89.822 9068.4082 12437.2617)">
+	<stop  offset="0" style="stop-color:#DBDBDB"/>
+	<stop  offset="1" style="stop-color:#BCBCBC"/>
+</linearGradient>
+<path id="Union_23" class="st0" d="M9.1,89.8c-5,0-9.1-4.1-9.1-9.1V27.4c0-5,4.1-9.1,9.1-9.1l0,0h9.1v-7H8.7V0h54.7v11.2H52.6v7h9.1
+	c5,0,9.1,4.1,9.1,9.1l0,0v53.3c0,5-4.1,9.1-9.1,9.1h0L9.1,89.8z"/>
 </svg>
