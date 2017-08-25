@@ -1,14 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 21.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 70.9 89.8" style="enable-background:new 0 0 70.9 89.8;" xml:space="preserve">
-<style type="text/css">
-	.st0{fill:url(#Union_23_1_);}
-</style>
-<linearGradient id="Union_23_1_" gradientUnits="userSpaceOnUse" x1="-127.0103" y1="138.4257" x2="-127.9103" y2="137.4257" gradientTransform="matrix(70.872 0 0 -89.822 9068.4082 12437.2617)">
-	<stop  offset="0" style="stop-color:#DBDBDB"/>
-	<stop  offset="1" style="stop-color:#BCBCBC"/>
-</linearGradient>
-<path id="Union_23" class="st0" d="M9.1,89.8c-5,0-9.1-4.1-9.1-9.1V27.4c0-5,4.1-9.1,9.1-9.1l0,0h9.1v-7H8.7V0h54.7v11.2H52.6v7h9.1
-	c5,0,9.1,4.1,9.1,9.1l0,0v53.3c0,5-4.1,9.1-9.1,9.1h0L9.1,89.8z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="9837 6218.544 70.872 89.818">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #4c4c4c;
+      }
+    </style>
+  </defs>
+  <path id="Union_23" data-name="Union 23" class="cls-1" d="M9.122,89.818A9.122,9.122,0,0,1,0,80.7V27.366a9.122,9.122,0,0,1,9.122-9.122h9.122V11.227H8.718V0H63.452V11.227H52.628v7.016H61.75a9.122,9.122,0,0,1,9.122,9.122V80.7a9.122,9.122,0,0,1-9.122,9.122Z" transform="translate(9837 6218.544)"/>
 </svg>
