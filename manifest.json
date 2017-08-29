@@ -2,7 +2,7 @@
 
   "description": "Handles cryptographically blinded tokens for bypassing Cloudflare challenge pages",
   "manifest_version": 2,
-  "name": "Cloudflare Token Store",
+  "name": "Cloudflare Token Jar",
   "version": "0.1",
   "icons": {
     "48": "icons/tokenjar-48.png"
@@ -30,7 +30,7 @@
 
   "browser_action": {
     "default_icon": "icons/tokenjar-empty-32.png",
-    "default_title": "Cloudflare Token Store",
+    "default_title": "Cloudflare Token Jar",
     "default_popup": "popup/bc-plugin.html"
   }
 

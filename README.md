@@ -1,4 +1,4 @@
-# challenge-bypass-extension
+# Cloudflare Token Jar
 
 This browser extension allows a user to bypass challenge pages provided by Cloudflare using the blinded tokens protocol described [here](https://github.com/cloudflare/challenge-bypass-specification). Our design mirrors that of a 'blind signing' protocol based on a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF). We provide a short description of how this fits into our original specification below. The VOPRF we now use is based unintentionally on [JKK14]. For a technical description of the protocol see the [Technical Overview](#technical-overview).
 
@@ -6,12 +6,14 @@ The protocol has received extensive review and testing, but this extension is a 
 
 To be sure it works in Tor Browser, this code was developed against Firefox ESR. It is also compatible with Chrome.
 
-## Contributors
-
+## Main authors
 - [George Tankersley](https://github.com/gtank) (george.tankersley@gmail.com)
 - [Alex Davidson](https://github.com/alxdavids) (alex.davidson.92@gmail.com) 
+
+## Other contributors
 - [Nick Sullivan](https://github.com/grittygrease) (nick@cloudflare.com)
 - [Filippo Valsorda](https://github.com/filosottile) (hello@filippo.io)
+- [Eric Tsai](https://github.com/eetom) (etsai@cloudflare.com)
 
 ## Acknowledgements
 

@@ -1,6 +1,9 @@
 /*
  * This background page handles the sending requests and dealing with responses.
  * Control flow is handled in the listeners. Cryptography uses SJCL.
+ *
+ * @author: George Tankersley
+ * @author: Alex Davidson
  */
 
 /*jshint esversion: 6 */
@@ -12,10 +15,11 @@ const STORAGE_KEY_COUNT  = "cf-token-count";
 const CF_BYPASS_SUPPORT  = "cf-chl-bypass";
 const CF_BYPASS_RESPONSE = "cf-chl-bypass-resp";
 const CF_CLEARANCE_COOKIE = "cf_clearance";
-const CF_FORCE_CHALLENGE_HEADER = "";
+const CAPTCHA_WEBSITE_DOMAIN = ".captcha.website"; // cookies have dots prepended
+const CF_FORCE_CHALLENGE_HEADER = "cf-setopt-chl";
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
-const CF_DBG_FORCE_CHALLENGE = false;
+const CF_DBG_FORCE_CHALLENGE = true;
 
 const TOKENS_PER_REQUEST = 10;
 
@@ -30,7 +34,9 @@ let targetUrl = null;
 // let activeCommConfig = DevCommitmentConfig;
 
 /* Event listeners manage control flow 
-    web request listeners act to send signable/redemption tokens when needed
+    - web request listeners act to send signable/redemption tokens when needed
+    - cookie listener clears cookie for captcha.website to enable getting more 
+    tokens in the future
 */
 
 // Watches headers for CF-Chl-Bypass and CF-Chl-Bypass-Resp headers.
@@ -214,6 +220,17 @@ function beforeRequest(details) {
     // Cancel the original request
     return {redirectUrl: 'javascript:void(0)'};
 }
+
+// Removes cookies for captcha.website to enable getting more tokens
+// in the future.
+chrome.cookies.onChanged.addListener(function(changeInfo) {
+    if (!changeInfo.removed) {
+        if (changeInfo.cookie.domain == CAPTCHA_WEBSITE_DOMAIN 
+            && changeInfo.cookie.name == CF_CLEARANCE_COOKIE) {
+            chrome.cookies.remove({url: "http://" + CAPTCHA_WEBSITE_DOMAIN, name: CF_CLEARANCE_COOKIE});
+        }
+    }
+});
 
 // An issue response takes the form "signatures=[b64 blob]"
 // The blob is an array of base64-encoded marshaled curve points.
