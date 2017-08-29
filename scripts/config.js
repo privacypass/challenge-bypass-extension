@@ -1,3 +1,9 @@
+/*
+ * Config file for handling DLEQ proofs from edge
+ *
+ * @author: Alex Davidson
+ */
+
 const DevCommitmentConfig = {
 	"G":"BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=",
 	"H":"BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo="	

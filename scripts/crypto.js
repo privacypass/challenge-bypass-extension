@@ -1,5 +1,7 @@
 /*
  * This implements a 2HashDH-based token scheme using the SJCL ecc package.
+ *
+ * @author: George Tankersley
  */
 
 /*jshint esversion: 6 */
