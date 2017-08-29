@@ -67,8 +67,8 @@ h1 {
 /*This is the token counter*/
   font-size: 25px;
   text-align: center;
-  margin: 20px auto 15px auto;
-  padding: 10px;
+  margin: 10px auto;
+  padding: 3px;
   border: 1px solid #dddddd;
   width: 72%;
 }

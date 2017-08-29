@@ -1,5 +1,8 @@
 /*
  * Handles the tokens.
+ * 
+ * @main_author: George Tankersley
+ * @other_contribs: Alex Davidson
  */
 
 /*jshint esversion: 6 */
