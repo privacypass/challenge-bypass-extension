@@ -3,7 +3,7 @@
   "description": "Handles cryptographically blinded tokens for bypassing Cloudflare challenge pages",
   "manifest_version": 2,
   "name": "Cloudflare Token Jar",
-  "version": "0.1",
+  "version": "0.3",
   "icons": {
     "48": "icons/tokenjar-48.png"
   },
