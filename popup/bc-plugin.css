@@ -1,5 +1,5 @@
 html, body {
-  height: 235px;
+  height: 255px;
   width: 300px;
   margin: 0;
   background-color: #fff;
@@ -70,7 +70,7 @@ h1 {
   margin: 10px auto;
   padding: 3px;
   border: 1px solid #dddddd;
-  width: 72%;
+  width: 76%;
 }
 
 .header-link {
@@ -87,6 +87,6 @@ h1 {
   position: absolute;
   top: 17px;
   left: 31px;
-  height: 48px;
+  height: 45px;
 }
 
