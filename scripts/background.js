@@ -15,11 +15,11 @@ const STORAGE_KEY_COUNT  = "cf-token-count";
 const CF_BYPASS_SUPPORT  = "cf-chl-bypass";
 const CF_BYPASS_RESPONSE = "cf-chl-bypass-resp";
 const CF_CLEARANCE_COOKIE = "cf_clearance";
-const CAPTCHA_WEBSITE_DOMAIN = ".captcha.website"; // cookies have dots prepended
-const CF_FORCE_CHALLENGE_HEADER = "cf-setopt-chl";
+const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
+const CF_FORCE_CHALLENGE_HEADER = "";
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
-const CF_DBG_FORCE_CHALLENGE = true;
+const CF_DBG_FORCE_CHALLENGE = false;
 
 const TOKENS_PER_REQUEST = 10;
 
@@ -49,7 +49,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 // Headers are received before document render. The blocking attributes allows
 // us to cancel requests instead of loading an unnecessary ReCaptcha widget.
 function processHeaders(details) {
-
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
 
@@ -72,11 +71,16 @@ function processHeaders(details) {
         if (!isBypassHeader(header) || details.statusCode != 403) {
             continue;
         }
-
-        // If we have tokens, cancel the request and pass execution over to the token handler.
+        
+        // If we have tokens, cancel the request and pass execution over to the token handler.        
         let url = new URL(details.url);
-        var hostName = url.hostname;
+        let hostName = url.hostname;
         if (countStoredTokens() > 0) {
+            // Prevent reloading on captcha.website
+            if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
+                return {cancel: false};
+            }
+
             console.log('reloading');
             setSpendFlag(url.host, true);
             targetUrl = url;
@@ -85,10 +89,10 @@ function processHeaders(details) {
             // We don't use cancel: true since in chrome the page appears 
             // blocked for a second
             return {redirectUrl: 'javascript:void(0)'};
-        } else if (!storedUrl) {
-            // For chrome we have to store the url for redirection after captcha is solved
-            storedUrl = url;
         }
+
+        // Store the url for redirection after captcha is solved
+        storedUrl = url;
 
         // Otherwise, allow the request to complete while we generate some tokens.
         // TODO: start generating tokens here to speed up the request processing
@@ -114,7 +118,7 @@ function beforeSendHeaders(request) {
         headers.push(chlHeader);
     }
 
-    // might need to add a force header
+    // might need to add a force header or cancel the reload for captcha.website
     if (!getSpendFlag(url.host)) {
         return {requestHeaders: headers};
     }
@@ -225,9 +229,9 @@ function beforeRequest(details) {
 // in the future.
 chrome.cookies.onChanged.addListener(function(changeInfo) {
     if (!changeInfo.removed) {
-        if (changeInfo.cookie.domain == CAPTCHA_WEBSITE_DOMAIN 
+        if (changeInfo.cookie.domain == "." + CF_CAPTCHA_DOMAIN // cookies have dots prepended
             && changeInfo.cookie.name == CF_CLEARANCE_COOKIE) {
-            chrome.cookies.remove({url: "http://" + CAPTCHA_WEBSITE_DOMAIN, name: CF_CLEARANCE_COOKIE});
+            chrome.cookies.remove({url: "http://" + CF_CAPTCHA_DOMAIN, name: CF_CLEARANCE_COOKIE});
         }
     }
 });
@@ -346,11 +350,7 @@ function countStoredTokens() {
 
     // We change the png file to show if tokens are stored or not
     const countInt = JSON.parse(count); 
-    if (countInt == 0) {
-        chrome.browserAction.setIcon({ path: "icons/tokenjar-empty-32.png", });
-    } else {
-        chrome.browserAction.setIcon({ path: "icons/tokenjar-32.png", });
-    }
+    updateIcon(countInt);
     return countInt;
 }
 
@@ -384,10 +384,12 @@ function storeTokens(tokens) {
     const json = JSON.stringify(storableTokens);
     localStorage.setItem(STORAGE_KEY_TOKENS, json);
     localStorage.setItem(STORAGE_KEY_COUNT, tokens.length);
+
+    // Update the count on the actual icon
+    updateIcon(tokens.length);
 }
 
-// This is for storing tokens we've just received from a new issuance response
-// that don't yet have signed points assigned to them.
+// This is for storing tokens we've just received from a new issuance response.
 function storeNewTokens(tokens, signedPoints) {
     let storableTokens = [];
     for (var i = 0; i < tokens.length; i++) {
@@ -400,6 +402,9 @@ function storeNewTokens(tokens, signedPoints) {
     const json = JSON.stringify(storableTokens);
     localStorage.setItem(STORAGE_KEY_TOKENS, json);
     localStorage.setItem(STORAGE_KEY_COUNT, tokens.length);
+
+    // Update the count on the actual icon
+    updateIcon(tokens.length);
 }
 
 function loadTokens() {
@@ -426,8 +431,8 @@ function clearStorage() {
         }
     });
     // Update icons
-    chrome.browserAction.setIcon({ path: "icons/tokenjar-empty-32.png", });
-    UpdateCallback()
+    updateIcon(0);
+    UpdateCallback();
 }
 
 function setSpendFlag(key, value) {
@@ -447,6 +452,17 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
+
+function updateIcon(count) {
+    if (count != 0) {
+        chrome.browserAction.setIcon({ path: "icons/tokenjar-32.png", });
+        chrome.browserAction.setBadgeText({text: count.toString()});
+        chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});
+    } else {
+        chrome.browserAction.setIcon({ path: "icons/tokenjar-empty-32.png", });
+        chrome.browserAction.setBadgeText({text: ""});
+    }
+}
 
 function isBypassHeader(header) {
     return header.name.toLowerCase() == CF_BYPASS_SUPPORT && header.value == "1";
