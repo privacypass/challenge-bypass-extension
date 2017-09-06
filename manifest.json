@@ -1,0 +1,37 @@
+{
+
+  "description": "Handles cryptographically blinded tokens for bypassing Cloudflare challenge pages",
+  "manifest_version": 2,
+  "name": "Cloudflare Token Jar",
+  "version": "0.4",
+  "icons": {
+    "48": "icons/tokenjar-48.png"
+  },
+
+  "background": {
+    "scripts": [
+        "scripts/sjcl.js",
+        "scripts/crypto.js",
+        "scripts/tokens.js",
+        "scripts/background.js",
+        "scripts/config.js"
+    ]
+  },
+
+  "permissions": [
+    "alarms",
+    "cookies",
+    "<all_urls>",
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/tokenjar-empty-32.png",
+    "default_title": "Cloudflare Token Jar",
+    "default_popup": "popup/bc-plugin.html"
+  }
+
+}

@@ -1,0 +1,92 @@
+html, body {
+  height: 255px;
+  width: 300px;
+  margin: 0;
+  background-color: #fff;
+  font-family: helvetica;
+}
+
+a {
+  font-size: 14x;
+  font-weight: normal;
+  text-decoration: none;
+  color: #408BC9; 
+}
+
+a:hover {
+  color: #204d72;
+}
+
+.popup-http {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+h1 {
+/*Styles for the Token Jar title */
+	font-size: 25px;
+  font-weight: normal;
+  margin-left: 78px;
+  margin-bottom: 2px;
+  margin-top: 20px;
+}
+
+.button {
+/*Style for the button container */ 
+  text-align: center;
+}
+
+.button-style {
+/*Style for the actual buttons*/
+  background-color: #408BC9;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  font-size: 18px;
+  height: 40px;
+  width: 80%;
+}
+
+.clear-link {
+  float: left;
+  margin-left: 29px;
+  margin-top: 15px;
+}
+
+.button-style:hover {
+  cursor: pointer;
+  background-color: #204d72;
+}
+
+.button-style:focus, .button-style:active {
+  background-color: #204d72;
+}
+
+#stored {
+/*This is the token counter*/
+  font-size: 25px;
+  text-align: center;
+  margin: 10px auto;
+  padding: 3px;
+  border: 1px solid #dddddd;
+  width: 76%;
+}
+
+.header-link {
+  margin-left: 78px;
+}
+
+.footer-link {
+  display: inline-block;
+  margin-left: 30px;
+  margin-top: 8px;
+}
+
+#tokenjar {
+  position: absolute;
+  top: 17px;
+  left: 31px;
+  height: 45px;
+}
+

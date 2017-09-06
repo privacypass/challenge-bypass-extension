@@ -1,0 +1,46 @@
+// This is a manifest for compatibility with Firefox pre-version 48. 
+// Replace the main manifest.json file with this one for browsers requiring this compatibility
+{
+
+  "description": "Creates and exchanges blind tokens with Cloudflare servers to bypass CAPTCHAs",
+  "manifest_version": 2,
+  "name": "captcha bypass extension",
+  "version": "0.1",
+  "icons": {
+    "48": "icons/person-48.png"
+  },
+
+  "applications": {
+    "gecko": {
+      "id": "crypto@cloudflare.com",
+      "strict_min_version": "45.0"
+    }
+
+  },
+  "background": {
+    "scripts": [
+        "scripts/sjcl.js",
+        "scripts/crypto.js",
+        "scripts/tokens.js",
+        "scripts/background.js",
+        "scripts/config.js"
+    ]
+  },
+
+  "permissions": [
+    "alarms",
+    "cookies",
+    "<all_urls>",
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/person-32.png",
+    "default_title": "captcha bypass extension",
+    "default_popup": "popup/bc-plugin.html"
+  }
+
+}
