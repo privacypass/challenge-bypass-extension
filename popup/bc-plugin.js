@@ -23,11 +23,20 @@ function replaceTokensStoredCount(tokLen) {
     if (!!oldCount) {
     	oldCount.parentNode.removeChild(oldCount);
     }
+    var oldText = document.getElementById("passtext");
+    if (!!oldText) {
+      oldText.parentNode.removeChild(oldText);
+    }  
 
     // replace with new count
-    var newCount = document.createElement("p");
+    var passtext = document.createElement("span");
+    passtext.setAttribute("id", "passtext");
+    passtext.appendChild(document.createTextNode("Passes"));
+    document.getElementById("stored").appendChild(passtext);
+
+    var newCount = document.createElement("span");
     newCount.setAttribute("id", "tokens");
-    newCount.appendChild(document.createTextNode("Tokens: " + tokLen));
+    newCount.appendChild(document.createTextNode(tokLen));
     document.getElementById("stored").appendChild(newCount);
 }
 

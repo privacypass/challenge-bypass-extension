@@ -1,20 +1,22 @@
 html, body {
-  height: 255px;
-  width: 300px;
+  height: 310px;
+  width: 250px;
   margin: 0;
   background-color: #fff;
   font-family: helvetica;
 }
 
 a {
-  font-size: 14x;
+  font-size: 14px;
   font-weight: normal;
   text-decoration: none;
-  color: #408BC9; 
+  color: #333333; 
+  outline: 0;
 }
 
 a:hover {
-  color: #204d72;
+  color: #ffffff;
+  background-color: #B1B1B1;
 }
 
 .popup-http {
@@ -24,57 +26,59 @@ a:hover {
 }
 
 h1 {
-/*Styles for the Token Jar title */
+/*Styles for the Edge Pass title */
 	font-size: 25px;
+  color: #333333;
   font-weight: normal;
-  margin-left: 78px;
+  margin-left: 98px;
   margin-bottom: 2px;
-  margin-top: 20px;
-}
-
-.button {
-/*Style for the button container */ 
-  text-align: center;
+  margin-top: 41px;
 }
 
 .button-style {
 /*Style for the actual buttons*/
-  background-color: #408BC9;
-  color: #fff;
+  background-color: #fff;
+  color: #333333;
+  text-align: left;
   border: none;
-  border-radius: 2px;
-  font-size: 18px;
-  height: 40px;
-  width: 80%;
-}
-
-.clear-link {
-  float: left;
-  margin-left: 29px;
-  margin-top: 15px;
+  border-top: 1px solid #ddd;
+  padding-left: 15px;
+  font-size: 14px;
+  height: 48px;
+  width: 100%;
 }
 
 .button-style:hover {
   cursor: pointer;
-  background-color: #204d72;
+  color: #ffffff;
+  background-color: #B1B1B1;
 }
 
 .button-style:focus, .button-style:active {
-  background-color: #204d72;
+  color: #ffffff;
+  background-color: #B1B1B1;
+}
+
+.link-out {
+  color: #408BC9;
 }
 
 #stored {
 /*This is the token counter*/
-  font-size: 25px;
-  text-align: center;
-  margin: 10px auto;
-  padding: 3px;
-  border: 1px solid #dddddd;
-  width: 76%;
+  font-size: 22px;
+  font-weight: 200;
+  text-align: left;
+  background-color: #F4F4F4;
+  padding-left: 15px;
+  padding-bottom: 13px;
+  margin-top: 35px;
+  border-top: 1px solid #ddd;
+  height: 48px;
 }
 
 .header-link {
-  margin-left: 78px;
+/*the GitHub link under the title*/
+  margin-left: 85px;
 }
 
 .footer-link {
@@ -83,10 +87,21 @@ h1 {
   margin-top: 8px;
 }
 
-#tokenjar {
+#edgepass {
   position: absolute;
-  top: 17px;
-  left: 31px;
-  height: 45px;
+  top: 24px;
+  left: 25px;
+  height: 55px;
+}
+
+#tokens {
+  float: right;
+  padding-right: 15px;
+  padding-top: 21px;
+}
+
+#passtext {
+  float: left;
+  padding-top: 21px;
 }
 

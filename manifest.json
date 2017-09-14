@@ -2,10 +2,10 @@
 
   "description": "Handles cryptographically blinded tokens for bypassing Cloudflare challenge pages",
   "manifest_version": 2,
-  "name": "Cloudflare Token Jar",
+  "name": "Cloudflare Edge Pass",
   "version": "0.4",
   "icons": {
-    "48": "icons/tokenjar-48.png"
+    "48": "icons/ticket-48.png"
   },
 
   "background": {
@@ -29,8 +29,8 @@
   ],
 
   "browser_action": {
-    "default_icon": "icons/tokenjar-empty-32.png",
-    "default_title": "Cloudflare Token Jar",
+    "default_icon": "icons/ticket-empty-32.png",
+    "default_title": "Cloudflare Edge Pass",
     "default_popup": "popup/bc-plugin.html"
   }
 
