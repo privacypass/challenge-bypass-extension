@@ -501,11 +501,11 @@ var UpdateCallback = function() { }
 
 function updateIcon(count) {
     if (count != 0) {
-        chrome.browserAction.setIcon({ path: "icons/tokenjar-32.png", });
+        chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});
     } else {
-        chrome.browserAction.setIcon({ path: "icons/tokenjar-empty-32.png", });
+        chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
         chrome.browserAction.setBadgeText({text: ""});
     }
 }
