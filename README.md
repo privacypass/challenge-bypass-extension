@@ -379,7 +379,7 @@ Given `(G, Y, q)`; `(P_1,...,P_m)`, `(Q_1, ... ,Q_m)`; `Q_i = k(P_i)` for i = 1.
 
 4. Prover sends proof
 
-        (c, s) <-- DLEQ(M/Z == Y/G)
+        (c, s) <-- DLEQ(Z/M == Y/G)
 
 5. Verifier recalculates the PRNG seed from protocol state, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
 
