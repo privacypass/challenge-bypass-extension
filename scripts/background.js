@@ -1,5 +1,6 @@
 /*
  * This background page handles the sending requests and dealing with responses.
+ * Passes are exchanged with the server containing blinded tokens for bypassing CAPTCHAs.
  * Control flow is handled in the listeners. Cryptography uses SJCL.
  *
  * @author: George Tankersley
@@ -31,7 +32,7 @@ let storedUrl = null;
 // This allows us to force tabs to update to the targeted url
 let targetUrl = null;
 
-// Monitors number of reloads for a url to prevent tokens
+// Monitors number of reloads for a url to prevent passes
 // being eaten.
 let reloadCount = new Map();
 
@@ -39,7 +40,7 @@ let reloadCount = new Map();
 let timeOfLastResp = 0;
 
 // We monitor referers so that we don't load sub-resources that 
-// tokens are required for
+// passes are required for
 let refererMap = new Map();
 
 // If clearance is applied for then we don't want to keep sending requests
@@ -104,7 +105,7 @@ function processHeaders(details) {
             continue;
         }
 
-        // If we have tokens, cancel the request and pass execution over to the token handler.        
+        // If we have tokens to spend, cancel the request and pass execution over to the token handler.        
         let hostName = url.hostname;
         if (countStoredTokens() > 0) {
             // Prevent reloading on captcha.website
@@ -190,7 +191,7 @@ function beforeSendHeaders(request) {
         return {requestHeaders: headers};
     }
 
-    // Attempt to spend a token
+    // Create a pass and reload to send it to the edge
     const tokenToSpend = GetTokenForSpend();
     if (tokenToSpend == null) {
         return {cancel: false};

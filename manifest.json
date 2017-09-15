@@ -1,9 +1,9 @@
 {
 
-  "description": "Handles cryptographically blinded tokens for bypassing Cloudflare challenge pages",
+  "description": "Handles passes containing cryptographically blinded tokens for bypassing Cloudflare challenge pages.",
   "manifest_version": 2,
   "name": "Cloudflare Edge Pass",
-  "version": "0.4",
+  "version": "0.5",
   "icons": {
     "48": "icons/ticket-48.png"
   },
