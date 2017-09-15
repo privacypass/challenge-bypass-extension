@@ -1,10 +1,10 @@
 # Challenge Bypass Extension
 
-This browser extension allows a user to bypass challenge pages provided by Cloudflare using the blinded tokens protocol described [here](https://github.com/cloudflare/challenge-bypass-specification). Our design mirrors that of a 'blind signing' protocol based on a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF). We provide a short description of how this fits into our original specification below. The VOPRF we now use is based unintentionally on [JKK14]. For a technical description of the protocol see the [Technical Overview](#overview-of-protocol).
+The Cloudflare Edge Pass extension allows a user to bypass challenge pages provided by Cloudflare using the blinded tokens protocol similar to the one described [here](https://github.com/cloudflare/challenge-bypass-specification). The protocol we use here is actually based on a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF). We provide a short description of how this fits into our original specification below. The VOPRF we now use is based heavily on the design first established by Jarecki et al. [JKK14]. For a technical description of the protocol see the [Technical Overview](#overview-of-protocol).
 
-The protocol has received extensive review and testing, but this extension is a work in progress and is NOT intended to be the canonical implementation of a bypass client. In the below, we detail the exact message specification that is required for interacting with Cloudflare's edge server. Pull requests and reviews of the extension detailed here are welcome and encouraged.
+The protocol has received extensive review and testing, but this extension is a work in progress. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. In the below, we detail the exact message specification that is required for interacting with Cloudflare's edge server. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
-To be sure it works in Tor Browser, this code was developed against Firefox ESR. It is also compatible with Chrome.
+The browser is compatible with Chrome, Firefox and the Tor Browser Bundle.
 
 ### Contents
 
@@ -22,7 +22,7 @@ To be sure it works in Tor Browser, this code was developed against Firefox ESR.
      * [Message formatting](#message-formatting)
         * [Issuance request](#issuance-request)
         * [Issue response](#issue-response)
-        * [Redemption request](#redemption-request)
+        * [Redemption request (edge pass)](#redemption-request-edge-pass)
         * [Redemption response](#redemption-response)
      * [DLEQ handling](#dleq-handling)
   * [Overview of protocol](#overview-of-protocol)
@@ -34,7 +34,7 @@ To be sure it works in Tor Browser, this code was developed against Firefox ESR.
      * [Batch Requests](#batch-requests)
      * [Attacks](#attacks)
         * [Tagging by the edge](#tagging-by-the-edge)
-        * [Token stockpiling](#token-stockpiling)
+        * [Stockpiling of passes](#stockpiling-of-passes)
      * [Appendix A: Tor-specific public key publication](#appendix-a-tor-specific-public-key-publication)
      * [Appendix B: Benefits vs blind RSA](#appendix-b-benefits-vs-blind-rsa)
   * [Blog post](#blog-post)
@@ -75,13 +75,13 @@ Cryptography is implemented using the elliptic-curve library [SJCL](https://gith
 - Open Firefox and go to `about:debugging`
 - Click 'Load Temporary Add-on' button
 - Select manifest.json from <your-repos>/challenge-bypass-extension/
-- Check extension logo appears in top-right corner and 0 tokens are stored (by clicking on it)
+- Check extension logo appears in top-right corner and 0 passes are stored (by clicking on it)
 - Go to a web page where CAPTCHAs are on and bypassing is on (e.g. captcha.website)
-- Solve CAPTCHA and check that some tokens are stored in the extension now
+- Solve CAPTCHA and check that some passes are stored in the extension now
 	- Should also have access to website
-- Refresh page; check that webpage is displayed and that no tokens are spent (using clearance cookie instead)
-- Delete cookies, refresh page and check that page is displayed and token(s) have been spent
-	- may spend multiple tokens for different resources 
+- Refresh page; check that webpage is displayed and that no passes are spent (using clearance cookie instead)
+- Delete cookies, refresh page and check that page is displayed and passes have been spent
+	- may spend multiple passes for different resources 
 
 ### Chrome
 
@@ -93,17 +93,19 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 
 ## Plugin overview
 
-- background.js: Processes the necessary interactions with web-pages directly. Sends messages and processes edge replies.
+- background.js: Processes the necessary interactions with web-pages directly. Sends messages and processes edge replies
 
-- config.js: Config file containing commitments to edge private key for checking DLEQ proofs (currently not implemented).
+- config.js: Config file containing commitments to edge private key for checking DLEQ proofs (currently not implemented)
 
-- content.js: (currently unused) Content script for reading page html.
+- content.js: (currently unused) Content script for reading page html
 
-- token.js: Constructs issuance and redemption requests
+- token.js: Constructs issuance and redemption requests (i.e. edge passes) from stored blinded tokens
 
 - crypto.js: Wrapper for performing various cryptographic operations required for manipulating tokens
 
 - sjcl.js: Local copy of SJCL library
+
+- In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. A pass refers to the object that the extension sends to the edge in order to bypass a CAPTCHA.
 
 ### Workflow
 
@@ -111,6 +113,8 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 - **user**: human user interacting with a browser
 - **plugin**: acts on behalf of user in interaction with edge
 - **client**: the browser
+- **(blinded) token**: Random EC point that is 'signed' by the edge
+- **pass**: redemption request containing token for bypassing CAPTCHA
 
 - Issuing:
 	- Browser requests an origin protected by the edge
@@ -121,16 +125,16 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 	- The plugin adds an ['issue request'](#issuance-request) to the body of the request before it is sent
 	- The edge verifies the CAPTCHA solution
 	- If fine, the edge signs the tokens and returns them back to the client in the form of a ['issue response'](#issue-response)
-	- The plugin disassembles the response and stores the signed tokens for future use. It also reloads the origin webpage and gains access (e.g. using a token as below or a single-domain cookie given by the edge).
+	- The plugin disassembles the response and stores the signed tokens for future use. It also reloads the origin webpage and gains access (e.g. sending a pass containing the token as below or a single-domain cookie given by the edge)
 
 - Redemption:
 	- User visits an origin and a CAPTCHA page is returned
-	- The plugin catches the response and gets an unspent blinded token and signature from the store
-	- The plugin unblinds the token and sends up a new request with a header `challenge-bypass-token`; with the value set to a ['redemption request'](#redemption-request)
-	- The edge verifies the redemption request<sup>1</sup> and checks that the token has not been spent before
+	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates an ['edge pass'](#redemption-request) 
+	- The plugin unblinds the token on the pass and sends up a new request with a header `challenge-bypass-token`; with the value set to the value of the pass
+	- The edge verifies the redemption request<sup>1</sup> and checks that the pass has not been used before
 	- If all is fine, the edge grants the user access to the origin
 
-<sup>1</sup> The validation is slightly different depending on the blinding scheme. In the VOPRF scheme the validation requires deriving a shared key and verifying a MAC over the token and associated request data.
+<sup>1</sup> The validation is slightly different depending on the blinding scheme. In the VOPRF scheme the validation requires deriving a shared key and verifying a MAC over the pass and associated request data.
 
 ### Message formatting
 
@@ -187,7 +191,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 	
 	`"signatures=" || <signed-tokens> || <Batch-DLEQ-Resp>`
 
-#### Redemption request
+#### Redemption request (edge pass)
 
 JSON struct sent in a request header to bypass CAPTCHA pages.
 
@@ -209,7 +213,7 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 
 	`HMAC("hash_request_binding", <derived-key>, <host>, <path>)`
 
-- `<Redeem-JSON-struct>`:
+- `<Redeem-JSON-struct>` (or edge pass):
 
 	```
 	{
@@ -225,9 +229,9 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 
 #### Redemption response
 
-Server response header used if errors occur. If this header is sent the plugin discards all stored tokens.
+Server response header used if errors occur when verifying the edge pass.
 
-- `<error-resp>` is the error value returned by the edge token verifier. Takes the value 5 or 6, where 5 is an edge-side connection error and 6 is a token verification error.
+- `<error-resp>` is the error value returned by the edge pass verifier. Takes the value 5 or 6, where 5 is an edge-side connection error and 6 is a pass verification error.
 
 - Header: 
 
@@ -247,7 +251,7 @@ We have tried to ensure that our notation coincides with the notation that is us
 
 ### Overview
 
-The solution that we develop here is a protocol between a user, a challenger and an edge server. The edge server proxies user requests for a protected origin and refers the user to the challenger if the request is deemed to be (potentially) malicious. The challenger serves a CAPTCHA to the user. If the user solves the CAPTCHA, then the challenger issues a batch of signed tokens to the user. A user possessing signed tokens may attempt to redeem them with the edge instead of solving a challenge. If the edge verifies that the token is signed by the challenger and has not already been spent, then the edge allows the connection through to the origin.
+The solution that we develop here is a protocol between a user, a challenger and an edge server. The edge server proxies user requests for a protected origin and refers the user to the challenger if the request is deemed to be (potentially) malicious. The challenger serves a CAPTCHA to the user. If the user solves the CAPTCHA, then the challenger issues a batch of signed tokens to the user. A user possessing signed tokens may attempt to redeem them with the edge instead of solving a challenge. If the edge verifies that a redemption pass contains a token signed by the challenger that has not already been spent, then the edge allows the connection through to the origin.
 
 In the specific case of Cloudflare, the challenger and the edge are the same party. Furthermore, our edge "rewards" the user with a single-domain clearance cookie that allows the user to visit the origin for a period of time without being challenged again.
 
@@ -265,7 +269,7 @@ In the specific case of Cloudflare, the challenger and the edge are the same par
 
 ### Protocol description
 
-We detail a 'blind-signing' protocol written by George Tankersley using an OPRF to contruct per-token shared keys for a MAC over each redemption request. This hides the token values themselves until redemption and obviates the need for public key encryption. This protocol subsumes the blind-RSA protocol that was described in earlier releases of the protocol specification.
+We detail a 'blind-signing' protocol written by George Tankersley using an OPRF to contruct per-pass shared keys for a MAC over each redemption request. This hides the token values themselves until redemption and obviates the need for public key encryption. This protocol subsumes the blind-RSA protocol that was described in earlier releases of the protocol specification.
 
 Given a group setting and three hashes `H_1`, `H_2`, `H_3` we build a commitment to a random token using a secret key x held by the edge servers. `H_1` is a hash into the group and `H_2`, `H_3` are hashes to bitstrings `{0, 1}^λ` where `λ` is a security parameter (we use SHA256).
 
@@ -301,7 +305,7 @@ Redemption looks like this:
 
 3. User calculates a shared key `sk = H_2(t, N)`
 
-4. User sends `(t, MAC_{sk}(R))` to the edge along with the HTTP request
+4. User sends a pass `(t, MAC_{sk}(R))` to the edge along with the HTTP request
 
 5. Edge recalculates `R` from observed request data
 
@@ -407,15 +411,15 @@ We assume that the proof of consistent discrete logarithm is sufficient to guard
 
 What else the user needs to validate remains an open question.
 
-#### Token stockpiling
+#### Stockpiling of passes
 
-The major risk to the edge is that a malicious user might somehow acquire enough bypass tokens to launch an attack, for instance by paying people to solve CAPTCHAs and stockpile the resulting tokens.
+The major risk to the edge is that a malicious user might somehow acquire enough edge passes to launch a service attack, for instance by paying people to solve CAPTCHAs and stockpile the resulting passes.
 
-We mitigate this in-protocol in two ways. First, by limiting the number of tokens that a user can request per challenge solution. Secondly, and more effectively, by enabling fast key rotation by the edge. The edge declares an epoch for which tokens will be valid, and at the end of that epoch rotates the key it uses to sign and validate tokens. This has the effect of invalidating all previously-issued tokens and requiring a stockpiling attacker to solve challenges close to the time they want to launch an attack, rather than waiting indefinitely.
+We mitigate this in-protocol in two ways. First, by limiting the number of passes that a user can request per challenge solution. Secondly, and more effectively, by enabling fast key rotation by the edge. The edge declares an epoch for which passes will be valid, and at the end of that epoch rotates the key it uses to sign and validate passes. This has the effect of invalidating all previously-issued passes and requiring a stockpiling attacker to solve challenges close to the time they want to launch an attack, rather than waiting indefinitely.
 
 The process of key rotation is simple: the edge generates a new private key and, via some appropriately public process, a fresh generator `G`. Its public key is then `H = kG`, which it publishes as `(H, G)` or just `H` (see Appendix A).
 
-We mitigate this risk out-of-protocol by applying further arbitrary processing to the requests (for instance, using a WAF or rate limiting) such that even an attacker in possession of many tokens cannot effectively damage the origins.
+We mitigate this risk out-of-protocol by applying further arbitrary processing to the requests (for instance, using a WAF or rate limiting) such that even an attacker in possession of many passes cannot effectively damage the origins.
 
 ### Appendix A: Tor-specific public key publication
 
@@ -429,7 +433,7 @@ We can further reduce the bookkeeping burden on clients while increasing the tru
 ### Appendix B: Benefits vs blind RSA
 
 - Simpler, faster primitives
-- 10x savings in token size (~256 bits using P-256 instead of ~2048)
+- 10x savings in pass size (~256 bits using P-256 instead of ~2048)
 - The only thing edge to manage is a private scalar. No certificates.
 - No need for public-key encryption at all, since the derived shared key used to calculate each MAC is never transmitted and cannot be found from passive observation without knowledge of the edge key or the user's blinding factor.
 - Easier key rotation. Instead of managing certificates pinned in TBB and submitted to CT, we can use the DLEQ proofs to allow users to positively verify they're in the same anonymity set with regard to k as everyone else.
