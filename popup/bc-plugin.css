@@ -27,7 +27,7 @@ a:hover, a:focus {
 }
 
 h1 {
-/*Styles for the Edge Pass title */
+/*Styles for the Privacy Pass title */
 	font-size: 25px;
   color: #333333;
   font-weight: normal;
@@ -88,7 +88,7 @@ h1 {
   margin-top: 8px;
 }
 
-#edgepass {
+#privacypass {
   position: absolute;
   top: 24px;
   left: 25px;
