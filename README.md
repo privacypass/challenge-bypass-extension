@@ -22,7 +22,7 @@ The browser is compatible with Chrome, Firefox and the Tor Browser Bundle.
      * [Message formatting](#message-formatting)
         * [Issuance request](#issuance-request)
         * [Issue response](#issue-response)
-        * [Redemption request (edge pass)](#redemption-request-edge-pass)
+        * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
      * [DLEQ handling](#dleq-handling)
   * [Overview of protocol](#overview-of-protocol)
@@ -99,7 +99,7 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 
 - content.js: (currently unused) Content script for reading page html
 
-- token.js: Constructs issuance and redemption requests (i.e. edge passes) from stored blinded tokens
+- token.js: Constructs issuance and redemption requests (i.e. privacy passes) from stored blinded tokens
 
 - crypto.js: Wrapper for performing various cryptographic operations required for manipulating tokens
 
@@ -129,7 +129,7 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 
 - Redemption:
 	- User visits an origin and a CAPTCHA page is returned
-	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates an ['edge pass'](#redemption-request) 
+	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates an ['privacy pass'](#redemption-request) 
 	- The plugin unblinds the token on the pass and sends up a new request with a header `challenge-bypass-token`; with the value set to the value of the pass
 	- The edge verifies the redemption request<sup>1</sup> and checks that the pass has not been used before
 	- If all is fine, the edge grants the user access to the origin
@@ -191,7 +191,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 	
 	`"signatures=" || <signed-tokens> || <Batch-DLEQ-Resp>`
 
-#### Redemption request (edge pass)
+#### Redemption request (privacy pass)
 
 JSON struct sent in a request header to bypass CAPTCHA pages.
 
@@ -213,7 +213,7 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 
 	`HMAC("hash_request_binding", <derived-key>, <host>, <path>)`
 
-- `<Redeem-JSON-struct>` (or edge pass):
+- `<Redeem-JSON-struct>` (or privacy pass):
 
 	```
 	{
@@ -229,9 +229,9 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 
 #### Redemption response
 
-Server response header used if errors occur when verifying the edge pass.
+Server response header used if errors occur when verifying the privacy pass.
 
-- `<error-resp>` is the error value returned by the edge pass verifier. Takes the value 5 or 6, where 5 is an edge-side connection error and 6 is a pass verification error.
+- `<error-resp>` is the error value returned by the privacy pass verifier. Takes the value 5 or 6, where 5 is an edge-side connection error and 6 is a pass verification error.
 
 - Header: 
 
@@ -413,7 +413,7 @@ What else the user needs to validate remains an open question.
 
 #### Stockpiling of passes
 
-The major risk to the edge is that a malicious user might somehow acquire enough edge passes to launch a service attack, for instance by paying people to solve CAPTCHAs and stockpile the resulting passes.
+The major risk to the edge is that a malicious user might somehow acquire enough privacy passes to launch a service attack, for instance by paying people to solve CAPTCHAs and stockpile the resulting passes.
 
 We mitigate this in-protocol in two ways. First, by limiting the number of passes that a user can request per challenge solution. Secondly, and more effectively, by enabling fast key rotation by the edge. The edge declares an epoch for which passes will be valid, and at the end of that epoch rotates the key it uses to sign and validate passes. This has the effect of invalidating all previously-issued passes and requiring a stockpiling attacker to solve challenges close to the time they want to launch an attack, rather than waiting indefinitely.
 

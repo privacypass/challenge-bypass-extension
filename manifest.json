@@ -3,7 +3,7 @@
   "description": "Handles passes containing cryptographically blinded tokens for bypassing Cloudflare challenge pages.",
   "manifest_version": 2,
   "name": "Cloudflare Privacy Pass",
-  "version": "0.5",
+  "version": "0.6",
   "icons": {
     "48": "icons/ticket-48.png"
   },
@@ -30,7 +30,7 @@
 
   "browser_action": {
     "default_icon": "icons/ticket-empty-32.png",
-    "default_title": "Cloudflare Edge Pass",
+    "default_title": "Cloudflare Privacy Pass",
     "default_popup": "popup/bc-plugin.html"
   }
 
