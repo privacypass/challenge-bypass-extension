@@ -21,7 +21,7 @@ const CF_FORCE_CHALLENGE_HEADER = "";
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
 const CF_DBG_FORCE_CHALLENGE = false;
-const RELOAD_MAX = 3;
+const RELOAD_MAX = 5;
 
 const TOKENS_PER_REQUEST = 30;
 
@@ -49,6 +49,9 @@ let clearanceApplied = new Map();
 
 // Set if a spend has occurred for a req id
 let spendId = new Map();
+
+// last set target URLs used for reloading compatibility with slow browsers
+let usedTargets = [];
 
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
@@ -85,7 +88,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 // us to cancel requests instead of loading an unnecessary ReCaptcha widget.
 function processHeaders(details) {
     timeOfLastResp = Date.now();
-
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
 
@@ -198,7 +200,7 @@ function beforeSendHeaders(request) {
     }
 
     const method = request.method;
-    const http_path = method + " " + url.pathname + url.search;
+    const http_path = method + " " + url.pathname;
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
@@ -370,11 +372,17 @@ function alarmListener(alarm) {
         // Fired on redemptions or errors
         case "reload-page":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                // If we don't have a target then try using the last one we had
+                let lastTarget = usedTargets.pop()
+                if (!targetUrl) {
+                    targetUrl = lastTarget;
+                }
                 if (!!targetUrl) {
                     chrome.tabs.update(tabs[0].id, { url: targetUrl.href });
+                    usedTargets.push(targetUrl);
                     setTimeout(function() {
                         targetUrl = null;
-                    } , 2000);
+                    } , 1000);
                     // Clear the refererMap if it is getting large
                     if (refererMap.size > 100) {
                         refererMap = new Map();
@@ -423,6 +431,7 @@ function isFaviconUrl(href) {
 function initNewVars() {
     reloadCount = new Map();
     clearanceApplied = new Map();
+    usedTargets = [];
 }
 
 function countStoredTokens() {
