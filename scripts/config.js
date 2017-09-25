@@ -3,6 +3,8 @@
  *
  * @author: Alex Davidson
  */
+/* exported DevCommitmentConfig */
+/* exported ProdCommitmentConfig */
 
 const DevCommitmentConfig = {
 	"G":"BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=",

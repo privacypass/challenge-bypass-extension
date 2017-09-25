@@ -6,9 +6,12 @@
  * @other_contribs: Alex Davidson
  */
 
-/*jshint esversion: 6 */
-/*global chrome,window,document,console,localStorage,browser,sjcl*/
-'use strict';
+/*global sjcl*/
+/* exported CreateBlindToken */
+/* exported GenerateNewTokens */
+/* exported BuildIssueRequest */
+/* exported BuildRedeemHeader */
+"use strict";
 
 
 // Creates

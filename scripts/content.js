@@ -8,7 +8,7 @@
 // Returns a map with the certs on success or null if any of the cert tags don't exist.
 function getBypassTags() {
     // If there isn't a captcha-bypass meta tag, do nothing.
-    var captchaTriggerTag = document.getElementById('captcha-bypass');
+    var captchaTriggerTag = document.getElementById("captcha-bypass");
     if (captchaTriggerTag !== null && captchaTriggerTag.tagName == "META") {
         var message = { data: captchaTriggerTag };
         return message;

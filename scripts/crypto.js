@@ -4,9 +4,17 @@
  * @author: George Tankersley
  */
 
-/*jshint esversion: 6 */
-/*global chrome,window,document,console,localStorage,browser,sjcl*/
-'use strict';
+/*global sjcl*/
+/* exported CreateBlindToken */
+/* exported checkRequestBinding */
+/* exported compressPoint */
+/* exported decodeStorablePoint */
+/* exported deriveKey */
+/* exported encodeStorablePoint */
+/* exported sec1DecodePoint */
+/* exported signPoint */
+/* exported unblindPoint */
+"use strict";
 
 var p256 = sjcl.ecc.curves.c256;
 
@@ -247,7 +255,6 @@ function sec1DecodePoint(p) {
     const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
     if (sec1Bytes[0] != 0x04) {
         throw new Error("[captcha_bypass]: attempted sec1DecodePoint with incorrect tag: " + p);
-        return null;
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
