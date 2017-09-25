@@ -28,6 +28,7 @@
         "BuildRedeemHeader": true
     },
     "rules": {
+        "no-trailing-spaces": "error",
         "linebreak-style": [
             "error",
             "unix"

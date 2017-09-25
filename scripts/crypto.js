@@ -99,7 +99,7 @@ function createRequestBinding(key, data) {
 
     const h = new sjcl.misc.hmac(keyBits, sjcl.hash.sha256);
     h.update(tagBits);
-    
+
     let dataBits = null;
     for (var i = 0; i < data.length; i++) {
         dataBits = sjcl.codec.bytes.toBits(data[i]);

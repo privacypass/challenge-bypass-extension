@@ -1,7 +1,7 @@
 /*
  * Handles the creation of 'privacy passes' for bypassing CAPTCHAs
  * A pass is an object containing a token for signing/redemption
- * 
+ *
  * @main_author: George Tankersley
  * @other_contribs: Alex Davidson
  */
