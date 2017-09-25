@@ -76,12 +76,14 @@ Cryptography is implemented using the elliptic-curve library [SJCL](https://gith
 - Click 'Load Temporary Add-on' button
 - Select manifest.json from <your-repos>/challenge-bypass-extension/
 - Check extension logo appears in top-right corner and 0 passes are stored (by clicking on it)
-- Go to a web page where CAPTCHAs are on and bypassing is on (e.g. captcha.website)
+- Go to a web page where CAPTCHAs are on and bypassing is on (e.g. https://captcha.website)
 - Solve CAPTCHA and check that some passes are stored in the extension now
-	- Should also have access to website
-- Refresh page; check that webpage is displayed and that no passes are spent (using clearance cookie instead)
-- Delete cookies, refresh page and check that page is displayed and passes have been spent
-	- may spend multiple passes for different resources 
+	- captcha.website cannot be bypassed (this is only for gaining tokens)
+- Go to webpage where CAPTCHA would normally be displayed
+- Check that webpage is displayed and that 1 or more passes are spent
+	- No interaction with a CAPTCHA page should occur
+- A clearance cookie should have been received 
+	- This can be used in the future instead of spending more tokens for this domain
 
 ### Chrome
 
