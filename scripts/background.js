@@ -17,12 +17,11 @@ const CF_BYPASS_SUPPORT  = "cf-chl-bypass";
 const CF_BYPASS_RESPONSE = "cf-chl-bypass-resp";
 const CF_CLEARANCE_COOKIE = "cf_clearance";
 const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
-const CF_FORCE_CHALLENGE_HEADER = "";
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
-const CF_DBG_FORCE_CHALLENGE = false;
-const RELOAD_MAX = 5;
+const RELOAD_MAX = 3; // This is mainly to stop runaway webpages
 
+const MAX_TOKENS = 300;
 const TOKENS_PER_REQUEST = 30;
 
 // store the url of captcha pages here for future reloading
@@ -73,6 +72,7 @@ function processRedirect(details) {
         let url = document.createElement('a');
         url.href = details.redirectUrl;
         setSpendFlag(url.host, true);
+        spendId[details.requestId] = false;
     }
 }
 
@@ -89,16 +89,15 @@ chrome.webRequest.onHeadersReceived.addListener(
 function processHeaders(details) {
     timeOfLastResp = Date.now();
     for (var i = 0; i < details.responseHeaders.length; i++) {
-        const header = details.responseHeaders[i];
-
         let url = new URL(details.url);
+        const header = details.responseHeaders[i];
         if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
             if (header.value == CF_VERIFICATION_ERROR
                 || header.value == CF_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
                 // Either tokens are bad or some resource is calling the server in a bad way
                 // Consider clearing storage
-                throw new Error("[captcha-bypass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
+                throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
             } 
         }
 
@@ -119,7 +118,7 @@ function processHeaders(details) {
             let referer = refererMap.get(details.requestId);
             if (!referer && !isFaviconUrl(url.href) && !targetUrl) {
                 targetUrl = url;
-            } 
+            }
 
             // reload page
             chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
@@ -137,14 +136,15 @@ function processHeaders(details) {
 
                     // Only persist reloading for a short amount of time
                     // Otherwise can get stuck in loops
-                    let reloads = reloadCount[url.hostname]
+                    let reloads = reloadCount[url.href]
                     if (!reloads) {
-                        reloadCount[url.hostname] = 1;
-                    } else if (reloadCount < RELOAD_MAX) {
-                        createAlarm("reload-page", Date.now() + 10);
-                        reloadCount[url.hostname] = reloads+1;
+                        createAlarm("reload-page", Date.now() + 200);
+                        reloadCount[url.href] = 1;
+                    } else if (reloads < RELOAD_MAX) {
+                        createAlarm("reload-page", Date.now() + 200);
+                        reloadCount[url.href] = reloads+1;
                     } else {
-                        throw new Error("[captcha-bypass]: Max reloads reached for resource at " + url.href);
+                        throw new Error("[privacy-pass]: Max reloads reached for resource: " + url.href);
                     }
                 }
             });
@@ -156,11 +156,12 @@ function processHeaders(details) {
         }
 
         // Store the url for redirection after captcha is solved
-        storedUrl = url;
-
-        // Otherwise, allow the request to complete while we generate some tokens.
-        // TODO: start generating tokens here to speed up the request processing
-        // createAlarm("generate-new-tokens", Date.now() + 10);
+        // Manual check for favicon urls
+        storedUrl = url.href;
+        let faviconIndex = storedUrl.indexOf("favicon");
+        if (faviconIndex != -1) {
+            storedUrl = storedUrl.substring(0, faviconIndex);
+        }
         return {cancel: false};
     }
 }
@@ -175,17 +176,10 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 function beforeSendHeaders(request) {
     let url = new URL(request.url);
     let headers = request.requestHeaders;
-
     for (let i = 0; i < headers.length; i++) {
         if (headers[i].name == "Referer") {
             refererMap.set(request.requestId, headers[i].value);
         }
-    }
-
-    // Force challenge!!
-    if (CF_DBG_FORCE_CHALLENGE) {
-        let chlHeader = { name: CF_FORCE_CHALLENGE_HEADER, value: "1" };
-        headers.push(chlHeader);
     }
 
     // might need to add a force header or cancel the reload for captcha.website
@@ -204,7 +198,6 @@ function beforeSendHeaders(request) {
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
-
     setSpendFlag(url.host, null);
     spendId[request.requestId] = true;
 
@@ -224,7 +217,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
     if (Date.now() - 3000 > timeOfLastResp) {
-        initNewVars();
+        resetVars();
     }
 
     let reqURL = details.url;
@@ -237,23 +230,7 @@ function beforeRequest(details) {
         return {cancel: false};
     }
 
-    let tokens = null;
-
-    // If no tokens exist, we'll need to make some first.
-    if (countStoredTokens() == 0) {
-        // createAlarm("generate-new-tokens", Date.now() + 10);
-        // console.log("tried to solve a CAPTCHA, didn't have any tokens prepared");
-        // return {cancel: false};
-        tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
-    } else {
-        tokens = GetStoredTokens();
-        if (tokens == null) {
-            console.error("[captcha_bypass]: tried to solve a CAPTCHA, couldn't retrieve stored tokens");
-            // Can't do anything with this request, so get out of the way.
-            return {cancel: false};
-        }
-    }
-
+    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
@@ -262,7 +239,7 @@ function beforeRequest(details) {
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         // When we receive a response...
-        if (xhr.status < 300 && xhr.readyState == 4 && countStoredTokens() == 0) {
+        if (xhr.status < 300 && xhr.readyState == 4 && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             const resp_data = xhr.responseText;
             const signedPoints = parseIssueResponse(resp_data);
             if (signedPoints !== null) {
@@ -272,6 +249,8 @@ function beforeRequest(details) {
                 createAlarm("reload-page-xhr", Date.now() + 10);
                 return;
             }
+        } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
+            throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.")
         }
 
         // Finally, we can reload and spend a token
@@ -316,7 +295,7 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
 function parseIssueResponse(data) {
     const split = data.split("signatures=", 2);
     if (split.length != 2) {
-        throw new Error("[captcha_bypass]: signature response invalid or in unexpected format, got response: " + data);
+        throw new Error("[privacy-pass]: signature response invalid or in unexpected format, got response: " + data);
         return null;
     }
     // decodes base-64
@@ -340,7 +319,7 @@ function parseIssueResponse(data) {
     signatures.forEach(function(signature) {
         let usablePoint = sec1DecodePoint(signature);
         if (usablePoint == null) {
-            throw new Error("[captcha_bypass]: unable to decode point" + signature + " in " + JSON.stringify(signatures));
+            throw new Error("[privacy-pass]: unable to decode point" + signature + " in " + JSON.stringify(signatures));
             return;
         }
         usablePoints.push(usablePoint);
@@ -364,7 +343,7 @@ function alarmListener(alarm) {
         case "reload-page-xhr":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                 if (tabs[0].id) {
-                    chrome.tabs.update(tabs[0].id, { url: storedUrl.href });
+                    chrome.tabs.update(tabs[0].id, { url: storedUrl });               
                     storedUrl = null;
                 }
             });
@@ -412,7 +391,7 @@ chrome.runtime.onMessage.addListener(handleDocumentEnd);
 function handleDocumentEnd(message, sender) {
     // have to do the undefined check for new versions of firefox
     if (message == undefined) {
-        throw new Error("[captcha_bypass]: Message from content script was undefined");
+        throw new Error("[privacy-pass]: Message from content script was undefined");
         return;
     }
     // ignore anything that isn't our trigger message
@@ -423,16 +402,6 @@ function handleDocumentEnd(message, sender) {
 
 
 /* Token storage functions */
-
-function isFaviconUrl(href) {
-    return href.indexOf("favicon.ico") != -1;
-}
-
-function initNewVars() {
-    reloadCount = new Map();
-    clearanceApplied = new Map();
-    usedTargets = [];
-}
 
 function countStoredTokens() {
     const count = localStorage.getItem(STORAGE_KEY_COUNT);
@@ -467,10 +436,7 @@ function storeTokens(tokens) {
     let storableTokens = [];
     for (var i = 0; i < tokens.length; i++) {
         let t = tokens[i];
-        // SJCL points are cyclic as objects, so we have to flatten them.
-        let storablePoint = encodeStorablePoint(t.point);
-        let storableBlind = t.blind.toString();
-        storableTokens[i] = { token: t.token, point: storablePoint, blind: storableBlind };
+        storableTokens[i] = getTokenEncoding(t,t.point);
     }
     const json = JSON.stringify(storableTokens);
     localStorage.setItem(STORAGE_KEY_TOKENS, json);
@@ -485,17 +451,29 @@ function storeNewTokens(tokens, signedPoints) {
     let storableTokens = [];
     for (var i = 0; i < tokens.length; i++) {
         let t = tokens[i];
-        // SJCL points are cyclic as objects, so we have to flatten them.
-        let storablePoint = encodeStorablePoint(signedPoints[i]);
-        let storableBlind = t.blind.toString();
-        storableTokens[i] = { token: t.token, point: storablePoint, blind: storableBlind };
+        storableTokens[i] = getTokenEncoding(t,signedPoints[i]);
+    }
+    // Append old tokens to the newly received tokens
+    if (countStoredTokens() > 0) {
+        let oldTokens = loadTokens();
+        for (let i=0; i<oldTokens.length; i++) {
+            let oldT = oldTokens[i];
+            storableTokens.push(getTokenEncoding(oldT,oldT.point));
+        }
     }
     const json = JSON.stringify(storableTokens);
     localStorage.setItem(STORAGE_KEY_TOKENS, json);
-    localStorage.setItem(STORAGE_KEY_COUNT, tokens.length);
+    localStorage.setItem(STORAGE_KEY_COUNT, storableTokens.length);
 
     // Update the count on the actual icon
-    updateIcon(tokens.length);
+    updateIcon(storableTokens.length);
+}
+
+// SJCL points are cyclic as objects, so we have to flatten them.
+function getTokenEncoding(t, curvePoint) {
+    let storablePoint = encodeStorablePoint(curvePoint);
+    let storableBlind = t.blind.toString();
+    return { token: t.token, point: storablePoint, blind: storableBlind };
 }
 
 function loadTokens() {
@@ -543,6 +521,17 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
+//  Favicons have caused us problems...
+function isFaviconUrl(href) {
+    return href.indexOf("favicon") != -1;
+}
+
+function resetVars() {
+    reloadCount = new Map();
+    clearanceApplied = new Map();
+    usedTargets = [];
+    spendId = new Map();
+}
 
 function updateIcon(count) {
     if (count != 0) {
@@ -569,7 +558,7 @@ function createAlarm(name, when) {
             when: when
         });
     } else {
-        throw new Error("[captcha_bypass]: Browser may not support alarms");
+        throw new Error("[privacy-pass]: Browser may not support alarms");
     }
 }
 
@@ -579,6 +568,6 @@ function removeAlarm(name) {
     } else if (browser.alarms !== undefined) {
         browser.alarms.clear(name);
     } else {
-        throw new Error("[captcha_bypass]: Browser may not support alarms");
+        throw new Error("[privacy-pass]: Browser may not support alarms");
     }
 }
