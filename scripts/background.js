@@ -122,7 +122,9 @@ function processHeaders(details) {
 
             // reload page
             chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
-                if (!cookie) {
+                // Require an existing, non-expired cookie.
+                var hasValidCookie = cookie && cookie.expirationDate * 1000 >= Date.now();
+                if (!hasValidCookie) {
                     if (!clearanceApplied[url.hostname]) {
                         clearanceApplied[url.hostname] = true;
                         setSpendFlag(url.host, true);  
