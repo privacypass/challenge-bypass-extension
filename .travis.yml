@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - "node"
+
+install:
+  - npm install -g eslint web-ext
+
+script:
+  - eslint .
+  - web-ext lint --warnings-as-errors

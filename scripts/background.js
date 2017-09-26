@@ -7,9 +7,9 @@
  * @author: Alex Davidson
  */
 
-/*jshint esversion: 6 */
-/*global chrome,window,document,console,localStorage,browser*/
-'use strict';
+/*global sjcl*/
+/* exported clearStorage */
+"use strict";
 
 const STORAGE_KEY_TOKENS = "cf-bypass-tokens";
 const STORAGE_KEY_COUNT  = "cf-token-count";
@@ -38,7 +38,7 @@ let reloadCount = new Map();
 // We use this to clear the reload map temporally
 let timeOfLastResp = 0;
 
-// We monitor referers so that we don't load sub-resources that 
+// We monitor referers so that we don't load sub-resources that
 // passes are required for
 let refererMap = new Map();
 
@@ -55,9 +55,9 @@ let usedTargets = [];
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
 
-/* Event listeners manage control flow 
+/* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
-    - cookie listener clears cookie for captcha.website to enable getting more 
+    - cookie listener clears cookie for captcha.website to enable getting more
     tokens in the future
 */
 
@@ -69,7 +69,7 @@ chrome.webRequest.onBeforeRedirect.addListener(
 );
 function processRedirect(details) {
     if (spendId[details.requestId]) {
-        let url = document.createElement('a');
+        let url = document.createElement("a");
         url.href = details.redirectUrl;
         setSpendFlag(url.host, true);
         spendId[details.requestId] = false;
@@ -98,7 +98,7 @@ function processHeaders(details) {
                 // Either tokens are bad or some resource is calling the server in a bad way
                 // Consider clearing storage
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
-            } 
+            }
         }
 
         // 403 with the right header indicates a bypassable CAPTCHA
@@ -106,8 +106,7 @@ function processHeaders(details) {
             continue;
         }
 
-        // If we have tokens to spend, cancel the request and pass execution over to the token handler.        
-        let hostName = url.hostname;
+        // If we have tokens to spend, cancel the request and pass execution over to the token handler.
         if (countStoredTokens() > 0) {
             // Prevent reloading on captcha.website
             if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
@@ -127,7 +126,7 @@ function processHeaders(details) {
                 if (!hasValidCookie) {
                     if (!clearanceApplied[url.hostname]) {
                         clearanceApplied[url.hostname] = true;
-                        setSpendFlag(url.host, true);  
+                        setSpendFlag(url.host, true);
                         createAlarm("reload-page", Date.now() + 200);
                     }
                 } else {
@@ -150,11 +149,11 @@ function processHeaders(details) {
                     }
                 }
             });
-            
 
-            // We don't use cancel: true since in chrome the page appears 
+
+            // We don't use cancel: true since in chrome the page appears
             // blocked for a second
-            return {redirectUrl: 'javascript:void(0)'};
+            return {redirectUrl: "javascript:void(0)"};
         }
 
         // Store the url for redirection after captcha is solved
@@ -266,11 +265,11 @@ function beforeRequest(details) {
     xhr.setRequestHeader("CF-Chl-Bypass", "1");
     // We seem to get back some odd mime types that cause problems...
     xhr.overrideMimeType("text/plain");
-    
+
     xhr.send("blinded-tokens=" + request);
 
     // Cancel the original request
-    return {redirectUrl: 'javascript:void(0)'};
+    return {redirectUrl: "javascript:void(0)"};
 }
 
 // Removes cookies for captcha.website to enable getting more tokens
@@ -298,7 +297,6 @@ function parseIssueResponse(data) {
     const split = data.split("signatures=", 2);
     if (split.length != 2) {
         throw new Error("[privacy-pass]: signature response invalid or in unexpected format, got response: " + data);
-        return null;
     }
     // decodes base-64
     const signaturesJSON = atob(split[1]);
@@ -306,7 +304,7 @@ function parseIssueResponse(data) {
     const issueResp = JSON.parse(signaturesJSON);
     let proof;
     let signatures;
-    // Only separate the proof if it has been sent (it should be included in the 
+    // Only separate the proof if it has been sent (it should be included in the
     // last element of the array).
     if (TOKENS_PER_REQUEST == issueResp.length-1) {
         proof = issueResp[issueResp.length - 1];
@@ -322,20 +320,20 @@ function parseIssueResponse(data) {
         let usablePoint = sec1DecodePoint(signature);
         if (usablePoint == null) {
             throw new Error("[privacy-pass]: unable to decode point" + signature + " in " + JSON.stringify(signatures));
-            return;
         }
         usablePoints.push(usablePoint);
     })
 
     // TODO: handle the DLEQ proof
-    
+    void proof; // ignore eslint warnings about unused-vars.
+
     return usablePoints;
 }
 
 // Alarm listener allows us to get out of the page load path.
 if (chrome.alarms !== undefined) {
     chrome.alarms.onAlarm.addListener(alarmListener);
-} else if (browser.alarms !== undefined) {  
+} else if (browser.alarms !== undefined) {
     browser.alarms.onAlarm.addListener(alarmListener);
 }
 
@@ -345,7 +343,7 @@ function alarmListener(alarm) {
         case "reload-page-xhr":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                 if (tabs[0].id) {
-                    chrome.tabs.update(tabs[0].id, { url: storedUrl });               
+                    chrome.tabs.update(tabs[0].id, { url: storedUrl });
                     storedUrl = null;
                 }
             });
@@ -358,7 +356,7 @@ function alarmListener(alarm) {
                 if (!targetUrl) {
                     targetUrl = lastTarget;
                 }
-                if (!!targetUrl) {
+                if (targetUrl) {
                     chrome.tabs.update(tabs[0].id, { url: targetUrl.href });
                     usedTargets.push(targetUrl);
                     setTimeout(function() {
@@ -394,7 +392,6 @@ function handleDocumentEnd(message, sender) {
     // have to do the undefined check for new versions of firefox
     if (message == undefined) {
         throw new Error("[privacy-pass]: Message from content script was undefined");
-        return;
     }
     // ignore anything that isn't our trigger message
     if (message.type != "triggerChallengeBypass" || !message.content) {
@@ -412,17 +409,9 @@ function countStoredTokens() {
     }
 
     // We change the png file to show if tokens are stored or not
-    const countInt = JSON.parse(count); 
+    const countInt = JSON.parse(count);
     updateIcon(countInt);
     return countInt;
-}
-
-function GetStoredTokens() {
-    const tokens = loadTokens();
-    if (tokens == null || tokens.length == 0) {
-        return null;
-    }
-    return tokens;
 }
 
 function GetTokenForSpend() {

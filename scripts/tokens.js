@@ -1,14 +1,17 @@
 /*
  * Handles the creation of 'privacy passes' for bypassing CAPTCHAs
  * A pass is an object containing a token for signing/redemption
- * 
+ *
  * @main_author: George Tankersley
  * @other_contribs: Alex Davidson
  */
 
-/*jshint esversion: 6 */
-/*global chrome,window,document,console,localStorage,browser,sjcl*/
-'use strict';
+/*global sjcl*/
+/* exported CreateBlindToken */
+/* exported GenerateNewTokens */
+/* exported BuildIssueRequest */
+/* exported BuildRedeemHeader */
+"use strict";
 
 
 // Creates

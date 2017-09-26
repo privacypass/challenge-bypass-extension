@@ -1,0 +1,51 @@
+{
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 8
+    },
+    "extends": "eslint:recommended",
+    "globals": {
+        "browser": true,
+        "chrome": true,
+        "createBlindToken": true,
+        "blindPoint": true,
+        "checkRequestBinding": true,
+        "compressPoint": true,
+        "createRequestBinding": true,
+        "deriveKey": true,
+        "encodeStorablePoint": true,
+        "decodeStorablePoint": true,
+        "newRandomPoint": true,
+        "sec1DecodePoint": true,
+        "signPoint": true,
+        "unblindPoint": true,
+        "CreateBlindToken": true,
+        "GenerateNewTokens": true,
+        "BuildIssueRequest": true,
+        "BuildRedeemHeader": true
+    },
+    "rules": {
+        "no-trailing-spaces": "error",
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "no-unused-vars": [
+            "error", {
+                "args": "none"
+            }
+        ],
+        "no-console": [
+            "error", {
+                "allow": ["error"]
+            }
+        ]
+    }
+}
