@@ -414,16 +414,6 @@ function countStoredTokens() {
     return countInt;
 }
 
-// TODO remove this unused function?
-// eslint-disable-next-line
-function GetStoredTokens() {
-    const tokens = loadTokens();
-    if (tokens == null || tokens.length == 0) {
-        return null;
-    }
-    return tokens;
-}
-
 function GetTokenForSpend() {
     let tokens = loadTokens();
     const tokenToSpend = tokens[0];
