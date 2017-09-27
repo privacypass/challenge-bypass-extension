@@ -1,19 +1,36 @@
 /* This page is for the popup in the browser toolbar */
 "use strict";
 
-chrome.extension.getBackgroundPage().UpdateCallback = UpdatePopup;
+if (chrome.extension.getBackgroundPage()) {
+    chrome.extension.getBackgroundPage().UpdateCallback = UpdatePopup;
+} else {
+    browser.runtime.sendMessage({
+        callback: UpdatePopup
+    });
+}
 
 function UpdatePopup() {
-  var background = chrome.extension.getBackgroundPage();
-  var tokLen = background.countStoredTokens();
-
-  // Replace the count displayed in the popup
-  replaceTokensStoredCount(tokLen);
-
-  document.getElementById("clear").addEventListener("click", function() {
     var background = chrome.extension.getBackgroundPage();
-      background.clearStorage();
-  });
+    let tokLen = 0
+    if (background) {
+        tokLen = background.countStoredTokens();
+        handleResponse(tokLen)
+    } else {
+        let send = browser.runtime.sendMessage({
+            tokLen: true
+        });    
+        send.then(handleResponse);
+    }
+}
+
+function handleResponse(tokLen) {
+    // Replace the count displayed in the popup
+    replaceTokensStoredCount(tokLen);
+
+    document.getElementById("clear").addEventListener("click", function() {
+        var background = chrome.extension.getBackgroundPage();
+        background.clearStorage();
+    });
 }
 
 // We have to do replace this way as using innerHtml is unsafe

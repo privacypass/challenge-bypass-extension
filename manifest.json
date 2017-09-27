@@ -25,7 +25,8 @@
     "storage",
     "tabs",
     "webRequest",
-    "webRequestBlocking"
+    "webRequestBlocking",
+    "webNavigation"
   ],
 
   "browser_action": {
