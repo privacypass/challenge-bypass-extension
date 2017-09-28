@@ -261,11 +261,13 @@ function beforeRequest(details) {
             }
             // Reload the page for the originally intended url
             let url = getUrlObject(reqUrl);
-            let captchaPath = url.pathname;
-            let pathIndex = url.href.indexOf(captchaPath);
-            let reloadUrl = url.href.substring(0, pathIndex+1);
-            setSpendFlag(reloadUrl, true);
-            chrome.tabs.update(details.tabId, { url: reloadUrl });
+            if (url.href.indexOf(CF_CAPTCHA_DOMAIN) == -1){
+                let captchaPath = url.pathname;
+                let pathIndex = url.href.indexOf(captchaPath);
+                let reloadUrl = url.href.substring(0, pathIndex+1);
+                setSpendFlag(reloadUrl, true);
+                chrome.tabs.update(details.tabId, { url: reloadUrl });
+            }
         } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.")
         }
