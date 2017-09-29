@@ -19,15 +19,16 @@ const CF_CLEARANCE_COOKIE = "cf_clearance";
 const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
-const RELOAD_MAX = 3; // This is mainly to stop runaway webpages
-const SPEND_MAX = 2;
+const SPEND_MAX = 1;
 const MAX_TOKENS = 300;
-const TOKENS_PER_REQUEST = 30;
+const TOKENS_PER_REQUEST = 50;
 const FF_PRIV_TAB = "about:privatebrowsing";
 const CHROME_TAB = "chrome://newtab/";
 const FF_BLANK = "about:blank";
 const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
+const SET_COOKIE_HEADER = "set-cookie";
+const VALID_REDIRECTS = ["https://","https://www.","http://www."];
 
 // store the url of captcha pages here for future reloading
 let storedUrl = null;
@@ -45,20 +46,58 @@ let spendId = new Map();
 // prevent token DoS attacks
 let spentHosts = new Map();
 
+// Used for tracking spends globally
+let spentUrl = new Map();
+
+// Bad spends
+let badSpend = new Map();
+
 // We want to monitor attempted spends to check if we should remove cookies
 let httpsRedirect = new Map();
 
 // Monitor whether we have already sent tokens for signing
 let sentTokens = new Map();
 
+// URL string for determining where tokens should be spent
+let target = "";
+
+// USed for checking redirects after a bad spend has occurred
+let checkRedirect = new Map();
+
+// Used for firefox primarily
+let futureReload = new Map();
+
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
 
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
+    - web navigation listener sets the target url for the execution 
     - cookie listener clears cookie for captcha.website to enable getting more
     tokens in the future
 */
+
+// Once we've completed the request if a spend went badly
+// (no cookie received) then we need to reload and try another resource
+chrome.webRequest.onCompleted.addListener(
+    handleCompletion,
+    { urls: ["<all_urls>"] },
+);
+function handleCompletion(details) {
+    let url = new URL(details.url);
+    // If we had a bad spend then reload the page
+    if (spendId[details.requestId] && checkRedirect[url.href] && !badSpend[url.href]) {
+        console.log("coming into here: " + url.href);
+        chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
+            if (!cookie) {
+                setSpendFlag(url.host, true);
+                chrome.tabs.reload(details.tabId);
+            }
+        });
+    } 
+    checkRedirect[url.href] = false;
+    spendId[details.requestId] = false; 
+}
 
 // If a redirect occurs then we want to see if we had spent previously
 // If so then it is likely that we will want to spend on the redirect
@@ -70,26 +109,30 @@ function processRedirect(details) {
     let oldUrl = details.url;
     let redirectUrl = details.redirectUrl;
     // Check if https redirect and set if so.
-    setHttpsRedirect(oldUrl, redirectUrl);
+    httpsRedirect[redirectUrl] = validRedirect(oldUrl, redirectUrl);
+    console.log(oldUrl);
+    console.log(redirectUrl);
+    console.log(validRedirect(oldUrl, redirectUrl));
     if (spendId[details.requestId] && redirectCount < SPEND_MAX) {
         let url = getUrlObject(redirectUrl);
-        setSpendFlag(url.href, true);
+        setSpendOnRedirect(url);
         spendId[details.requestId] = false;
         redirectCount++;
     }
 }
-function setHttpsRedirect(oldUrl, redirectUrl) {
+function validRedirect(oldUrl, redirectUrl) {
     let httpInd = oldUrl.indexOf("http://");
-    let httpsInd = redirectUrl.indexOf("https://");
-    if (httpInd != -1 && httpsInd != -1) {
+    let valids = VALID_REDIRECTS;
+    if (httpInd != -1) {
         let urlStr = oldUrl.substring(7);
-        let newUrl = "https://" + urlStr;
-        let newWwwUrl = "https://www." + urlStr;
-        if (newUrl == redirectUrl
-            || newWwwUrl == redirectUrl) {
-            httpsRedirect[redirectUrl] = true;
+        for (let i=0; i<valids.length; i++) {
+            let newUrl = valids[i] + urlStr;
+            if (newUrl == redirectUrl) {
+                return true;
+            }
         }
     }
+    return false;
 }
 
 
@@ -103,9 +146,11 @@ chrome.webRequest.onHeadersReceived.addListener(
 // Headers are received before document render. The blocking attributes allows
 // us to cancel requests instead of loading an unnecessary ReCaptcha widget.
 function processHeaders(details) {
-    timeOfLastResp = Date.now();
+    let url = new URL(details.url);
+    let timeOfLastResp = Date.now();
+    let cookieFound = false;
+    let needCookie = spendId[details.requestId];
     for (var i = 0; i < details.responseHeaders.length; i++) {
-        let url = new URL(details.url);
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
             if (header.value == CF_VERIFICATION_ERROR
@@ -114,6 +159,10 @@ function processHeaders(details) {
                 // Either tokens are bad or some resource is calling the server in a bad way
                 // Consider clearing storage
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
+            }
+        } else if (needCookie) {
+            if (header.name.toLowerCase() == SET_COOKIE_HEADER) {
+                cookieFound = true;
             }
         }
 
@@ -134,21 +183,24 @@ function processHeaders(details) {
                 stores.forEach( function(store, index) {
                     store.tabIds.forEach( function(tabId, idIndex) {
                         // Tor seems to have an object here whereas chrome/firefox just have an id
-                        let id = tabId.id
-                        if (!id) {
-                            id = tabId
-                        }
+                        let id = getTabId(tabId);
                         if (id == details.tabId) {
                             chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
                                 // Require an existing, non-expired cookie.
                                 let hasValidCookie = cookie && cookie.expirationDate * 1000 >= Date.now();
                                 if (!hasValidCookie) {
                                     setSpendFlag(url.host, true);
-                                    setTimeout(function() {
-                                        if (getSpendFlag(url.host) && !checkMaxSpend(url.host)) {
-                                            chrome.tabs.reload(tabId);
-                                        }
-                                    }, 500);
+                                    console.log("target: " + target);
+                                    if (url.href == target) {
+                                        console.log("updating");
+                                        chrome.tabs.update(id, { url: target });
+                                        target = "";
+                                    } else if (target != url.href) {
+                                        // set a reload in the future when the target has been inited
+                                        console.log("actual url: " + url.href);
+                                        console.log(id);
+                                        futureReload[id] = url.href;
+                                    }
                                 }
                             });
                         }
@@ -171,6 +223,22 @@ function processHeaders(details) {
         }
         return {cancel: false};
     }
+
+    // We remove the token if the spend is valid
+    if (needCookie) {
+        if (!cookieFound) {
+            // If not valid we need to ascertain whether a redirect is occurring
+            if (spentUrl[url.href]) {
+                spentUrl[url.href] = false;
+                badSpend[url.href] = true;
+            }
+            checkRedirect[url.href] = true;
+            console.log("url: " + url.href);
+        } else {
+            RemoveToken();
+        }
+        spentUrl[url.href] = true;
+    }
 }
 
 // Intercepts token-spend reload requests to add a redemption header.
@@ -184,23 +252,12 @@ function beforeSendHeaders(request) {
     let url = new URL(request.url);
     let headers = request.requestHeaders;
 
-    // Spend a token for one url only
-    if (getSpendFlag(url.host)) {
-        setSpendFlag(url.host, null);
-        if (!checkMaxSpend(url.host)) {
-            setSpendFlag(url.href, true);
-        } else {
-            console.warn("Already spent token for " + url + ", not spending again");
-            return {cancel: false};
-        }
-    }
-
     // Cancel if we don't have a token to spend
-    if (!getSpendFlag(url.href) || checkMaxSpend(url.href)) {
+    if (!getSpendFlag(url.host) || checkMaxSpend(url.host) || badSpend[url.href] || (target != url.href && target != "")) {
         return {cancel: false};
     }
-    setSpendFlag(url.href, null);
-
+    target = "";
+    setSpendFlag(url.host, null);
 
     // Create a pass and reload to send it to the edge
     const tokenToSpend = GetTokenForSpend();
@@ -213,6 +270,8 @@ function beforeSendHeaders(request) {
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
+    console.log("spending for: " + url.href);
+    console.log("req: " + request.requestId);
     spendId[request.requestId] = true;
     return {requestHeaders: headers};
 }
@@ -229,7 +288,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 // have tokens, it asks for new ones when we solve a captcha.
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
-    if (Date.now() - 3000 > timeOfLastResp) {
+    if (Date.now() - 5000 > timeOfLastResp) {
         resetVars();
     }
 
@@ -354,6 +413,10 @@ function alarmListener(alarm) {
         // Fired on cookie reloads
         case "reload-page":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0].status == "loading") {
+                    createAlarm("reload-page", Date.now() + 10);
+                    return;
+                }
                 let tabId = tabs[0].id;
                 chrome.tabs.reload(tabId);
             });
@@ -369,10 +432,16 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
     if (details.transitionType != AUTO_SUBFRAME 
         && (!badTransition(redirect) || httpsRedirect[url.href])
         && !isNewTab(url.href)) {
-        if (getSpendFlag(url.host)) {
-            setSpendFlag(url.host, null);
-            setSpendFlag(url.href, true);
-            chrome.tabs.update(tabId, { url: url.href });
+        target = url.href;
+        let id = getTabId(tabId);
+        console.log(id);
+        console.log("commit: " + target);
+        console.log(futureReload);
+        // If a reload was attempted but target hadn't been inited then reload now
+        if (futureReload[id] == target) {
+            console.log("reload: " + target);
+            futureReload[id] = false;
+            chrome.tabs.update(id, {url: target});
         }
     }
 }); 
@@ -388,9 +457,15 @@ function handleMessage(request, sender, sendResponse) {
 }
 
 /* Token storage functions */
+function setSpendOnRedirect(url) {
+    checkRedirect[url.href] = false;
+    RemoveToken();
+    setSpendFlag(url.host, true);
+}
+
 function checkMaxSpend(url) {
     if (!spentHosts[url]) {
-        spentHosts[url] = 1;
+        spentHosts[url] = 0;
         return false;
     } 
     if (spentHosts[url] < SPEND_MAX) {
@@ -412,11 +487,17 @@ function countStoredTokens() {
     return countInt;
 }
 
+// Removes a token if the spend went well
+function RemoveToken() {
+    let tokens = loadTokens();
+    tokens = tokens.slice(1);
+    storeTokens(tokens);
+}
+
+// Returns a token for a redemption
 function GetTokenForSpend() {
     let tokens = loadTokens();
     const tokenToSpend = tokens[0];
-    tokens = tokens.slice(1);
-    storeTokens(tokens);
     return tokenToSpend;
 }
 
@@ -502,7 +583,7 @@ function setSpendFlag(key, value) {
 }
 
 function getSpendFlag(key) {
-    return !!localStorage.getItem(key);
+    return localStorage.getItem(key);
 }
 
 // We use this function for updating the popup when tokens are cleared
@@ -510,6 +591,14 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
+function getTabId(tabId) {
+    let id = tabId.id;
+    if (!id) {
+        id = tabId;
+    }
+    return id;
+}
+
 function getUrlObject(urlStr) {
     let url = document.createElement("a");
     url.href = urlStr;
@@ -533,7 +622,6 @@ function isFaviconUrl(href) {
 }
 
 function resetVars() {
-    spendId = new Map();
     redirectCount = 0;
     sentTokens = new Map();
     spentHosts = new Map();
