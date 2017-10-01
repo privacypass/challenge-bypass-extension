@@ -18,7 +18,7 @@ function UpdatePopup() {
     } else {
         let send = browser.runtime.sendMessage({
             tokLen: true
-        });    
+        });
         send.then(handleResponse);
     }
 }
@@ -26,7 +26,6 @@ function UpdatePopup() {
 function handleResponse(tokLen) {
     // Replace the count displayed in the popup
     replaceTokensStoredCount(tokLen);
-
     document.getElementById("clear").addEventListener("click", function() {
         var background = chrome.extension.getBackgroundPage();
         background.clearStorage();
