@@ -1,8 +1,9 @@
 /* This page is for the popup in the browser toolbar */
 "use strict";
 
-if (chrome.extension.getBackgroundPage()) {
-    chrome.extension.getBackgroundPage().UpdateCallback = UpdatePopup;
+let background = chrome.extension.getBackgroundPage();
+if (background) {
+    background.UpdateCallback = UpdatePopup;
 } else {
     browser.runtime.sendMessage({
         callback: UpdatePopup
@@ -10,7 +11,6 @@ if (chrome.extension.getBackgroundPage()) {
 }
 
 function UpdatePopup() {
-    var background = chrome.extension.getBackgroundPage();
     let tokLen = 0
     if (background) {
         tokLen = background.countStoredTokens();
@@ -27,7 +27,6 @@ function handleResponse(tokLen) {
     // Replace the count displayed in the popup
     replaceTokensStoredCount(tokLen);
     document.getElementById("clear").addEventListener("click", function() {
-        var background = chrome.extension.getBackgroundPage();
         background.clearStorage();
     });
 }

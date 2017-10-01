@@ -59,7 +59,7 @@ let sentTokens = new Map();
 // URL string for determining where tokens should be spent
 let target = new Map();
 
-// USed for checking redirects after a bad spend has occurred
+// Used for checking redirects after a bad spend has occurred
 let checkRedirect = new Map();
 
 // Used for firefox primarily
