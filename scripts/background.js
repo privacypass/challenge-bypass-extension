@@ -20,7 +20,7 @@ const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
 const MAX_REDIRECT = 3;
-const SPEND_MAX = 1;
+const SPEND_MAX = 5;
 const MAX_TOKENS = 300;
 const TOKENS_PER_REQUEST = 30;
 const FF_PRIV_TAB = "about:privatebrowsing";
@@ -36,9 +36,6 @@ let storedUrl = null;
 
 // Prevent too many redirections from exhausting tokens
 let redirectCount = new Map();
-
-// We use this to clear the reload map temporally
-let timeOfLastResp = 0;
 
 // Set if a spend has occurred for a req id
 let spendId = new Map();
@@ -65,6 +62,9 @@ let checkRedirect = new Map();
 // Used for firefox primarily
 let futureReload = new Map();
 
+// Already reloaded for bad spend
+let alreadyBad = new Map();
+
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
 
@@ -84,10 +84,11 @@ chrome.webRequest.onCompleted.addListener(
 function handleCompletion(details) {
     let url = new URL(details.url);
     // If we had a bad spend then reload the page
-    if (spendId[details.requestId] && checkRedirect[url.href]) {
+    if (spendId[details.requestId] && checkRedirect[url.href] && !alreadyBad[url.href]) {
         chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
             if (!cookie) {
                 setSpendFlag(url.host, true);
+                alreadyBad[url.href] = true;
                 chrome.tabs.reload(details.tabId);
             }
         });
@@ -103,17 +104,16 @@ chrome.webRequest.onBeforeRedirect.addListener(
     { urls: ["<all_urls>"] },
 );
 function processRedirect(details) {
-    let oldUrl = details.url;
-    let redirectUrl = details.redirectUrl;
-    httpsRedirect[redirectUrl] = validRedirect(oldUrl, redirectUrl);
-    if (!redirectCount[details.requestId]) {
+    let oldUrl = new URL(details.url);
+    let newUrl = new URL(details.redirectUrl);
+    httpsRedirect[newUrl.href] = validRedirect(oldUrl.href, newUrl.href);
+    if (redirectCount[details.requestId] === undefined) {
         redirectCount[details.requestId] = 0;
     }
     if (spendId[details.requestId] && redirectCount[details.requestId] < MAX_REDIRECT) {
-        let url = getUrlObject(redirectUrl);
-        setSpendOnRedirect(url);
+        setSpendOnRedirect(oldUrl, newUrl);
         spendId[details.requestId] = false;
-        redirectCount[details.requestId]++;
+        redirectCount[details.requestId] = redirectCount[details.requestId]+1;
     }
 }
 function validRedirect(oldUrl, redirectUrl) {
@@ -143,7 +143,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 // us to cancel requests instead of loading an unnecessary ReCaptcha widget.
 function processHeaders(details) {
     let url = new URL(details.url);
-    timeOfLastResp = Date.now();
     let doRedeem = false;
     let cookieFound = false;
     let needCookie = spendId[details.requestId];
@@ -202,38 +201,41 @@ function processHeaders(details) {
 
 // Attempts to redeem a token if we should do
 function attemptRedeem(url, respTabId) {
-    if (countStoredTokens() > 0) {
-        // Prevent reloading on captcha.website
-        if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
-            return false;
-        }
-
-        chrome.cookies.getAllCookieStores(function(stores) {
-            stores.forEach( function(store, index) {
-                store.tabIds.forEach( function(tabId, idIndex) {
-                    // Tor seems to have an object here whereas chrome/firefox just have an id
-                    let id = getTabId(tabId);
-                    if (id == respTabId) {
-                        chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
-                            // Require an existing, non-expired cookie.
-                            let hasValidCookie = cookie && cookie.expirationDate * 1000 >= Date.now();
-                            if (!hasValidCookie) {
-                                setSpendFlag(url.host, true);
-                                let targetUrl = target[id];
-                                if (url.href == targetUrl) {
-                                    chrome.tabs.update(id, { url: targetUrl });
-                                    targetUrl = "";
-                                } else if (!targetUrl || (targetUrl != url.href && !isFaviconUrl(targetUrl))) {
-                                    // set a reload in the future when the target has been inited
-                                    futureReload[id] = url.href;
-                                }
-                            }
-                        });
-                    }
-                });
-            });
-        });
+    // Prevent reloading on captcha.website
+    if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
+        return false;
     }
+
+    // Check all cookie stores to see if a clearance cookie is held
+    chrome.cookies.getAllCookieStores(function(stores) {
+        let clearanceHeld = false;
+        stores.forEach( function(store, index) {
+            var tabIds = store.tabIds;
+            if (tabIds.length && tabIds[0].id !== undefined) {
+                tabIds = tabIds.map((tab) => respTabId.id);
+            }
+            var storeMatches = tabIds.indexOf(respTabId) >= 0;
+            if (storeMatches) {
+                chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
+                    // Require an existing, non-expired cookie.
+                    clearanceHeld = (cookie && cookie.expirationDate * 1000 >= Date.now());
+                });
+            }
+        });
+
+        // If a clearance cookie is not held then set the spend flag
+        if (!clearanceHeld) {
+            setSpendFlag(url.host, true);
+            let targetUrl = target[respTabId];
+            if (url.href == targetUrl) {
+                chrome.tabs.update(respTabId, { url: targetUrl });
+                targetUrl = "";
+            } else if (!targetUrl || (targetUrl != url.href && !isFaviconUrl(targetUrl))) {
+                // set a reload in the future when the target has been inited
+                futureReload[respTabId] = url.href;
+            }
+        }
+    });
 
     return true;
 }
@@ -250,11 +252,12 @@ function beforeSendHeaders(request) {
     let headers = request.requestHeaders;
 
     // Cancel if we don't have a token to spend
-    if (!getSpendFlag(url.host) || checkMaxSpend(url.host) || spentUrl[url.href] || errorPage(url.href)) {
+    if (!getSpendFlag(url.host) || checkMaxSpend(url.host) || spentUrl[url.href] || isErrorPage(url.href) || isFaviconUrl(url.href)) {
         return {cancel: false};
     }
-    target[request.tabId] = "";
     setSpendFlag(url.host, null);
+    incrementSpentHost(url.host);
+    target[request.tabId] = "";
 
     // Create a pass and reload to send it to the edge
     const tokenToSpend = GetTokenForSpend();
@@ -284,9 +287,6 @@ chrome.webRequest.onBeforeRequest.addListener(
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
     checkRedirect[details.url] = false;
-    if (Date.now() - 5000 > timeOfLastResp) {
-        resetVars();
-    }
 
     let reqUrl = details.url;
     const manualChallenge = reqUrl.indexOf("manual_challenge") != -1;
@@ -315,7 +315,7 @@ function beforeRequest(details) {
                 storeNewTokens(tokens, signedPoints);
             }
             // Reload the page for the originally intended url
-            let url = getUrlObject(reqUrl);
+            let url = new URL(reqUrl);
             if (url.href.indexOf(CF_CAPTCHA_DOMAIN) == -1){
                 let captchaPath = url.pathname;
                 let pathIndex = url.href.indexOf(captchaPath);
@@ -352,6 +352,9 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
         } else if (cookieName == CF_CLEARANCE_COOKIE) {
             createAlarm("reload-page", Date.now() + 500);
         }
+    } else if (changeInfo.removed && cookieName == CF_CLEARANCE_COOKIE) {
+        spentUrl = new Map();
+        alreadyBad = new Map();
     }
 });
 
@@ -386,7 +389,7 @@ function parseIssueResponse(data) {
     signatures.forEach(function(signature) {
         let usablePoint = sec1DecodePoint(signature);
         if (usablePoint == null) {
-            throw new Error("[privacy-pass]: unable to decode point" + signature + " in " + JSON.stringify(signatures));
+            throw new Error("[privacy-pass]: unable to decode point " + signature + " in " + JSON.stringify(signatures));
         }
         usablePoints.push(usablePoint);
     })
@@ -408,11 +411,11 @@ function alarmListener(alarm) {
         // Fired on cookie reloads
         case "reload-page":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                let tabId = tabs[0].id;
                 if (tabs[0].status == "loading") {
                     createAlarm("reload-page", Date.now() + 10);
                     return;
                 }
-                let tabId = tabs[0].id;
                 chrome.tabs.reload(tabId);
             });
             break;
@@ -424,7 +427,7 @@ function alarmListener(alarm) {
 chrome.webNavigation.onCommitted.addListener(function(details) {
     let redirect = details.transitionQualifiers[0];
     let tabId = details.tabId;
-    let url = getUrlObject(details.url);
+    let url = new URL(details.url);
     if (details.transitionType != AUTO_SUBFRAME
         && (!badTransition(redirect) || httpsRedirect[url.href])
         && !isNewTab(url.href)) {
@@ -448,21 +451,31 @@ function handleMessage(request, sender, sendResponse) {
     }
 }
 
+chrome.tabs.onUpdated.addListener(function(tabId, info) {
+    if (info.status === "complete") {
+        resetVars();
+    }
+});
+
 /* Token storage functions */
-function setSpendOnRedirect(url) {
-    checkRedirect[url.href] = false;
+
+
+function setSpendOnRedirect(oldUrl, newUrl) {
+    checkRedirect[oldUrl.href] = false;
     // Remove the token that we spent previously
     RemoveToken();
-    setSpendFlag(url.host, true);
+    setSpendFlag(newUrl.host, true);
 }
 
-function checkMaxSpend(url) {
-    if (!spentHosts[url]) {
-        spentHosts[url] = 0;
-        return false;
+function incrementSpentHost(host) {
+    if (spentHosts[host] === undefined) {
+        spentHosts[host] = 0;
     }
-    if (spentHosts[url] < SPEND_MAX) {
-        spentHosts[url]++;
+    spentHosts[host] = spentHosts[host]+1;
+}
+
+function checkMaxSpend(host) {
+    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX) {
         return false;
     }
     return true
@@ -584,10 +597,9 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
-function errorPage(url) {
+function isErrorPage(url) {
     let found = false;
-    const errorPagePaths = ["/cdn-cgi/styles/cf.errors.css", "/cdn-cgi/scripts/zepto.min.js", "/cdn-cgi/scripts/cf.common.js",
-                            "/cdn-cgi/scripts/cf.challenge.js"];
+    const errorPagePaths = ["/cdn-cgi/styles/", "/cdn-cgi/scripts/", "/cdn-cgi/images/"];
     errorPagePaths.forEach(function(str) {
         if (url.indexOf(str) != -1) {
             found = true;
@@ -596,6 +608,7 @@ function errorPage(url) {
     return found;
 }
 
+//  Favicons have caused us problems...
 function isFaviconUrl(url) {
     return url.indexOf("favicon") != -1;
 }
@@ -609,18 +622,13 @@ function clearanceCookieFound(header) {
     return false;
 }
 
+// Tor seems to have an object here whereas chrome/firefox just have an id
 function getTabId(tabId) {
     let id = tabId.id;
     if (!id) {
         id = tabId;
     }
     return id;
-}
-
-function getUrlObject(urlStr) {
-    let url = document.createElement("a");
-    url.href = urlStr;
-    return url
 }
 
 function badTransition(type) {
@@ -634,7 +642,6 @@ function isNewTab(url) {
     return url == CHROME_TAB || url == FF_PRIV_TAB || url == FF_BLANK;
 }
 
-//  Favicons have caused us problems...
 function resetVars() {
     redirectCount = new Map();
     sentTokens = new Map();
@@ -642,7 +649,6 @@ function resetVars() {
     target = new Map();
     spendId = new Map();
     futureReload = new Map();
-    timeOfLastResp = Date.now();
 }
 
 function updateIcon(count) {
