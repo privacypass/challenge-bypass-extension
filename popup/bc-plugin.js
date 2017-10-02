@@ -14,7 +14,7 @@ function UpdatePopup() {
     let tokLen = 0
     if (background) {
         tokLen = background.countStoredTokens();
-        handleResponse(tokLen)
+        handleResponse(tokLen);
     } else {
         let send = browser.runtime.sendMessage({
             tokLen: true
@@ -26,8 +26,18 @@ function UpdatePopup() {
 function handleResponse(tokLen) {
     // Replace the count displayed in the popup
     replaceTokensStoredCount(tokLen);
+
     document.getElementById("clear").addEventListener("click", function() {
-        background.clearStorage();
+        if (background) {
+            background.clearStorage();
+        } else {
+            let send = browser.runtime.sendMessage({
+                clear: true
+            });
+            send.then(function() {
+                replaceTokensStoredCount(0);
+            });
+        }
     });
 }
 

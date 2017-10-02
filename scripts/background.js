@@ -20,7 +20,7 @@ const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
 const MAX_REDIRECT = 3;
-const SPEND_MAX = 5;
+const SPEND_MAX = 3;
 const MAX_TOKENS = 300;
 const TOKENS_PER_REQUEST = 30;
 const FF_PRIV_TAB = "about:privatebrowsing";
@@ -30,6 +30,9 @@ const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
 const SET_COOKIE_HEADER = "set-cookie";
 const VALID_REDIRECTS = ["https://","https://www.","http://www."];
+
+// Used for resetting variables below
+let timeSinceLastResp = 0;
 
 // store the url of captcha pages here for future reloading
 let storedUrl = null;
@@ -82,6 +85,7 @@ chrome.webRequest.onCompleted.addListener(
     { urls: ["<all_urls>"] },
 );
 function handleCompletion(details) {
+    timeSinceLastResp = Date.now();
     let url = new URL(details.url);
     // If we had a bad spend then reload the page
     if (spendId[details.requestId] && checkRedirect[url.href] && !alreadyBad[url.href]) {
@@ -184,6 +188,8 @@ function processHeaders(details) {
             if (faviconIndex != -1) {
                 storedUrl = storedUrl.substring(0, faviconIndex);
             }
+            // Update icon to show user that token may be spent here
+            updateIcon("!");
         }
     }
 
@@ -218,7 +224,12 @@ function attemptRedeem(url, respTabId) {
             if (storeMatches) {
                 chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
                     // Require an existing, non-expired cookie.
-                    clearanceHeld = (cookie && cookie.expirationDate * 1000 >= Date.now());
+                    if (cookie) {
+                        clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
+                        if (!clearanceHeld) {
+                            alreadyBad[url.href] = false;
+                        }
+                    }
                 });
             }
         });
@@ -287,6 +298,9 @@ chrome.webRequest.onBeforeRequest.addListener(
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
     checkRedirect[details.url] = false;
+    if (Date.now() - 2000 > timeSinceLastResp) {
+        resetVars();
+    }
 
     let reqUrl = details.url;
     const manualChallenge = reqUrl.indexOf("manual_challenge") != -1;
@@ -353,10 +367,14 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
             createAlarm("reload-page", Date.now() + 500);
         }
     } else if (changeInfo.removed && cookieName == CF_CLEARANCE_COOKIE) {
-        spentUrl = new Map();
-        alreadyBad = new Map();
+        resetSpendVars();
     }
 });
+
+// Reset spend vars when window is closed in case we're private browsing
+chrome.windows.onRemoved.addListener(function() {
+    resetSpendVars();
+})
 
 // An issue response takes the form "signatures=[b64 blob]"
 // The blob is an array of base64-encoded marshaled curve points.
@@ -448,14 +466,10 @@ function handleMessage(request, sender, sendResponse) {
         UpdateCallback = request.callback;
     } else if (request.tokLen) {
         sendResponse(countStoredTokens());
+    } else if (request.clear) {
+        clearStorage();
     }
 }
-
-chrome.tabs.onUpdated.addListener(function(tabId, info) {
-    if (info.status === "complete") {
-        resetVars();
-    }
-});
 
 /* Token storage functions */
 
@@ -575,6 +589,8 @@ function clearStorage() {
             console.error(chrome.runtime.lastError.message);
         }
     });
+    resetVars();
+    resetSpendVars();
     // Update icons
     updateIcon(0);
     UpdateCallback();
@@ -645,17 +661,26 @@ function isNewTab(url) {
 function resetVars() {
     redirectCount = new Map();
     sentTokens = new Map();
-    spentHosts = new Map();
     target = new Map();
     spendId = new Map();
     futureReload = new Map();
+    spentHosts = new Map();
+}
+
+function resetSpendVars() {
+    spentUrl = new Map();
+    alreadyBad = new Map();
 }
 
 function updateIcon(count) {
-    if (count != 0) {
+    let warn = (count.toString().indexOf("!") != -1)
+    if (count != 0 && !warn) {
         chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});
+    } else if (warn) {
+        chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
+        chrome.browserAction.setBadgeText({text: "!!!"});
     } else {
         chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
         chrome.browserAction.setBadgeText({text: ""});
