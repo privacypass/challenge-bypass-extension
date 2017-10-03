@@ -19,47 +19,87 @@ const CF_CLEARANCE_COOKIE = "cf_clearance";
 const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
 const CF_VERIFICATION_ERROR = "6";
 const CF_CONNECTION_ERROR = "5";
-const RELOAD_MAX = 3; // This is mainly to stop runaway webpages
-
+const MAX_REDIRECT = 3;
+const SPEND_MAX = 3;
 const MAX_TOKENS = 300;
 const TOKENS_PER_REQUEST = 30;
+const FF_PRIV_TAB = "about:privatebrowsing";
+const CHROME_TAB = "chrome://newtab/";
+const FF_BLANK = "about:blank";
+const SERVER_REDIRECT = "server_redirect";
+const AUTO_SUBFRAME = "auto_subframe";
+const SET_COOKIE_HEADER = "set-cookie";
+const VALID_REDIRECTS = ["https://","https://www.","http://www."];
+
+// Used for resetting variables below
+let timeSinceLastResp = 0;
 
 // store the url of captcha pages here for future reloading
 let storedUrl = null;
 
-// This url is inited when a token is about to be spent
-// This allows us to force tabs to update to the targeted url
-let targetUrl = null;
-
-// Monitors number of reloads for a url to prevent passes
-// being eaten.
-let reloadCount = new Map();
-
-// We use this to clear the reload map temporally
-let timeOfLastResp = 0;
-
-// We monitor referers so that we don't load sub-resources that
-// passes are required for
-let refererMap = new Map();
-
-// If clearance is applied for then we don't want to keep sending requests
-// before a cookie has been stored
-let clearanceApplied = new Map();
+// Prevent too many redirections from exhausting tokens
+let redirectCount = new Map();
 
 // Set if a spend has occurred for a req id
 let spendId = new Map();
 
-// last set target URLs used for reloading compatibility with slow browsers
-let usedTargets = [];
+// used for checking if we've already spent a token for this host to 
+// prevent token DoS attacks
+let spentHosts = new Map();
+
+// Used for tracking spends globally
+let spentUrl = new Map();
+
+// We want to monitor attempted spends to check if we should remove cookies
+let httpsRedirect = new Map();
+
+// Monitor whether we have already sent tokens for signing
+let sentTokens = new Map();
+
+// URL string for determining where tokens should be spent
+let target = new Map();
+
+// Used for checking redirects after a bad spend has occurred
+let checkRedirect = new Map();
+
+// Used for firefox primarily
+let futureReload = new Map();
+
+// Already reloaded for bad spend
+let alreadyBad = new Map();
 
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
 
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
+    - web navigation listener sets the target url for the execution 
     - cookie listener clears cookie for captcha.website to enable getting more
     tokens in the future
 */
+
+// Once we've completed the request if a spend went badly
+// (no cookie received) then we need to reload and try another resource
+chrome.webRequest.onCompleted.addListener(
+    handleCompletion,
+    { urls: ["<all_urls>"] },
+);
+function handleCompletion(details) {
+    timeSinceLastResp = Date.now();
+    let url = new URL(details.url);
+    // If we had a bad spend then reload the page
+    if (spendId[details.requestId] && checkRedirect[url.href] && !alreadyBad[url.href]) {
+        chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
+            if (!cookie) {
+                setSpendFlag(url.host, true);
+                alreadyBad[url.href] = true;
+                chrome.tabs.reload(details.tabId);
+            }
+        });
+    }
+    checkRedirect[url.href] = false;
+    spendId[details.requestId] = false;
+}
 
 // If a redirect occurs then we want to see if we had spent previously
 // If so then it is likely that we will want to spend on the redirect
@@ -68,12 +108,31 @@ chrome.webRequest.onBeforeRedirect.addListener(
     { urls: ["<all_urls>"] },
 );
 function processRedirect(details) {
-    if (spendId[details.requestId]) {
-        let url = document.createElement("a");
-        url.href = details.redirectUrl;
-        setSpendFlag(url.host, true);
-        spendId[details.requestId] = false;
+    let oldUrl = new URL(details.url);
+    let newUrl = new URL(details.redirectUrl);
+    httpsRedirect[newUrl.href] = validRedirect(oldUrl.href, newUrl.href);
+    if (redirectCount[details.requestId] === undefined) {
+        redirectCount[details.requestId] = 0;
     }
+    if (spendId[details.requestId] && redirectCount[details.requestId] < MAX_REDIRECT) {
+        setSpendOnRedirect(oldUrl, newUrl);
+        spendId[details.requestId] = false;
+        redirectCount[details.requestId] = redirectCount[details.requestId]+1;
+    }
+}
+function validRedirect(oldUrl, redirectUrl) {
+    let httpInd = oldUrl.indexOf("http://");
+    let valids = VALID_REDIRECTS;
+    if (httpInd != -1) {
+        let urlStr = oldUrl.substring(7);
+        for (let i=0; i<valids.length; i++) {
+            let newUrl = valids[i] + urlStr;
+            if (newUrl == redirectUrl) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 
@@ -87,84 +146,109 @@ chrome.webRequest.onHeadersReceived.addListener(
 // Headers are received before document render. The blocking attributes allows
 // us to cancel requests instead of loading an unnecessary ReCaptcha widget.
 function processHeaders(details) {
-    timeOfLastResp = Date.now();
+    let url = new URL(details.url);
+    let doRedeem = false;
+    let cookieFound = false;
+    let needCookie = spendId[details.requestId];
     for (var i = 0; i < details.responseHeaders.length; i++) {
-        let url = new URL(details.url);
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
             if (header.value == CF_VERIFICATION_ERROR
                 || header.value == CF_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
                 // Either tokens are bad or some resource is calling the server in a bad way
-                // Consider clearing storage
+                // Remove most recent token
+                RemoveToken();
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
+            }
+        } else if (needCookie) {
+            if (clearanceCookieFound(header)) {
+                cookieFound = true;
             }
         }
 
         // 403 with the right header indicates a bypassable CAPTCHA
-        if (!isBypassHeader(header) || details.statusCode != 403) {
-            continue;
+        if (isBypassHeader(header) && details.statusCode == 403) {
+            doRedeem = true;
         }
+    }
 
-        // If we have tokens to spend, cancel the request and pass execution over to the token handler.
+    // If we have tokens to spend, cancel the request and pass execution over to the token handler.
+    if (doRedeem && !spentUrl[url.href]) {
         if (countStoredTokens() > 0) {
-            // Prevent reloading on captcha.website
-            if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
+            let ok = attemptRedeem(url, details.tabId);
+            if (!ok) {
                 return {cancel: false};
             }
-
-            // Only reload a specific url if no referer is set.
-            let referer = refererMap.get(details.requestId);
-            if (!referer && !isFaviconUrl(url.href) && !targetUrl) {
-                targetUrl = url;
+        } else {
+            // Store the url for redirection after captcha is solved
+            // Manual check for favicon urls
+            storedUrl = url.href;
+            let faviconIndex = storedUrl.indexOf("favicon");
+            if (faviconIndex != -1) {
+                storedUrl = storedUrl.substring(0, faviconIndex);
             }
-
-            // reload page
-            chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
-                // Require an existing, non-expired cookie.
-                var hasValidCookie = cookie && cookie.expirationDate * 1000 >= Date.now();
-                if (!hasValidCookie) {
-                    if (!clearanceApplied[url.hostname]) {
-                        clearanceApplied[url.hostname] = true;
-                        setSpendFlag(url.host, true);
-                        createAlarm("reload-page", Date.now() + 200);
-                    }
-                } else {
-                    // Clear this record out now since we don't need it once we have a cookie
-                    if (clearanceApplied[url.hostname]) {
-                        clearanceApplied[url.hostName] = null;
-                    }
-
-                    // Only persist reloading for a short amount of time
-                    // Otherwise can get stuck in loops
-                    let reloads = reloadCount[url.href]
-                    if (!reloads) {
-                        createAlarm("reload-page", Date.now() + 200);
-                        reloadCount[url.href] = 1;
-                    } else if (reloads < RELOAD_MAX) {
-                        createAlarm("reload-page", Date.now() + 200);
-                        reloadCount[url.href] = reloads+1;
-                    } else {
-                        throw new Error("[privacy-pass]: Max reloads reached for resource: " + url.href);
-                    }
-                }
-            });
-
-
-            // We don't use cancel: true since in chrome the page appears
-            // blocked for a second
-            return {redirectUrl: "javascript:void(0)"};
+            // Update icon to show user that token may be spent here
+            updateIcon("!");
         }
-
-        // Store the url for redirection after captcha is solved
-        // Manual check for favicon urls
-        storedUrl = url.href;
-        let faviconIndex = storedUrl.indexOf("favicon");
-        if (faviconIndex != -1) {
-            storedUrl = storedUrl.substring(0, faviconIndex);
-        }
-        return {cancel: false};
     }
+
+    // We remove the token if the spend is valid
+    if (needCookie) {
+        if (!cookieFound) {
+            // If not valid we need to ascertain whether a redirect is occurring
+            checkRedirect[url.href] = true;
+        } else {
+            RemoveToken();
+        }
+        spentUrl[url.href] = true;
+    }
+}
+
+// Attempts to redeem a token if we should do
+function attemptRedeem(url, respTabId) {
+    // Prevent reloading on captcha.website
+    if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
+        return false;
+    }
+
+    // Check all cookie stores to see if a clearance cookie is held
+    chrome.cookies.getAllCookieStores(function(stores) {
+        let clearanceHeld = false;
+        stores.forEach( function(store, index) {
+            var tabIds = store.tabIds;
+            if (tabIds.length && tabIds[0].id !== undefined) {
+                tabIds = tabIds.map((tab) => respTabId.id);
+            }
+            var storeMatches = tabIds.indexOf(respTabId) >= 0;
+            if (storeMatches) {
+                chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
+                    // Require an existing, non-expired cookie.
+                    if (cookie) {
+                        clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
+                        if (!clearanceHeld) {
+                            alreadyBad[url.href] = false;
+                        }
+                    }
+                });
+            }
+        });
+
+        // If a clearance cookie is not held then set the spend flag
+        if (!clearanceHeld) {
+            setSpendFlag(url.host, true);
+            let targetUrl = target[respTabId];
+            if (url.href == targetUrl) {
+                chrome.tabs.update(respTabId, { url: targetUrl });
+                targetUrl = "";
+            } else if (!targetUrl || (targetUrl != url.href && !isFaviconUrl(targetUrl))) {
+                // set a reload in the future when the target has been inited
+                futureReload[respTabId] = url.href;
+            }
+        }
+    });
+
+    return true;
 }
 
 // Intercepts token-spend reload requests to add a redemption header.
@@ -177,16 +261,14 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 function beforeSendHeaders(request) {
     let url = new URL(request.url);
     let headers = request.requestHeaders;
-    for (let i = 0; i < headers.length; i++) {
-        if (headers[i].name == "Referer") {
-            refererMap.set(request.requestId, headers[i].value);
-        }
-    }
 
-    // might need to add a force header or cancel the reload for captcha.website
-    if (!getSpendFlag(url.host)) {
-        return {requestHeaders: headers};
+    // Cancel if we don't have a token to spend
+    if (!getSpendFlag(url.host) || checkMaxSpend(url.host) || spentUrl[url.href] || isErrorPage(url.href) || isFaviconUrl(url.href)) {
+        return {cancel: false};
     }
+    setSpendFlag(url.host, null);
+    incrementSpentHost(url.host);
+    target[request.tabId] = "";
 
     // Create a pass and reload to send it to the edge
     const tokenToSpend = GetTokenForSpend();
@@ -199,9 +281,7 @@ function beforeSendHeaders(request) {
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
-    setSpendFlag(url.host, null);
     spendId[request.requestId] = true;
-
     return {requestHeaders: headers};
 }
 
@@ -217,25 +297,27 @@ chrome.webRequest.onBeforeRequest.addListener(
 // have tokens, it asks for new ones when we solve a captcha.
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
-    if (Date.now() - 3000 > timeOfLastResp) {
+    checkRedirect[details.url] = false;
+    if (Date.now() - 2000 > timeSinceLastResp) {
         resetVars();
     }
 
-    let reqURL = details.url;
-    const manualChallenge = reqURL.indexOf("manual_challenge") != -1;
-    const captchaResp = reqURL.indexOf("g-recaptcha-response") != -1;
-    const alreadyProcessed = reqURL.indexOf("&captcha-bypass=true") != -1;
+    let reqUrl = details.url;
+    const manualChallenge = reqUrl.indexOf("manual_challenge") != -1;
+    const captchaResp = reqUrl.indexOf("g-recaptcha-response") != -1;
+    const alreadyProcessed = reqUrl.indexOf("&captcha-bypass=true") != -1;
 
     // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if ((captchaResp && alreadyProcessed) || (!manualChallenge && !captchaResp)) {
+    if ((captchaResp && alreadyProcessed) || (!manualChallenge && !captchaResp) || sentTokens[reqUrl]) {
         return {cancel: false};
     }
+    sentTokens[reqUrl] = true;
 
     let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
-    let newURL = reqURL + "&captcha-bypass=true";
+    let newUrl = reqUrl + "&captcha-bypass=true";
 
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
@@ -245,22 +327,22 @@ function beforeRequest(details) {
             const signedPoints = parseIssueResponse(resp_data);
             if (signedPoints !== null) {
                 storeNewTokens(tokens, signedPoints);
-            } else {
-                // reload the page.
-                createAlarm("reload-page-xhr", Date.now() + 10);
-                return;
+            }
+            // Reload the page for the originally intended url
+            let url = new URL(reqUrl);
+            if (url.href.indexOf(CF_CAPTCHA_DOMAIN) == -1){
+                let captchaPath = url.pathname;
+                let pathIndex = url.href.indexOf(captchaPath);
+                let reloadUrl = url.href.substring(0, pathIndex+1);
+                setSpendFlag(reloadUrl, true);
+                chrome.tabs.update(details.tabId, { url: reloadUrl });
             }
         } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.")
         }
-
-        // Finally, we can reload and spend a token
-        if (xhr.readyState == 4 && countStoredTokens() > 0) {
-            createAlarm("reload-page-xhr", Date.now() + 10);
-        }
     };
 
-    xhr.open("POST", newURL, true);
+    xhr.open("POST", newUrl, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("CF-Chl-Bypass", "1");
     // We seem to get back some odd mime types that cause problems...
@@ -282,11 +364,17 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
             && cookieName == CF_CLEARANCE_COOKIE) {
             chrome.cookies.remove({url: "http://" + CF_CAPTCHA_DOMAIN, name: CF_CLEARANCE_COOKIE});
         } else if (cookieName == CF_CLEARANCE_COOKIE) {
-            // Reload the page when we get a cookie back as we might need to use it.
-            createAlarm("reload-page", Date.now() + 1000);
+            createAlarm("reload-page", Date.now() + 500);
         }
+    } else if (changeInfo.removed && cookieName == CF_CLEARANCE_COOKIE) {
+        resetSpendVars();
     }
 });
+
+// Reset spend vars when window is closed in case we're private browsing
+chrome.windows.onRemoved.addListener(function() {
+    resetSpendVars();
+})
 
 // An issue response takes the form "signatures=[b64 blob]"
 // The blob is an array of base64-encoded marshaled curve points.
@@ -319,7 +407,7 @@ function parseIssueResponse(data) {
     signatures.forEach(function(signature) {
         let usablePoint = sec1DecodePoint(signature);
         if (usablePoint == null) {
-            throw new Error("[privacy-pass]: unable to decode point" + signature + " in " + JSON.stringify(signatures));
+            throw new Error("[privacy-pass]: unable to decode point " + signature + " in " + JSON.stringify(signatures));
         }
         usablePoints.push(usablePoint);
     })
@@ -336,71 +424,76 @@ if (chrome.alarms !== undefined) {
 } else if (browser.alarms !== undefined) {
     browser.alarms.onAlarm.addListener(alarmListener);
 }
-
 function alarmListener(alarm) {
     switch(alarm.name) {
-        // Fired when a user sends tokens to be signed
-        case "reload-page-xhr":
-            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                if (tabs[0].id) {
-                    chrome.tabs.update(tabs[0].id, { url: storedUrl });
-                    storedUrl = null;
-                }
-            });
-            break;
-        // Fired on redemptions or errors
+        // Fired on cookie reloads
         case "reload-page":
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                // If we don't have a target then try using the last one we had
-                let lastTarget = usedTargets.pop()
-                if (!targetUrl) {
-                    targetUrl = lastTarget;
+                let tabId = tabs[0].id;
+                if (tabs[0].status == "loading") {
+                    createAlarm("reload-page", Date.now() + 10);
+                    return;
                 }
-                if (targetUrl) {
-                    chrome.tabs.update(tabs[0].id, { url: targetUrl.href });
-                    usedTargets.push(targetUrl);
-                    setTimeout(function() {
-                        targetUrl = null;
-                    } , 1000);
-                    // Clear the refererMap if it is getting large
-                    if (refererMap.size > 100) {
-                        refererMap = new Map();
-                    }
-                } else {
-                    chrome.tabs.reload(tabs[0].id);
-                }
+                chrome.tabs.reload(tabId);
             });
-            break;
-        case "generate-new-tokens":
-            // TODO use this alarm to generate tokens in more efficient manner
-            // storeTokens(GenerateNewTokens(TOKENS_PER_REQUEST));
             break;
     }
     removeAlarm(alarm.name);
 }
 
-// Listens for a message sent by the content script at document_end.
-chrome.runtime.onMessage.addListener(handleDocumentEnd);
-
-/*
-    The content script is not currently used
-    We instead use a header sent from Cloudflare to verify a CAPTCHA page
- */
-// We expect to have the meta tags at this point but not to have loaded the
-// captcha iframe, which gives us a chance to stop needless requests to Google.
-function handleDocumentEnd(message, sender) {
-    // have to do the undefined check for new versions of firefox
-    if (message == undefined) {
-        throw new Error("[privacy-pass]: Message from content script was undefined");
+// Set the target URL for the spend and update the tab if necessary
+chrome.webNavigation.onCommitted.addListener(function(details) {
+    let redirect = details.transitionQualifiers[0];
+    let tabId = details.tabId;
+    let url = new URL(details.url);
+    if (details.transitionType != AUTO_SUBFRAME
+        && (!badTransition(redirect) || httpsRedirect[url.href])
+        && !isNewTab(url.href)) {
+        target[tabId] = url.href;
+        let id = getTabId(tabId);
+        // If a reload was attempted but target hadn't been inited then reload now
+        if (futureReload[id] == target[tabId]) {
+            futureReload[id] = false;
+            chrome.tabs.update(id, {url: target[tabId]});
+        }
     }
-    // ignore anything that isn't our trigger message
-    if (message.type != "triggerChallengeBypass" || !message.content) {
-        return;
+});
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener(handleMessage);
+function handleMessage(request, sender, sendResponse) {
+    if (request.callback) {
+        UpdateCallback = request.callback;
+    } else if (request.tokLen) {
+        sendResponse(countStoredTokens());
+    } else if (request.clear) {
+        clearStorage();
     }
 }
 
-
 /* Token storage functions */
+
+
+function setSpendOnRedirect(oldUrl, newUrl) {
+    checkRedirect[oldUrl.href] = false;
+    // Remove the token that we spent previously
+    RemoveToken();
+    setSpendFlag(newUrl.host, true);
+}
+
+function incrementSpentHost(host) {
+    if (spentHosts[host] === undefined) {
+        spentHosts[host] = 0;
+    }
+    spentHosts[host] = spentHosts[host]+1;
+}
+
+function checkMaxSpend(host) {
+    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX) {
+        return false;
+    }
+    return true
+}
 
 function countStoredTokens() {
     const count = localStorage.getItem(STORAGE_KEY_COUNT);
@@ -414,11 +507,17 @@ function countStoredTokens() {
     return countInt;
 }
 
+// Removes a token if the spend went well
+function RemoveToken() {
+    let tokens = loadTokens();
+    tokens = tokens.slice(1);
+    storeTokens(tokens);
+}
+
+// Returns a token for a redemption
 function GetTokenForSpend() {
     let tokens = loadTokens();
     const tokenToSpend = tokens[0];
-    tokens = tokens.slice(1);
-    storeTokens(tokens);
     return tokenToSpend;
 }
 
@@ -490,6 +589,8 @@ function clearStorage() {
             console.error(chrome.runtime.lastError.message);
         }
     });
+    resetVars();
+    resetSpendVars();
     // Update icons
     updateIcon(0);
     UpdateCallback();
@@ -504,7 +605,7 @@ function setSpendFlag(key, value) {
 }
 
 function getSpendFlag(key) {
-    return !!localStorage.getItem(key);
+    return localStorage.getItem(key);
 }
 
 // We use this function for updating the popup when tokens are cleared
@@ -512,23 +613,74 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
+function isErrorPage(url) {
+    let found = false;
+    const errorPagePaths = ["/cdn-cgi/styles/", "/cdn-cgi/scripts/", "/cdn-cgi/images/"];
+    errorPagePaths.forEach(function(str) {
+        if (url.indexOf(str) != -1) {
+            found = true;
+        }
+    });
+    return found;
+}
+
 //  Favicons have caused us problems...
-function isFaviconUrl(href) {
-    return href.indexOf("favicon") != -1;
+function isFaviconUrl(url) {
+    return url.indexOf("favicon") != -1;
+}
+
+function clearanceCookieFound(header) {
+    if (header.name.toLowerCase() == SET_COOKIE_HEADER) {
+        if (header.value.indexOf(CF_CLEARANCE_COOKIE) != -1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Tor seems to have an object here whereas chrome/firefox just have an id
+function getTabId(tabId) {
+    let id = tabId.id;
+    if (!id) {
+        id = tabId;
+    }
+    return id;
+}
+
+function badTransition(type) {
+    if (!type) {
+        return true;
+    }
+    return type == SERVER_REDIRECT;
+}
+
+function isNewTab(url) {
+    return url == CHROME_TAB || url == FF_PRIV_TAB || url == FF_BLANK;
 }
 
 function resetVars() {
-    reloadCount = new Map();
-    clearanceApplied = new Map();
-    usedTargets = [];
+    redirectCount = new Map();
+    sentTokens = new Map();
+    target = new Map();
     spendId = new Map();
+    futureReload = new Map();
+    spentHosts = new Map();
+}
+
+function resetSpendVars() {
+    spentUrl = new Map();
+    alreadyBad = new Map();
 }
 
 function updateIcon(count) {
-    if (count != 0) {
+    let warn = (count.toString().indexOf("!") != -1)
+    if (count != 0 && !warn) {
         chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});
+    } else if (warn) {
+        chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
+        chrome.browserAction.setBadgeText({text: "!!!"});
     } else {
         chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
         chrome.browserAction.setBadgeText({text: ""});
