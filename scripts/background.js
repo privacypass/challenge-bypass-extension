@@ -148,8 +148,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 function processHeaders(details) {
     let url = new URL(details.url);
     let doRedeem = false;
-    let cookieFound = false;
-    let needCookie = spendId[details.requestId];
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
@@ -160,10 +158,6 @@ function processHeaders(details) {
                 // Remove most recent token
                 RemoveToken();
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
-            }
-        } else if (needCookie) {
-            if (clearanceCookieFound(header)) {
-                cookieFound = true;
             }
         }
 
@@ -191,17 +185,6 @@ function processHeaders(details) {
             // Update icon to show user that token may be spent here
             updateIcon("!");
         }
-    }
-
-    // We remove the token if the spend is valid
-    if (needCookie) {
-        if (!cookieFound) {
-            // If not valid we need to ascertain whether a redirect is occurring
-            checkRedirect[url.href] = true;
-        } else {
-            RemoveToken();
-        }
-        spentUrl[url.href] = true;
     }
 }
 
@@ -282,6 +265,7 @@ function beforeSendHeaders(request) {
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
     spendId[request.requestId] = true;
+    spentUrl[url.href];
     return {requestHeaders: headers};
 }
 
@@ -476,8 +460,6 @@ function handleMessage(request, sender, sendResponse) {
 
 function setSpendOnRedirect(oldUrl, newUrl) {
     checkRedirect[oldUrl.href] = false;
-    // Remove the token that we spent previously
-    RemoveToken();
     setSpendFlag(newUrl.host, true);
 }
 
@@ -514,10 +496,12 @@ function RemoveToken() {
     storeTokens(tokens);
 }
 
-// Returns a token for a redemption
+// Pops a token from storage for a redemption
 function GetTokenForSpend() {
     let tokens = loadTokens();
     const tokenToSpend = tokens[0];
+    tokens = tokens.slice(1);
+    storeTokens(tokens);
     return tokenToSpend;
 }
 
