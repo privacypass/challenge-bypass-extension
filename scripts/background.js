@@ -28,7 +28,6 @@ const CHROME_TAB = "chrome://newtab/";
 const FF_BLANK = "about:blank";
 const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
-const SET_COOKIE_HEADER = "set-cookie";
 const VALID_REDIRECTS = ["https://","https://www.","http://www."];
 
 // Used for resetting variables below
@@ -265,7 +264,7 @@ function beforeSendHeaders(request) {
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
     spendId[request.requestId] = true;
-    spentUrl[url.href];
+    spentUrl[url.href] = true;
     return {requestHeaders: headers};
 }
 
@@ -611,15 +610,6 @@ function isErrorPage(url) {
 //  Favicons have caused us problems...
 function isFaviconUrl(url) {
     return url.indexOf("favicon") != -1;
-}
-
-function clearanceCookieFound(header) {
-    if (header.name.toLowerCase() == SET_COOKIE_HEADER) {
-        if (header.value.indexOf(CF_CLEARANCE_COOKIE) != -1) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // Tor seems to have an object here whereas chrome/firefox just have an id
