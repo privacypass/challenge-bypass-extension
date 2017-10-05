@@ -28,7 +28,6 @@ const CHROME_TAB = "chrome://newtab/";
 const FF_BLANK = "about:blank";
 const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
-const SET_COOKIE_HEADER = "set-cookie";
 const VALID_REDIRECTS = ["https://","https://www.","http://www."];
 
 // Used for resetting variables below
@@ -148,8 +147,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 function processHeaders(details) {
     let url = new URL(details.url);
     let doRedeem = false;
-    let cookieFound = false;
-    let needCookie = spendId[details.requestId];
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
@@ -160,10 +157,6 @@ function processHeaders(details) {
                 // Remove most recent token
                 RemoveToken();
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
-            }
-        } else if (needCookie) {
-            if (clearanceCookieFound(header)) {
-                cookieFound = true;
             }
         }
 
@@ -191,17 +184,6 @@ function processHeaders(details) {
             // Update icon to show user that token may be spent here
             updateIcon("!");
         }
-    }
-
-    // We remove the token if the spend is valid
-    if (needCookie) {
-        if (!cookieFound) {
-            // If not valid we need to ascertain whether a redirect is occurring
-            checkRedirect[url.href] = true;
-        } else {
-            RemoveToken();
-        }
-        spentUrl[url.href] = true;
     }
 }
 
@@ -282,6 +264,7 @@ function beforeSendHeaders(request) {
     const newHeader = { name: "challenge-bypass-token", value: redemptionString };
     headers.push(newHeader);
     spendId[request.requestId] = true;
+    spentUrl[url.href] = true;
     return {requestHeaders: headers};
 }
 
@@ -476,8 +459,6 @@ function handleMessage(request, sender, sendResponse) {
 
 function setSpendOnRedirect(oldUrl, newUrl) {
     checkRedirect[oldUrl.href] = false;
-    // Remove the token that we spent previously
-    RemoveToken();
     setSpendFlag(newUrl.host, true);
 }
 
@@ -514,10 +495,12 @@ function RemoveToken() {
     storeTokens(tokens);
 }
 
-// Returns a token for a redemption
+// Pops a token from storage for a redemption
 function GetTokenForSpend() {
     let tokens = loadTokens();
     const tokenToSpend = tokens[0];
+    tokens = tokens.slice(1);
+    storeTokens(tokens);
     return tokenToSpend;
 }
 
@@ -627,15 +610,6 @@ function isErrorPage(url) {
 //  Favicons have caused us problems...
 function isFaviconUrl(url) {
     return url.indexOf("favicon") != -1;
-}
-
-function clearanceCookieFound(header) {
-    if (header.name.toLowerCase() == SET_COOKIE_HEADER) {
-        if (header.value.indexOf(CF_CLEARANCE_COOKIE) != -1) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // Tor seems to have an object here whereas chrome/firefox just have an id
