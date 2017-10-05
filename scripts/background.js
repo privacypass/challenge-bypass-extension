@@ -144,8 +144,6 @@ function processHeaders(details) {
                 || header.value == CF_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
                 // Either tokens are bad or some resource is calling the server in a bad way
-                // Remove most recent token
-                RemoveToken();
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
             }
         }
@@ -442,13 +440,6 @@ function countStoredTokens() {
     const countInt = JSON.parse(count);
     updateIcon(countInt);
     return countInt;
-}
-
-// Removes a token if the spend went well
-function RemoveToken() {
-    let tokens = loadTokens();
-    tokens = tokens.slice(1);
-    storeTokens(tokens);
 }
 
 // Pops a token from storage for a redemption
