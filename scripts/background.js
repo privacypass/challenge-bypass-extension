@@ -24,11 +24,12 @@ const SPEND_MAX = 3;
 const MAX_TOKENS = 300;
 const TOKENS_PER_REQUEST = 30;
 const FF_PRIV_TAB = "about:privatebrowsing";
-const CHROME_TAB = "chrome://newtab/";
+const CHROME_TABS = "chrome://";
 const FF_BLANK = "about:blank";
 const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
 const VALID_REDIRECTS = ["https://","https://www.","http://www."];
+const POTENTIALLY_GOOD_TRANSITIONS = ["link", "typed", "auto_bookmark"];
 
 // Used for resetting variables below
 let timeSinceLastResp = 0;
@@ -58,14 +59,11 @@ let sentTokens = new Map();
 // URL string for determining where tokens should be spent
 let target = new Map();
 
-// Used for checking redirects after a bad spend has occurred
-let checkRedirect = new Map();
-
 // Used for firefox primarily
 let futureReload = new Map();
 
-// Already reloaded for bad spend
-let alreadyBad = new Map();
+// Tabs that a spend occurred in
+let spentTab = new Map();
 
 // TODO: DLEQ proofs
 // let activeCommConfig = DevCommitmentConfig;
@@ -85,18 +83,10 @@ chrome.webRequest.onCompleted.addListener(
 );
 function handleCompletion(details) {
     timeSinceLastResp = Date.now();
-    let url = new URL(details.url);
-    // If we had a bad spend then reload the page
-    if (spendId[details.requestId] && checkRedirect[url.href] && !alreadyBad[url.href]) {
-        chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE}, function(cookie) {
-            if (!cookie) {
-                setSpendFlag(url.host, true);
-                alreadyBad[url.href] = true;
-                chrome.tabs.reload(details.tabId);
-            }
-        });
+    // If we had a spend then reload the page
+    if (spendId[details.requestId]) {
+        chrome.tabs.reload(details.tabId);
     }
-    checkRedirect[url.href] = false;
     spendId[details.requestId] = false;
 }
 
@@ -114,7 +104,7 @@ function processRedirect(details) {
         redirectCount[details.requestId] = 0;
     }
     if (spendId[details.requestId] && redirectCount[details.requestId] < MAX_REDIRECT) {
-        setSpendOnRedirect(oldUrl, newUrl);
+        setSpendFlag(newUrl.host, true);
         spendId[details.requestId] = false;
         redirectCount[details.requestId] = redirectCount[details.requestId]+1;
     }
@@ -169,10 +159,7 @@ function processHeaders(details) {
     // If we have tokens to spend, cancel the request and pass execution over to the token handler.
     if (doRedeem && !spentUrl[url.href]) {
         if (countStoredTokens() > 0) {
-            let ok = attemptRedeem(url, details.tabId);
-            if (!ok) {
-                return {cancel: false};
-            }
+            attemptRedeem(url, details.tabId);
         } else {
             // Store the url for redirection after captcha is solved
             // Manual check for favicon urls
@@ -191,7 +178,7 @@ function processHeaders(details) {
 function attemptRedeem(url, respTabId) {
     // Prevent reloading on captcha.website
     if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
-        return false;
+        return;
     }
 
     // Check all cookie stores to see if a clearance cookie is held
@@ -208,9 +195,6 @@ function attemptRedeem(url, respTabId) {
                     // Require an existing, non-expired cookie.
                     if (cookie) {
                         clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
-                        if (!clearanceHeld) {
-                            alreadyBad[url.href] = false;
-                        }
                     }
                 });
             }
@@ -222,15 +206,12 @@ function attemptRedeem(url, respTabId) {
             let targetUrl = target[respTabId];
             if (url.href == targetUrl) {
                 chrome.tabs.update(respTabId, { url: targetUrl });
-                targetUrl = "";
             } else if (!targetUrl || (targetUrl != url.href && !isFaviconUrl(targetUrl))) {
                 // set a reload in the future when the target has been inited
                 futureReload[respTabId] = url.href;
             }
         }
     });
-
-    return true;
 }
 
 // Intercepts token-spend reload requests to add a redemption header.
@@ -265,6 +246,10 @@ function beforeSendHeaders(request) {
     headers.push(newHeader);
     spendId[request.requestId] = true;
     spentUrl[url.href] = true;
+    if (!spentTab[request.tabId]) {
+        spentTab[request.tabId] = [];
+    }
+    spentTab[request.tabId].push(url.href);
     return {requestHeaders: headers};
 }
 
@@ -280,7 +265,6 @@ chrome.webRequest.onBeforeRequest.addListener(
 // have tokens, it asks for new ones when we solve a captcha.
 function beforeRequest(details) {
     // Clear vars if they haven't been used for a while
-    checkRedirect[details.url] = false;
     if (Date.now() - 2000 > timeSinceLastResp) {
         resetVars();
     }
@@ -347,9 +331,11 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
             && cookieName == CF_CLEARANCE_COOKIE) {
             chrome.cookies.remove({url: "http://" + CF_CAPTCHA_DOMAIN, name: CF_CLEARANCE_COOKIE});
         } else if (cookieName == CF_CLEARANCE_COOKIE) {
-            createAlarm("reload-page", Date.now() + 500);
+            reloadTab(cookieDomain);
         }
-    } else if (changeInfo.removed && cookieName == CF_CLEARANCE_COOKIE) {
+    } else if (changeInfo.removed
+            && cookieName == CF_CLEARANCE_COOKIE
+            && cookieDomain != "." + CF_CAPTCHA_DOMAIN) {
         resetSpendVars();
     }
 });
@@ -401,36 +387,13 @@ function parseIssueResponse(data) {
     return usablePoints;
 }
 
-// Alarm listener allows us to get out of the page load path.
-if (chrome.alarms !== undefined) {
-    chrome.alarms.onAlarm.addListener(alarmListener);
-} else if (browser.alarms !== undefined) {
-    browser.alarms.onAlarm.addListener(alarmListener);
-}
-function alarmListener(alarm) {
-    switch(alarm.name) {
-        // Fired on cookie reloads
-        case "reload-page":
-            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                let tabId = tabs[0].id;
-                if (tabs[0].status == "loading") {
-                    createAlarm("reload-page", Date.now() + 10);
-                    return;
-                }
-                chrome.tabs.reload(tabId);
-            });
-            break;
-    }
-    removeAlarm(alarm.name);
-}
-
 // Set the target URL for the spend and update the tab if necessary
 chrome.webNavigation.onCommitted.addListener(function(details) {
     let redirect = details.transitionQualifiers[0];
     let tabId = details.tabId;
     let url = new URL(details.url);
     if (details.transitionType != AUTO_SUBFRAME
-        && (!badTransition(redirect) || httpsRedirect[url.href])
+        && (!badTransition(url.href, redirect, details.transitionType))
         && !isNewTab(url.href)) {
         target[tabId] = url.href;
         let id = getTabId(tabId);
@@ -455,13 +418,6 @@ function handleMessage(request, sender, sendResponse) {
 }
 
 /* Token storage functions */
-
-
-function setSpendOnRedirect(oldUrl, newUrl) {
-    checkRedirect[oldUrl.href] = false;
-    setSpendFlag(newUrl.host, true);
-}
-
 function incrementSpentHost(host) {
     if (spentHosts[host] === undefined) {
         spentHosts[host] = 0;
@@ -596,6 +552,45 @@ function getSpendFlag(key) {
 var UpdateCallback = function() { }
 
 /* Utility functions */
+function reloadTab(cookieDomain) {
+    let found = false;
+    chrome.windows.getAll(function(windows) {
+        windows.forEach( function(w) {
+            let wId = w.id;
+            chrome.tabs.query({windowId: wId}, function(tabs) {
+                tabs.forEach( function(tab, index) {
+                    if (!found) {
+                        let id = getTabId(tab.id);
+                        let hrefs = spentTab[id];
+                        if (!hrefs) {
+                            return;
+                        }
+                        if (isCookieForTab(hrefs, cookieDomain)) {
+                            chrome.tabs.reload(id);
+                            found = true;
+                        }
+                    }
+                });
+            });
+        });
+    });
+}
+
+function isCookieForTab(hrefs, cookieDomain) {
+    if (hrefs.indexOf(cookieDomain) > -1) {
+        return true;
+    }
+    // remove preceding dot and try again
+    if (cookieDomain[0] == ".") {
+        let noDot = cookieDomain.substring(1);
+        if (hrefs.indexOf(noDot)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function isErrorPage(url) {
     let found = false;
     const errorPagePaths = ["/cdn-cgi/styles/", "/cdn-cgi/scripts/", "/cdn-cgi/images/"];
@@ -621,15 +616,22 @@ function getTabId(tabId) {
     return id;
 }
 
-function badTransition(type) {
-    if (!type) {
+// Checks whether a transition is deemed to be bad to prevent loading subresources 
+// in address bar
+function badTransition(href, type, transitionType) {
+    if (httpsRedirect[href]) {
+        httpsRedirect[href] = false;
+        return false;
+    }
+    let maybeGood = (POTENTIALLY_GOOD_TRANSITIONS.indexOf(transitionType) >= 0);
+    if (!type && !maybeGood) {
         return true;
     }
     return type == SERVER_REDIRECT;
 }
 
 function isNewTab(url) {
-    return url == CHROME_TAB || url == FF_PRIV_TAB || url == FF_BLANK;
+    return url == FF_PRIV_TAB || url == FF_BLANK || url.indexOf(CHROME_TABS) != -1;
 }
 
 function resetVars() {
@@ -642,8 +644,8 @@ function resetVars() {
 }
 
 function resetSpendVars() {
+    spentTab = new Map();
     spentUrl = new Map();
-    alreadyBad = new Map();
 }
 
 function updateIcon(count) {
@@ -663,28 +665,4 @@ function updateIcon(count) {
 
 function isBypassHeader(header) {
     return header.name.toLowerCase() == CF_BYPASS_SUPPORT && header.value == "1";
-}
-
-function createAlarm(name, when) {
-    if (chrome.alarms !== undefined) {
-        chrome.alarms.create(name, {
-            when: when
-        });
-    } else if (browser.alarms !== undefined) {
-        browser.alarms.create(name, {
-            when: when
-        });
-    } else {
-        throw new Error("[privacy-pass]: Browser may not support alarms");
-    }
-}
-
-function removeAlarm(name) {
-    if (chrome.alarms !== undefined) {
-        chrome.alarms.clear(name);
-    } else if (browser.alarms !== undefined) {
-        browser.alarms.clear(name);
-    } else {
-        throw new Error("[privacy-pass]: Browser may not support alarms");
-    }
 }
