@@ -29,7 +29,7 @@ const FF_BLANK = "about:blank";
 const SERVER_REDIRECT = "server_redirect";
 const AUTO_SUBFRAME = "auto_subframe";
 const VALID_REDIRECTS = ["https://","https://www.","http://www."];
-const POTENTIALLY_GOOD_TRANSITIONS = ["link", "typed", "auto_bookmark"];
+const POTENTIALLY_GOOD_TRANSITIONS = ["link", "typed", "auto_bookmark", "reload"];
 
 // Used for resetting variables below
 let timeSinceLastResp = 0;
@@ -631,7 +631,7 @@ function badTransition(href, type, transitionType) {
 }
 
 function isNewTab(url) {
-    return url == FF_PRIV_TAB || url == FF_BLANK || url.indexOf(CHROME_TABS) != -1;
+    return url == FF_PRIV_TAB || url == FF_BLANK || url.indexOf(CHROME_TABS) === 0;
 }
 
 function resetVars() {
