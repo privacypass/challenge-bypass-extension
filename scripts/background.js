@@ -583,7 +583,7 @@ function isCookieForTab(hrefs, cookieDomain) {
     // remove preceding dot and try again
     if (cookieDomain[0] == ".") {
         let noDot = cookieDomain.substring(1);
-        if (hrefs.indexOf(noDot)) {
+        if (hrefs.indexOf(noDot) > -1) {
             return true;
         }
     }
