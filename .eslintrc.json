@@ -25,7 +25,9 @@
         "CreateBlindToken": true,
         "GenerateNewTokens": true,
         "BuildIssueRequest": true,
-        "BuildRedeemHeader": true
+        "BuildRedeemHeader": true,
+        "verifyBatchProof": true,
+        "ProdCommitmentConfig": true
     },
     "rules": {
         "no-trailing-spaces": "error",

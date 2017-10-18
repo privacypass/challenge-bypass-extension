@@ -2,7 +2,7 @@
 
 The Cloudflare Privacy Pass extension allows a user to bypass challenge pages provided by Cloudflare using the blinded tokens protocol similar to the one described [here](https://github.com/cloudflare/challenge-bypass-specification). The protocol we use here is actually based on a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF). We provide a short description of how this fits into our original specification below. The VOPRF we now use is based heavily on the design first established by Jarecki et al. [JKK14]. For a technical description of the protocol see the [Technical Overview](#overview-of-protocol).
 
-The protocol has received extensive review and testing, but this extension is a work in progress. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. In the below, we detail the exact message specification that is required for interacting with Cloudflare's edge server. Pull requests and reviews of the extension detailed here are welcome and encouraged.
+The protocol has received extensive review and testing, but this extension is a work in progress. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
 The browser is compatible with Chrome, Firefox and the Tor Browser Bundle.
 
@@ -24,7 +24,6 @@ The browser is compatible with Chrome, Firefox and the Tor Browser Bundle.
         * [Issue response](#issue-response)
         * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
-     * [DLEQ handling](#dleq-handling)
   * [Overview of protocol](#overview-of-protocol)
      * [Notation](#notation)
      * [Overview](#overview)
@@ -97,7 +96,7 @@ We have provided a manifest.json file in ff-48/ that adds the `applications` tag
 
 - background.js: Processes the necessary interactions with web-pages directly. Sends messages and processes edge replies
 
-- config.js: Config file containing commitments to edge private key for checking DLEQ proofs (currently not implemented)
+- config.js: Config file containing commitments to edge private key for checking DLEQ proofs
 
 - content.js: (currently unused) Content script for reading page html
 
@@ -238,10 +237,6 @@ Server response header used if errors occur when verifying the privacy pass.
 - Header: 
 
 	`"CF-Chl-Bypass-Resp":"<error-resp>"`
-
-### DLEQ handling
-
-The DLEQ proofs are not currently handled by the extension. In a future version we plan to introduce this functionality. Moreover, the edge private key commitments are baked into the extension config so the deanonymisation potential is reduced for now.
 
 ## Overview of protocol
 
