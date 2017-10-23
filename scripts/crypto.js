@@ -383,12 +383,14 @@ function isBatchProofCompleteAndSane(bp, chkM, chkZ) {
         return false;
     }
     // Check that point sets are present and correct
-    if (!bp.M || !bp.Z || bp.M.length == 0 || bp.Z.length == 0 || bp.M.length !== bp.Z.length) {
+    let lenM = bp.M.length;
+    let lenZ = bp.Z.length;
+    if (!bp.M || !bp.Z || lenM == 0 || lenZ == 0 || lenM !== lenZ || chkM.length !== lenM || chkZ.length !== lenZ) {
         console.error(INCORRECT_POINT_SETS_ERR);
         return false;
     }
     // Check that the curve is correct and that the values of M, Z are consistent
-    for (let i=0; i<bp.M.length; i++) {
+    for (let i=0; i<lenM; i++) {
         if (sjcl.ecc.curveName(bp.M[i].curve) != sjcl.ecc.curveName(G.curve) ||
             sjcl.ecc.curveName(bp.Z[i].curve) != sjcl.ecc.curveName(G.curve) ||
             sjcl.ecc.curveName(bp.M[i].curve) != P256_NAME) {
@@ -397,7 +399,7 @@ function isBatchProofCompleteAndSane(bp, chkM, chkZ) {
         }
         // If the values of M and Z are consistent then we can use dleq.M and 
         // dleq.Z to verify the proof later
-        if (!sjcl.bitArray.equal(sjcl.codec.bytes.toBits(sec1EncodePoint(bp.M[i])), sjcl.codec.bytes.toBits(sec1EncodePoint(chkM[i].point))) || 
+        if (!sjcl.bitArray.equal(sjcl.codec.bytes.toBits(sec1EncodePoint(bp.M[i])), sjcl.codec.bytes.toBits(sec1EncodePoint(chkM[i].point))) ||
             !sjcl.bitArray.equal(sjcl.codec.bytes.toBits(sec1EncodePoint(bp.Z[i])), sjcl.codec.bytes.toBits(sec1EncodePoint(chkZ[i])))) {
             console.error(INCONSISTENT_PROOF_ERR);
             return false;
