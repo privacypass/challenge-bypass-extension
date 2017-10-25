@@ -65,9 +65,6 @@ let futureReload = new Map();
 // Tabs that a spend occurred in
 let spentTab = new Map();
 
-// TODO: DLEQ proofs
-// let activeCommConfig = DevCommitmentConfig;
-
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
     - web navigation listener sets the target url for the execution 
@@ -289,7 +286,7 @@ function beforeRequest(details) {
         // When we receive a response...
         if (xhr.status < 300 && xhr.readyState == 4 && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             const resp_data = xhr.responseText;
-            const signedPoints = parseIssueResponse(resp_data);
+            const signedPoints = parseIssueResponse(resp_data, tokens);
             if (signedPoints !== null) {
                 storeNewTokens(tokens, signedPoints);
             }
@@ -348,7 +345,7 @@ chrome.windows.onRemoved.addListener(function() {
 // The points are uncompressed (TODO).
 //
 // If the blinded points are P = H(t)rB, these are Q = kP.
-function parseIssueResponse(data) {
+function parseIssueResponse(data, tokens) {
     const split = data.split("signatures=", 2);
     if (split.length != 2) {
         throw new Error("[privacy-pass]: signature response invalid or in unexpected format, got response: " + data);
@@ -357,20 +354,13 @@ function parseIssueResponse(data) {
     const signaturesJSON = atob(split[1]);
     // parses into JSON
     const issueResp = JSON.parse(signaturesJSON);
-    let proof;
-    let signatures;
-    // Only separate the proof if it has been sent (it should be included in the
-    // last element of the array).
-    if (TOKENS_PER_REQUEST == issueResp.length-1) {
-        proof = issueResp[issueResp.length - 1];
-        signatures = issueResp.slice(0, issueResp.length - 1);
-    } else {
-        signatures = issueResp;
+    let batchProof = issueResp[issueResp.length - 1];
+    let signatures = issueResp.slice(0, issueResp.length - 1);
+    if (!batchProof) {
+        throw new Error("[privacy-pass]: No batch proof provided");
     }
 
     let usablePoints = [];
-
-    // We also include the DLEQ proof in the final entry now
     signatures.forEach(function(signature) {
         let usablePoint = sec1DecodePoint(signature);
         if (usablePoint == null) {
@@ -379,8 +369,10 @@ function parseIssueResponse(data) {
         usablePoints.push(usablePoint);
     })
 
-    // TODO: handle the DLEQ proof
-    void proof; // ignore eslint warnings about unused-vars.
+    // Verify the DLEQ batch proof before handing back the usable points
+    if (!verifyBatchProof(batchProof, tokens, usablePoints)) {
+        throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
+    }
 
     return usablePoints;
 }

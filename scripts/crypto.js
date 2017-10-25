@@ -14,9 +14,23 @@
 /* exported sec1DecodePoint */
 /* exported signPoint */
 /* exported unblindPoint */
+/* exported verifyBatchProof */
 "use strict";
 
 var p256 = sjcl.ecc.curves.c256;
+const P256_NAME = "c256";
+const BATCH_PROOF_PREFIX = "batch-proof=";
+const NO_COMMITMENTS_ERR = "[privacy-pass]: Batch proof does not contain commitments";
+const INCORRECT_POINT_SETS_ERR = "[privacy-pass]: Point sets for batch proof are incorrect";
+const COMMITMENT_MISMATCH_ERR = "[privacy-pass]: Mismatch between stored and received commitments";
+const DLEQ_PROOF_INCOMPLETE = "[privacy-pass]: DLEQ proof has components that are not defined";
+const INCORRECT_CURVE_ERR = "[privacy-pass]: Curve is incorrect for one or more points in proof";
+const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
+const PARSE_ERR = "[privacy-pass]: Error parsing proof";
+const INCONSISTENT_BATCH_PROOF_ERR = "[privacy-pass]: Tokens/signatures are inconsistent with batch proof";
+const INCONSISTENT_DLEQ_PROOF_ERR = "[privacy-pass]: Tokens/signatures are inconsistent with underlying DLEQ proof";
+
+let activeCommConfig = ProdCommitmentConfig;
 
 // Performs the scalar multiplication k*P
 //
@@ -254,7 +268,7 @@ function sec1DecodePoint(p) {
     const sec1Bits = sjcl.codec.base64.toBits(p);
     const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
     if (sec1Bytes[0] != 0x04) {
-        throw new Error("[captcha_bypass]: attempted sec1DecodePoint with incorrect tag: " + p);
+        throw new Error("[privacy-pass]: attempted sec1DecodePoint with incorrect tag: " + p);
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
@@ -278,4 +292,221 @@ function encodeStorablePoint(p) {
 function decodeStorablePoint(s) {
     const bits = sjcl.codec.base64.toBits(s);
     return p256.fromBits(bits);
+}
+
+
+/**
+ * DLEQ proof verification logic
+ */
+
+// Verifies the DLEQ proof that is returned when tokens are signed
+// 
+// input: marshaled JSON DLEQ proof
+// output: bool
+function verifyBatchProof(proof, tokens, signatures) {
+    let batchProofM = getMarshaledBatchProof(proof);
+    let bp = unmarshalBatchProof(batchProofM);
+    if (!bp) {
+        // Error has probably occurred
+        return false;
+    }
+    const chkM = tokens;
+    const chkZ = signatures;
+    if (!isBatchProofCompleteAndSane(bp, chkM, chkZ)) {
+        return false;
+    }
+    return verifyDleq(bp, chkM, chkZ);
+}
+
+// Verify the NIZK DLEQ proof
+function verifyDleq(bp, chkM, chkZ) {
+    // Check sanity of proof
+    let dleq = bp.P;
+    if (!isDleqCompleteAndSane(dleq, chkM, chkZ, bp.C)) {
+        return false;
+    }
+
+    let cH = _scalarMult(dleq.C, dleq.H);
+    let rG = _scalarMult(dleq.R, dleq.G);
+    const A = cH.toJac().add(rG).toAffine();
+
+    let cZ = _scalarMult(dleq.C, dleq.Z);
+    let rM = _scalarMult(dleq.R, dleq.M);
+    const B = cZ.toJac().add(rM).toAffine();
+
+    // Recalculate C' and check if C =?= C'
+    let h = new sjcl.hash.sha256();
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(dleq.G)));
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(dleq.H)));
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(dleq.M)));
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(dleq.Z)));
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(A)));
+    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(B)));
+    const digestBits = h.finalize();
+    const receivedDigestBits = dleq.C.toBits();
+    if (!sjcl.bitArray.equal(digestBits, receivedDigestBits)) {
+        console.error(DIGEST_INEQUALITY_ERR);
+        console.error("Computed digest: " + digestBits.toString());
+        console.error("Received digest: " + receivedDigestBits.toString());
+        return false;
+    }
+    return true;
+}
+
+// Check that the underlying DLEQ proof is well-defined
+function isDleqCompleteAndSane(dleq, chkM, chkZ, proofC) {
+    if (!dleq.M || !dleq.Z || !dleq.R || !dleq.C) {
+        console.error(DLEQ_PROOF_INCOMPLETE);
+        return false;
+    }
+
+    // Check that all points are on the same curve
+    let curveG = dleq.G.curve;
+    let curveH = dleq.H.curve;
+    let curveM = dleq.M.curve;
+    let curveZ = dleq.Z.curve;
+    if (sjcl.ecc.curveName(curveG) != sjcl.ecc.curveName(curveH) ||
+        sjcl.ecc.curveName(curveH) != sjcl.ecc.curveName(curveM) ||
+        sjcl.ecc.curveName(curveM) != sjcl.ecc.curveName(curveZ) ||
+        sjcl.ecc.curveName(curveG) != P256_NAME) {
+        console.error(INCORRECT_CURVE_ERR);
+        return false;
+    }
+
+    let chkMPoint;
+    let chkZPoint;
+    for (let i=0; i<chkM.length; i++) {
+        let cMi = _scalarMult(proofC[i], chkM[i].point);
+        let cZi = _scalarMult(proofC[i], chkZ[i]);
+
+        if (!chkMPoint && !chkZPoint) {
+            chkMPoint = cMi;
+            chkZPoint = cZi;
+        } else {
+            chkMPoint = chkMPoint.toJac().add(cMi).toAffine();
+            chkZPoint = chkZPoint.toJac().add(cZi).toAffine();
+        }
+    }
+    if (!sjcl.bitArray.equal(dleq.M.toBits(), chkMPoint.toBits()) || !sjcl.bitArray.equal(dleq.Z.toBits(), chkZPoint.toBits())) {
+        console.error(INCONSISTENT_DLEQ_PROOF_ERR);
+        return false;
+    }
+    return true;
+}
+
+// Checks that the batch proof is well-defined
+function isBatchProofCompleteAndSane(bp, chkM, chkZ) {
+    // Check commitments are present
+    let G = bp.P.G;
+    let H = bp.P.H;
+    if (!G || !H) {
+        console.error(NO_COMMITMENTS_ERR);
+        return false;
+    }
+    // Check that point sets are present and correct
+    let lenM = bp.M.length;
+    let lenZ = bp.Z.length;
+    if (!bp.M || !bp.Z || lenM == 0 || lenZ == 0 || lenM !== lenZ || chkM.length !== lenM || chkZ.length !== lenZ) {
+        console.error(INCORRECT_POINT_SETS_ERR);
+        return false;
+    }
+    // Check that the curve is correct and that the values of M, Z are consistent
+    for (let i=0; i<lenM; i++) {
+        if (sjcl.ecc.curveName(bp.M[i].curve) != sjcl.ecc.curveName(G.curve) ||
+            sjcl.ecc.curveName(bp.Z[i].curve) != sjcl.ecc.curveName(G.curve) ||
+            sjcl.ecc.curveName(bp.M[i].curve) != P256_NAME) {
+            console.error(INCORRECT_CURVE_ERR);
+            return false;
+        }
+        // If the values of M and Z are consistent then we can use dleq.M and 
+        // dleq.Z to verify the proof later
+        if (!sjcl.bitArray.equal(bp.M[i].toBits(), chkM[i].point.toBits()) ||
+            !sjcl.bitArray.equal(bp.Z[i].toBits(), chkZ[i].toBits())) {
+            console.error(INCONSISTENT_BATCH_PROOF_ERR);
+            return false;
+        }
+    }
+    return true;
+}
+
+// Returns a decoded batch proof as a map
+function unmarshalBatchProof(batchProofM) {
+    let bp = new Map();
+    let dleqProof;
+    try {
+        dleqProof = parseDleqProof(atob(batchProofM.P));
+    } catch(e) {
+        console.error(PARSE_ERR);
+        return;
+    }
+
+    bp.P = dleqProof;
+    bp.M = batchDecodePoints(batchProofM.M);
+    bp.Z = batchDecodePoints(batchProofM.Z);
+    let encC = batchProofM.C;
+    let decC = [];
+    for (let i=0; i<encC.length; i++) {
+        decC[i] = getBigNumFromB64(encC[i]);
+    }
+    bp.C = decC;
+
+    return bp;
+}
+
+// Batch decode a number of points
+// 
+// input: Array of sec1-encoded points
+// output: Array of sec1-decoded points
+function batchDecodePoints(pointArr) {
+    let decPointArr = [];
+    for (let i=0; i<pointArr.length; i++) {
+        decPointArr.push(sec1DecodePoint(pointArr[i]));
+    }
+    return decPointArr;
+}
+
+// Decode proof string and remove prefix
+function getMarshaledBatchProof(proof) {
+    let proofStr = atob(proof);
+    if (proofStr.indexOf(BATCH_PROOF_PREFIX) === 0) {
+        proofStr = proofStr.substring(BATCH_PROOF_PREFIX.length);
+    }
+    return JSON.parse(proofStr);
+}
+
+// Decode the proof that is sent into a map
+// 
+// input: Marshaled proof string
+// output: DLEQ proof
+function parseDleqProof(proofStr) {
+    const dleqProofM = JSON.parse(proofStr);
+    let dleqProof = new Map();
+
+    // if we do not have the same commitments then something is wrong
+    if (!validateConsistentCommitments(dleqProofM.G, dleqProofM.H)) {
+        throw new Error(COMMITMENT_MISMATCH_ERR);
+    }
+
+    dleqProof.G = sec1DecodePoint(dleqProofM.G);
+    dleqProof.M = sec1DecodePoint(dleqProofM.M);
+    dleqProof.H = sec1DecodePoint(dleqProofM.H);
+    dleqProof.Z = sec1DecodePoint(dleqProofM.Z);
+    dleqProof.R = getBigNumFromB64(dleqProofM.R);
+    dleqProof.C = getBigNumFromB64(dleqProofM.C);
+    return dleqProof;
+}
+
+// Check that the commitments on the proof match the commitments
+// in the extension
+function validateConsistentCommitments(G,H) {
+    if (G != activeCommConfig.G || H != activeCommConfig.H) {
+        return false;
+    }
+    return true;
+}
+
+// Return a byte array from a base-64 encoded string
+function getBigNumFromB64(b64Str) {
+    let bits = sjcl.codec.base64.toBits(b64Str)
+    return sjcl.bn.fromBits(bits);
 }
