@@ -27,7 +27,8 @@ const DLEQ_PROOF_INCOMPLETE = "[privacy-pass]: DLEQ proof has components that ar
 const INCORRECT_CURVE_ERR = "[privacy-pass]: Curve is incorrect for one or more points in proof";
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
-const INCONSISTENT_PROOF_ERR = "[privacy-pass]: Tokens/signatures are inconsistent with sent proof";
+const INCONSISTENT_BATCH_PROOF_ERR = "[privacy-pass]: Tokens/signatures are inconsistent with batch proof";
+const INCONSISTENT_DLEQ_PROOF_ERR = "[privacy-pass]: Tokens/signatures are inconsistent with underlying DLEQ proof";
 
 let activeCommConfig = ProdCommitmentConfig;
 
@@ -314,13 +315,14 @@ function verifyBatchProof(proof, tokens, signatures) {
     if (!isBatchProofCompleteAndSane(bp, chkM, chkZ)) {
         return false;
     }
-    return verifyDleq(bp.P, tokens, signatures);
+    return verifyDleq(bp, chkM, chkZ);
 }
 
 // Verify the NIZK DLEQ proof
-function verifyDleq(dleq) {
+function verifyDleq(bp, chkM, chkZ) {
     // Check sanity of proof
-    if (!isDleqCompleteAndSane(dleq)) {
+    let dleq = bp.P;
+    if (!isDleqCompleteAndSane(dleq, chkM, chkZ, bp.C)) {
         return false;
     }
 
@@ -352,7 +354,7 @@ function verifyDleq(dleq) {
 }
 
 // Check that the underlying DLEQ proof is well-defined
-function isDleqCompleteAndSane(dleq) {
+function isDleqCompleteAndSane(dleq, chkM, chkZ, proofC) {
     if (!dleq.M || !dleq.Z || !dleq.R || !dleq.C) {
         console.error(DLEQ_PROOF_INCOMPLETE);
         return false;
@@ -363,11 +365,30 @@ function isDleqCompleteAndSane(dleq) {
     let curveH = dleq.H.curve;
     let curveM = dleq.M.curve;
     let curveZ = dleq.Z.curve;
-    if (sjcl.ecc.curveName(curveG) != sjcl.ecc.curveName(curveH)
-        || sjcl.ecc.curveName(curveH) != sjcl.ecc.curveName(curveM)
-        || sjcl.ecc.curveName(curveM) != sjcl.ecc.curveName(curveZ)
-        || sjcl.ecc.curveName(curveG) != P256_NAME) {
+    if (sjcl.ecc.curveName(curveG) != sjcl.ecc.curveName(curveH) ||
+        sjcl.ecc.curveName(curveH) != sjcl.ecc.curveName(curveM) ||
+        sjcl.ecc.curveName(curveM) != sjcl.ecc.curveName(curveZ) ||
+        sjcl.ecc.curveName(curveG) != P256_NAME) {
         console.error(INCORRECT_CURVE_ERR);
+        return false;
+    }
+
+    let chkMPoint;
+    let chkZPoint;
+    for (let i=0; i<chkM.length; i++) {
+        let cMi = _scalarMult(proofC[i], chkM[i].point);
+        let cZi = _scalarMult(proofC[i], chkZ[i]);
+
+        if (!chkMPoint && !chkZPoint) {
+            chkMPoint = cMi;
+            chkZPoint = cZi;
+        } else {
+            chkMPoint = chkMPoint.toJac().add(cMi).toAffine();
+            chkZPoint = chkZPoint.toJac().add(cZi).toAffine();
+        }
+    }
+    if (!sjcl.bitArray.equal(dleq.M.toBits(), chkMPoint.toBits()) || !sjcl.bitArray.equal(dleq.Z.toBits(), chkZPoint.toBits())) {
+        console.error(INCONSISTENT_DLEQ_PROOF_ERR);
         return false;
     }
     return true;
@@ -399,9 +420,9 @@ function isBatchProofCompleteAndSane(bp, chkM, chkZ) {
         }
         // If the values of M and Z are consistent then we can use dleq.M and 
         // dleq.Z to verify the proof later
-        if (!sjcl.bitArray.equal(sjcl.codec.bytes.toBits(sec1EncodePoint(bp.M[i])), sjcl.codec.bytes.toBits(sec1EncodePoint(chkM[i].point))) ||
-            !sjcl.bitArray.equal(sjcl.codec.bytes.toBits(sec1EncodePoint(bp.Z[i])), sjcl.codec.bytes.toBits(sec1EncodePoint(chkZ[i])))) {
-            console.error(INCONSISTENT_PROOF_ERR);
+        if (!sjcl.bitArray.equal(bp.M[i].toBits(), chkM[i].point.toBits()) ||
+            !sjcl.bitArray.equal(bp.Z[i].toBits(), chkZ[i].toBits())) {
+            console.error(INCONSISTENT_BATCH_PROOF_ERR);
             return false;
         }
     }
@@ -423,9 +444,9 @@ function unmarshalBatchProof(batchProofM) {
     bp.M = batchDecodePoints(batchProofM.M);
     bp.Z = batchDecodePoints(batchProofM.Z);
     let encC = batchProofM.C;
-    let decC = new ArrayBuffer(encC.length);
-    for (let i=0; i<decC.length; i++) {
-        decC[i] = getBigNumFromB64(encC[i])
+    let decC = [];
+    for (let i=0; i<encC.length; i++) {
+        decC[i] = getBigNumFromB64(encC[i]);
     }
     bp.C = decC;
 
