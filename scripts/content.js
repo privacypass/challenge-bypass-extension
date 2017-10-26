@@ -1,6 +1,6 @@
 /*
     This content script is not currently used by the extensions
-    We currently rely on a Cf-Chl-Bypass header returning from Cloudflare
+    We currently rely on the use of headers returned by sites with Privacy Pass support
     The option is there to use the HTML tags instead if need be.
  */
 
