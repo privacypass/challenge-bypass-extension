@@ -24,7 +24,7 @@ The solution that we develop here is a protocol between a user, a challenger and
 
 ## Protocol description
 
-We detail a 'blind-signing' protocol written by George Tankersley using an OPRF to contruct per-pass shared keys for a MAC over each redemption request. This hides the token values themselves until redemption and obviates the need for public key encryption. This protocol subsumes the blind-RSA protocol that was described in earlier releases of the protocol specification.
+We detail a 'blind-signing' protocol written by the Privacy Pass team using an OPRF to construct per-pass shared keys for a MAC over each redemption request. This hides the token values themselves until redemption and obviates the need for public key encryption. This protocol subsumes the blind-RSA protocol that was described in earlier releases of the protocol specification.
 
 Given a group setting and three hashes `H_1`, `H_2`, `H_3` we build a commitment to a random token using a secret key x held by the edge servers. `H_1` is a hash into the group and `H_2`, `H_3` are hashes to bitstrings `{0, 1}^λ` where `λ` is a security parameter (we use SHA256).
 
@@ -155,6 +155,8 @@ For `(M_1, M_2)`, `(Z_1, Z_2)`, and `(c_1, c_2)`:
 So the composite points will have the same discrete log relation x as the underlying individual points.
 
 ## Attacks
+
+We detail two potential attack vectors for a malicious edge/client and proposed mitigations.
 
 ### Tagging by the edge
 

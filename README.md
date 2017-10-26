@@ -14,7 +14,6 @@ The extension is compatible with Chrome and Firefox (v48+).
   * [Testing](#testing)
      * [Firefox](#firefox)
      * [Chrome](#chrome)
-     * [Firefox pre-version 48](#firefox-pre-version-48)
   * [Plugin overview](#plugin-overview)
      * [Workflow](#workflow)
      * [Message formatting](#message-formatting)
@@ -23,7 +22,6 @@ The extension is compatible with Chrome and Firefox (v48+).
         * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
   * [Cryptography](#cryptography)
-  * [Acknowledgements](#acknowledgements)
 
 ## Stable releases
 
@@ -213,10 +211,6 @@ Server response header used if errors occur when verifying the privacy pass.
 ## Cryptography
 
 Cryptography is implemented using the elliptic-curve library [SJCL](https://github.com/bitwiseshiftleft/sjcl) and compression of points is done in accordance with the standard SEC1. This work uses the NIST standard P256 elliptic curve for performing operations. Third-party implementers should note that the outputs of the hash-to-curve, key derivation, and point encoding functions must match their Go equivalents exactly for interaction with our server implementation. More information about this will be provided when the edge implementation is open-sourced.
-
-## Acknowledgements
-
-We'd like to thank Dan Boneh for suggesting OPRFs in the first place; Ian Goldberg for his extensive advice and the batch proof; and Brian Warner, Zaki Manian, Tony Arcieri, Isis Lovecruft, Henry de Valence, Trevor Perrin, and several anonymous others for their valuable help, input, and review.
 
 
 
