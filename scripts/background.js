@@ -13,12 +13,12 @@
 
 const STORAGE_KEY_TOKENS = "cf-bypass-tokens";
 const STORAGE_KEY_COUNT  = "cf-token-count";
-const CF_BYPASS_SUPPORT  = "cf-chl-bypass";
-const CF_BYPASS_RESPONSE = "cf-chl-bypass-resp";
-const CF_CLEARANCE_COOKIE = "cf_clearance";
-const CF_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
-const CF_VERIFICATION_ERROR = "6";
-const CF_CONNECTION_ERROR = "5";
+const CHL_BYPASS_SUPPORT  = "cf-chl-bypass";
+const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp";
+const CHL_CLEARANCE_COOKIE = "cf_clearance";
+const CHL_CAPTCHA_DOMAIN = "captcha.website"; // cookies have dots prepended
+const CHL_VERIFICATION_ERROR = "6";
+const CHL_CONNECTION_ERROR = "5";
 const MAX_REDIRECT = 3;
 const SPEND_MAX = 3;
 const MAX_TOKENS = 300;
@@ -136,9 +136,9 @@ function processHeaders(details) {
     let doRedeem = false;
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
-        if (header.name.toLowerCase() == CF_BYPASS_RESPONSE) {
-            if (header.value == CF_VERIFICATION_ERROR
-                || header.value == CF_CONNECTION_ERROR) {
+        if (header.name.toLowerCase() == CHL_BYPASS_RESPONSE) {
+            if (header.value == CHL_VERIFICATION_ERROR
+                || header.value == CHL_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
                 // Either tokens are bad or some resource is calling the server in a bad way
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
@@ -172,7 +172,7 @@ function processHeaders(details) {
 // Attempts to redeem a token if we should do
 function attemptRedeem(url, respTabId) {
     // Prevent reloading on captcha.website
-    if (url.host.indexOf(CF_CAPTCHA_DOMAIN) != -1) {
+    if (url.host.indexOf(CHL_CAPTCHA_DOMAIN) != -1) {
         return;
     }
 
@@ -186,7 +186,7 @@ function attemptRedeem(url, respTabId) {
             }
             var storeMatches = tabIds.indexOf(respTabId) >= 0;
             if (storeMatches) {
-                chrome.cookies.get({"url": url.href, "name": CF_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
+                chrome.cookies.get({"url": url.href, "name": CHL_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
                     // Require an existing, non-expired cookie.
                     if (cookie) {
                         clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
@@ -292,7 +292,7 @@ function beforeRequest(details) {
             }
             // Reload the page for the originally intended url
             let url = new URL(reqUrl);
-            if (url.href.indexOf(CF_CAPTCHA_DOMAIN) == -1){
+            if (url.href.indexOf(CHL_CAPTCHA_DOMAIN) == -1){
                 let captchaPath = url.pathname;
                 let pathIndex = url.href.indexOf(captchaPath);
                 let reloadUrl = url.href.substring(0, pathIndex+1);
@@ -322,15 +322,15 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
     let cookieDomain = changeInfo.cookie.domain;
     let cookieName = changeInfo.cookie.name;
     if (!changeInfo.removed) {
-        if (cookieDomain == "." + CF_CAPTCHA_DOMAIN // cookies have dots prepended
-            && cookieName == CF_CLEARANCE_COOKIE) {
-            chrome.cookies.remove({url: "http://" + CF_CAPTCHA_DOMAIN, name: CF_CLEARANCE_COOKIE});
-        } else if (cookieName == CF_CLEARANCE_COOKIE) {
+        if (cookieDomain == "." + CHL_CAPTCHA_DOMAIN // cookies have dots prepended
+            && cookieName == CHL_CLEARANCE_COOKIE) {
+            chrome.cookies.remove({url: "http://" + CHL_CAPTCHA_DOMAIN, name: CHL_CLEARANCE_COOKIE});
+        } else if (cookieName == CHL_CLEARANCE_COOKIE) {
             reloadTab(cookieDomain);
         }
     } else if (changeInfo.removed
-            && cookieName == CF_CLEARANCE_COOKIE
-            && cookieDomain != "." + CF_CAPTCHA_DOMAIN) {
+            && cookieName == CHL_CLEARANCE_COOKIE
+            && cookieDomain != "." + CHL_CAPTCHA_DOMAIN) {
         resetSpendVars();
     }
 });
@@ -647,5 +647,5 @@ function updateIcon(count) {
 }
 
 function isBypassHeader(header) {
-    return header.name.toLowerCase() == CF_BYPASS_SUPPORT && header.value == "1";
+    return header.name.toLowerCase() == CHL_BYPASS_SUPPORT && header.value == "1";
 }
