@@ -1,34 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="17234 13835 234 227">
-  <defs>
-    <style>
-      .cls-1 {
-        clip-path: url(#clip-Artboard_21);
-      }
-
-      .cls-2 {
-        fill: url(#linear-gradient);
-      }
-
-      .cls-3 {
-        fill: #fff;
-      }
-    </style>
-    <linearGradient id="linear-gradient" x1="1" x2="0" y2="1" gradientUnits="objectBoundingBox">
-      <stop offset="0" stop-color="#ffbd00"/>
-      <stop offset="1" stop-color="#ff7600"/>
-    </linearGradient>
-    <clipPath id="clip-Artboard_21">
-      <rect x="17234" y="13835" width="234" height="227"/>
-    </clipPath>
-  </defs>
-  <g id="Artboard_21" data-name="Artboard – 21" class="cls-1">
-    <rect class="cls-3" x="17234" y="13835" width="234" height="227"/>
-    <g id="Group_100" data-name="Group 100" transform="matrix(0.985, -0.174, 0.174, 0.985, 17233.74, 13892.946)">
-      <path id="Subtraction_11" data-name="Subtraction 11" class="cls-2" d="M-17199.992-13081.633h-168.016c-.266-13.87-10.354-25.153-22.49-25.153q-.252,0-.5.006v-120.072c.168,0,.336.007.5.007,12.137,0,22.227-11.284,22.49-25.154h168.016c.266,13.8,9.926,24.847,21.994,25.147v120.072c-12.068.3-21.729,11.346-21.994,25.146h0v0Z" transform="translate(17389.842 13241.801)"/>
-      <g id="Group_94" data-name="Group 94" transform="matrix(0.999, -0.035, 0.035, 0.999, -36.147, -10.614)">
-        <path id="Path_81" data-name="Path 81" class="cls-3" d="M114.328,74.662l.857-2.962c1.02-3.524.641-6.782-1.072-9.176a9.317,9.317,0,0,0-7.388-3.654L46.338,58.1a1.2,1.2,0,0,1-.95-.506,1.229,1.229,0,0,1-.129-1.09,1.609,1.609,0,0,1,1.4-1.072l60.947-.773c7.229-.331,15.056-6.2,17.8-13.352l3.476-9.082a2.1,2.1,0,0,0,.137-.772,2.04,2.04,0,0,0-.043-.429,39.694,39.694,0,0,0-76.319-4.1A17.863,17.863,0,0,0,24.647,45.64,25.373,25.373,0,0,0,.269,74.689a1.182,1.182,0,0,0,1.163,1.018l111.484.013c.011,0,.021,0,.032-.005A1.468,1.468,0,0,0,114.328,74.662Z" transform="translate(55.116 46.522)"/>
-        <path id="Path_82" data-name="Path 82" class="cls-3" d="M16.152,0c-.56,0-1.117.016-1.672.043A.934.934,0,0,0,14.218.1a.962.962,0,0,0-.608.641l-2.375,8.2c-1.02,3.524-.641,6.78,1.072,9.173a9.31,9.31,0,0,0,7.388,3.654l12.873.773a1.173,1.173,0,0,1,.918.5,1.226,1.226,0,0,1,.135,1.1,1.612,1.612,0,0,1-1.4,1.072l-13.376.773c-7.262.334-15.088,6.2-17.83,13.352L.048,41.858a.713.713,0,0,0,.635.967c.012,0,.023,0,.036,0H46.744a1.228,1.228,0,0,0,1.187-.886A33.031,33.031,0,0,0,16.152,0Z" transform="translate(173.409 79.413)"/>
-      </g>
-    </g>
-  </g>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 22.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 234 227" style="enable-background:new 0 0 234 227;" xml:space="preserve">
+<style type="text/css">
+	.st0{clip-path:url(#SVGID_2_);}
+	.st1{fill:url(#Subtraction_11_1_);}
+	.st2{fill:none;}
+	.st3{fill:none;stroke:#FFFFFF;stroke-width:8;}
+	.st4{fill:#FFFFFF;}
+</style>
+<g>
+	<defs>
+		<rect id="SVGID_1_" width="234" height="227"/>
+	</defs>
+	<clipPath id="SVGID_2_">
+		<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+	</clipPath>
+	<g id="Artboard_26" class="st0">
+		<g id="Group_100" transform="translate(-15459.261 11109.213) rotate(-9)">
+			
+				<linearGradient id="Subtraction_11_1_" gradientUnits="userSpaceOnUse" x1="17166.7129" y1="-8353.1484" x2="17165.7129" y2="-8354.1484" gradientTransform="matrix(210.3875 23.8788 33.322 -150.7657 -3316108 -1677789.25)">
+				<stop  offset="0" style="stop-color:#FFBD00"/>
+				<stop  offset="1" style="stop-color:#FF7600"/>
+			</linearGradient>
+			<path id="Subtraction_11" class="st1" d="M17188.3-8347.9h-168c-0.3-12.4-10.4-22.5-22.5-22.5c-0.2,0-0.3,0-0.5,0v-107.6
+				c0.2,0,0.3,0,0.5,0c12.1,0,22.2-10.1,22.5-22.5h168c0.1,12.2,9.8,22.1,22,22.5v107.6
+				C17198.1-8370.1,17188.4-8360.1,17188.3-8347.9z"/>
+		</g>
+		<g id="Rectangle_340" transform="translate(-15432 11118.263) rotate(-10)">
+			<path class="st2" d="M17150.1-8192.4h145c3.3,0,6,2.7,6,6v97c0,3.3-2.7,6-6,6h-145c-3.3,0-6-2.7-6-6v-97
+				C17144.1-8189.7,17146.7-8192.4,17150.1-8192.4z"/>
+			<path class="st3" d="M17150.1-8188.4h145c1.1,0,2,0.9,2,2v97c0,1.1-0.9,2-2,2h-145c-1.1,0-2-0.9-2-2v-97
+				C17148.1-8187.5,17148.9-8188.4,17150.1-8188.4z"/>
+		</g>
+		<path id="Path_512" class="st4" d="M104,104.9L82.2,112l18.8,12.9l0.1,22.9l18.3-14l21.8,6.9l-7.8-21.6l13.4-18.6l-22.7,0.7
+			l-13.7-18.7L104,104.9z"/>
+	</g>
+</g>
 </svg>
