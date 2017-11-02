@@ -9,8 +9,6 @@ The extension is compatible with Chrome and Firefox (v48+).
 ### Contents
 
   * [Stable releases](#stable-releases)
-  * [Main authors](#main-authors)
-  * [Other contributors](#other-contributors)
   * [Testing](#testing)
      * [Firefox](#firefox)
      * [Chrome](#chrome)
@@ -21,6 +19,8 @@ The extension is compatible with Chrome and Firefox (v48+).
         * [Issue response](#issue-response)
         * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
+  * [Team](#team)
+  * [Design](#design)
   * [Cryptography](#cryptography)
 
 ## Stable releases
@@ -28,18 +28,6 @@ The extension is compatible with Chrome and Firefox (v48+).
 Download the latest stable release of the extension:
 - [Chrome](https://chrome.google.com/webstore/detail/cloudflare-privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cloudflare-privacy-pass/)
-
-## Team
-
-- [Alex Davidson](https://alxdavids.xyz)
-- [Ian Goldberg](https://cs.uwaterloo.ca/~iang/)
-- [Nick Sullivan](https://github.com/grittygrease)
-- [George Tankersley](https://gtank.cc)
-- [Filippo Valsorda](https://github.com/filosottile)
-
-## Design
-
-- [Eric Tsai](https://github.com/eetom)
 
 ## Testing
 
@@ -208,9 +196,18 @@ Server response header used if errors occur when verifying the privacy pass.
 
 	`"CF-Chl-Bypass-Resp":"<error-resp>"`
 
+## Team
+
+- [Alex Davidson](https://alxdavids.xyz)
+- [Ian Goldberg](https://cs.uwaterloo.ca/~iang/)
+- [Nick Sullivan](https://github.com/grittygrease)
+- [George Tankersley](https://gtank.cc)
+- [Filippo Valsorda](https://github.com/filosottile)
+
+## Design
+
+- [Eric Tsai](https://github.com/eetom)
+
 ## Cryptography
 
 Cryptography is implemented using the elliptic-curve library [SJCL](https://github.com/bitwiseshiftleft/sjcl) and compression of points is done in accordance with the standard SEC1. This work uses the NIST standard P256 elliptic curve for performing operations. Third-party implementers should note that the outputs of the hash-to-curve, key derivation, and point encoding functions must match their Go equivalents exactly for interaction with our server implementation. More information about this will be provided when the edge implementation is open-sourced.
-
-
-
