@@ -29,16 +29,17 @@ Download the latest stable release of the extension:
 - [Chrome](https://chrome.google.com/webstore/detail/cloudflare-privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cloudflare-privacy-pass/)
 
-## Main authors
+## Team
 
-- [George Tankersley](https://github.com/gtank) (george.tankersley@gmail.com)
-- [Alex Davidson](https://github.com/alxdavids) (alex.davidson.92@gmail.com) 
+- [Alex Davidson](https://alxdavids.xyz)
+- [Ian Goldberg](https://cs.uwaterloo.ca/~iang/)
+- [Nick Sullivan](https://github.com/grittygrease)
+- [George Tankersley](https://gtank.cc)
+- [Filippo Valsorda](https://github.com/filosottile)
 
-## Other contributors
+## Design
 
-- [Nick Sullivan](https://github.com/grittygrease) (nick@cloudflare.com)
-- [Filippo Valsorda](https://github.com/filosottile) (hello@filippo.io)
-- [Eric Tsai](https://github.com/eetom) (etsai@cloudflare.com)
+- [Eric Tsai](https://github.com/eetom)
 
 ## Testing
 
@@ -93,19 +94,17 @@ We describe a generic workflow where a user attempts to visit multiple webpages 
 	- Browser arrives at challenge page (aka CAPTCHA) provided by the edge
 	- User solves CAPTCHA
 	- User sends CAPTCHA solution back to the edge
-	- Browser plugin generates N tokens (N=<100; N=30;) and cryptographically blinds them
+	- Browser plugin generates tokens (currently 30) and cryptographically blinds them
 	- The plugin adds an ['issue request'](#issuance-request) to the body of the request before it is sent
 	- The edge verifies the CAPTCHA solution and signs the tokens before returning them back to the client in the form of a ['issue response'](#issue-response)
-	- The plugin disassembles the response and stores the signed tokens for future use. It also reloads the origin webpage and gains access (e.g. sending a pass containing the token as below or a single-domain cookie given by the edge)
+	- The plugin disassembles and unblinds the response and stores the signed tokens for future use. It also reloads the origin webpage and gains access (e.g. sending a pass containing the token as below or a single-domain cookie given by the edge)
 
 - Redemption:
 	- User visits an origin and a CAPTCHA page is returned
 	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates a ['privacy pass'](#redemption-request) 
-	- The plugin unblinds the token on the pass and sends up a new request with a header `challenge-bypass-token`; with the value set to the value of the pass
-	- The edge verifies the redemption request<sup>1</sup> and checks that the pass has not been used before
+	- The plugin sets up a new HTTP request with a header `challenge-bypass-token`; with the value set to the value of the pass
+	- The edge verifies the redemption request and checks that the pass has not been used before
 	- If all is fine, the edge grants the user access to the origin
-
-<sup>1</sup> The validation is slightly different depending on the blinding scheme. In the VOPRF scheme the validation requires deriving a shared key and verifying a MAC over the pass and associated request data.
 
 ### Message formatting
 
@@ -142,7 +141,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - `<M>` and `<Z>` are base64 encoded compressed elliptic curve points 
 
-- `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2</sup>
+- `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2,3</sup>
 
 	```
 	{
@@ -153,6 +152,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 	```
 
 <sup>2</sup> Other [VRF implementations](https://datatracker.ietf.org/doc/draft-goldbe-vrf/?include_text=1) use different notation to us. We have tried to coincide as much as possible with these works.
+<sup>3</sup> Note that we send the server generated`M` and `Z` with the proof. During client proof verification, we recompute `M'` and `Z'` from the client's view of the signed tokens and check that `M == M'` and `Z == Z'`. 
 
 - `<Batch-DLEQ-Resp>`:
 	
@@ -174,15 +174,15 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 
 - `<path>` is the HTTP path of the original request.
 
-- `HMAC()` is a HMAC function that uses SHA256
+- `HMAC()` is a HMAC function that uses SHA256 as underlying hash function
 
-- `<derived-key>` is the derived key output by:
+- `<derived-key>` is the derived key (computed over `<data> = (<token> || <shared-point>)`) output by:
 	
-	`HMAC("hash_derive_key", <token>, <shared-point>)`
+	`HMAC("hash_derive_key", <data>)`
 
-- `<request-binding>` is the output of the following:
+- `<request-binding>` is the output (computed over `<data> = (<derived-key> || <host> || <path>)`) of the following:
 
-	`HMAC("hash_request_binding", <derived-key>, <host>, <path>)`
+	`HMAC("hash_request_binding", <data>)`
 
 - `<Redeem-JSON-struct>` (or privacy pass):
 

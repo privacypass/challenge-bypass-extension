@@ -13,8 +13,6 @@ The solution that we develop here is a protocol between a user, a challenger and
 
 ## Preliminaries
 
-- A signature on a message is a publicly verifiable authentication tag that certifies that the message has been signed by the holder of the private half of a public/private keypair.
-- A blind signature is a signature scheme where the contents of the message are obscured ("blinded") before signing, such that the signer does not know what it is signing. A party who knows how the message was obscured (the "blinding factor") can unblind both the message and the signature to produce a valid signature for the original message. The most widely-known example of a blind signature is Chaum's blind RSA scheme.
 - A message authentication code ("MAC") on a message is a keyed authentication tag that can be only be created and verified by the holder of the secret key.
 - A pseudorandom function is a function whose output cannot be efficiently distinguished from random output. This is a general class of functions; concrete examples include hashes and encryption algorithms.
 - An oblivious pseudorandom function ("OPRF") is a generalization of blind signatures. Per Jarecki, it's a two-party protocol between sender S and receiver R for securely computing a pseudorandom function `f_x(·)` on key `x` contributed by S and input `t` contributed by R, in such a way that receiver R learns only the value `f_x(t)` while sender S learns nothing from the interaction.
@@ -28,7 +26,7 @@ We detail a 'blind-signing' protocol written by the Privacy Pass team using an O
 
 Given a group setting and three hashes `H_1`, `H_2`, `H_3` we build a commitment to a random token using a secret key x held by the edge servers. `H_1` is a hash into the group and `H_2`, `H_3` are hashes to bitstrings `{0, 1}^λ` where `λ` is a security parameter (we use SHA256).
 
-We assume the edge has published a public key `Y = xG` for the current epoch (we use `H` instead in the code but `Y` to differentiate from the hash functions that we use). 
+We assume the edge has published a public key `Y = xG` for the current epoch and some long-term generator `G` (we use `H` instead in the code but `Y` here to differentiate from the hash functions that we use). Here we also the term 'user' synonymously with 'plugin' for operations that are carried out on the client-side.
 
 
 Token issuance looks like this:
@@ -47,9 +45,7 @@ Token issuance looks like this:
 
 7. User checks the proof `D` against the sent tokens and the previously-known key commitment `Y` to establish that the edge is using a consistent key.
 
-8. User unblinds `Z` to calculate `N = (-r)Z = xT` and stores `(t, N)`
-
-Now both the edge and the user can calculate `H_2(t, N)` as a shared key.
+8. User unblinds `Z` to calculate `N = (1/r)Z = xT` and stores `(t, N)`
 
 
 Redemption looks like this:
@@ -79,7 +75,7 @@ In the current protocol, "request binding data" is the Host header and requested
 
 In issuance step (5.) above, we call for a zero-knowledge proof of the equality of a discrete logarithm (our edge key) with regard to two different generators.
 
-The protocol naturally provides `Z = xM` in the edge response. To ensure that the edge has not used unique `x` value to tag users, we require them to publish a public key, `Y = xG`. If `M`, `G` are orthogonal we can use a Chaum-Pedersen proof [CP93] to prove in zero knowledge that `log_G(Y) == log_M(Z)`. We note this as `DLEQ(Z/M == Y/G)`.
+The protocol naturally provides `Z = xM` in the edge response. To ensure that the edge has not used unique `x` value to tag users, we require them to publish a public key, `Y = xG`. Now we can use knowledge of `G,Y,M,Z` to construct a Chaum-Pedersen proof [CP93] proving in zero knowledge that `log_G(Y) == log_M(Z)` (i.e. that the same key is used for the pinned epoch as for 'signing' the tokens). We note this as `DLEQ(Z/M == Y/G)`.
 
 The proof follows the standard non-interactive Schnorr pattern. For a group of prime order `q` with orthogonal generators `M`, `G`, public key `Y`, and point `Z`:
 
@@ -112,8 +108,7 @@ The proof follows the standard non-interactive Schnorr pattern. For a group of p
 
    and checks that `c == c'`.
 
-If all users share a consistent view of the tuple `(Y, G)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `k`. One way to ensure this consistent view is to pin a key in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility in Appendix A. We currently use the former method but plan to migrate to the latter in the near future.
-
+If all users share a consistent view of the tuple `(Y, G)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js). 
 
 ## Batch Requests
 
@@ -172,28 +167,17 @@ What else the user needs to validate remains an open question.
 
 The major risk to the edge is that a malicious user might somehow acquire enough privacy passes to launch a service attack, for instance by paying people to solve CAPTCHAs and stockpile the resulting passes.
 
-We mitigate this in-protocol in two ways. First, by limiting the number of passes that a user can request per challenge solution. Secondly, and more effectively, by enabling fast key rotation by the edge. The edge declares an epoch for which passes will be valid, and at the end of that epoch rotates the key it uses to sign and validate passes. This has the effect of invalidating all previously-issued passes and requiring a stockpiling attacker to solve challenges close to the time they want to launch an attack, rather than waiting indefinitely.
+We mitigate this in-protocol in two ways. First, by limiting the number of passes that a user can request per challenge solution. Secondly, and more effectively, by enabling fast key rotation by the edge. The edge declares an epoch for which passes will be valid, and at the end of that epoch rotates the key it uses to sign and validate passes. This has the effect of invalidating all previously-issued passes and requiring a stockpiling attacker to solve challenges close to the time they want to launch an attack, rather than waiting indefinitely. In practice, we could also use a 'sliding window approach' so that tokens from the last epoch are not immediately invalidated, this will make epoch transitions smoother for clients. Note here though that we leak a bit of anonymity with respect to the set of clients that are using tokens signed by one of the keys that are valid.
 
-The process of key rotation is simple: the edge generates a new private key and, via some appropriately public process, a fresh generator `G`. Its public key is then `Y = kG`, which it publishes as `(Y, G)` or just `Y` (see Appendix A).
+The process of key rotation is simple: the edge generates a new private key and, via some appropriately public process, a fresh generator `G` (we can also use a fixed generator). The public key is then computed as `Y = xG`, and the pair `(Y, G)` or just `Y` (see [below](#tor-specific-public-key-publication)) is then published.
 
 We mitigate this risk out-of-protocol by applying further arbitrary processing to the requests (for instance, using a WAF or rate limiting) such that even an attacker in possession of many passes cannot effectively damage the origins.
 
-## Appendix A: Tor-specific public key publication
+#### Tor-specific public key publication
 
 A better way to publish H is to run a long-lived Tor relay with the public key placed in some of the descriptor fields. The descriptor will be included in the Tor network consensus and thus queryable by any Tor client with control port access - which includes Tor Browser. The descriptor is signed and addressed by a public key under our control that will develop a reputation weighting in the consensus over time. This gives us a reasonably trusted publication mechanism that, by protocol necessity, provides a consistent view to all participants in the Tor network while allowing us to update the values at any time.
 
 In this scheme, client software need only pin a Tor relay fingerprint and the challenger can rotate keys as often as necessary to mitigate stockpiling problems.
-
-We can further reduce the bookkeeping burden on clients while increasing the trustworthiness of our public keys by deriving the public key generator G from the consensus shared randomness values.
-
-
-## Appendix B: Benefits vs blind RSA
-
-- Simpler, faster primitives
-- 10x savings in pass size (~256 bits using P-256 instead of ~2048)
-- The only thing edge to manage is a private scalar. No certificates.
-- No need for public-key encryption at all, since the derived shared key used to calculate each MAC is never transmitted and cannot be found from passive observation without knowledge of the edge key or the user's blinding factor.
-- Easier key rotation. Instead of managing certificates pinned in TBB and submitted to CT, we can use the DLEQ proofs to allow users to positively verify they're in the same anonymity set with regard to k as everyone else.
 
 ## References
 
