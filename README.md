@@ -4,7 +4,9 @@ The Privacy Pass extension allows a user to bypass internet challenge pages on w
 
 The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md). The protocol has received extensive review and testing, but this extension is a work in progress. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
-The extension is compatible with Chrome and Firefox (v48+).
+Privacy Pass is currently supported by Cloudflare to allow users to redeem validly signed tokens instead of completing CAPTCHA solutions. Clients receive 30 signed tokens for each CAPTCHA that is initially solved.
+
+The extension is compatible with [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/) (v48+).
 
 ### Contents
 
