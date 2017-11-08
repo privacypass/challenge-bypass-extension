@@ -26,8 +26,8 @@ The extension is compatible with Chrome and Firefox (v48+).
 ## Stable releases
 
 Download the latest stable release of the extension:
-- [Chrome](https://chrome.google.com/webstore/detail/cloudflare-privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cloudflare-privacy-pass/)
+- [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
+- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 
 ## Testing
 
