@@ -112,7 +112,7 @@ If all users share a consistent view of the tuple `(G, Y)` for each key epoch, t
 
 ## Batch Requests
 
-In practice, the issuance protocol operates over sets of tokens rather than just one. A system parameter, `m`, determines how many tokens a user is allowed to request per valid CAPTCHA solution. Consequently, users generate `(t_1, t_2, ... , t_m)` and `(r_1, r_2, ... , r_m)`; send `M1, M_2, ... , M_m)` to the edge; and receive `(Z_1, Z_2 ... , Z_m)` in response.
+In practice, the issuance protocol operates over sets of tokens rather than just one. A system parameter, `m`, determines how many tokens a user is allowed to request per valid CAPTCHA solution. Consequently, users generate `(t_1, t_2, ... , t_m)` and `(r_1, r_2, ... , r_m)`; send `M_1, M_2, ... , M_m)` to the edge; and receive `(Z_1, Z_2 ... , Z_m)` in response.
 
 Generating an independent proof of equality for each point implies excess overhead in both computation and bandwidth consumption. Therefore, we employ a batch proof to show consistent key usage for an entire set of tokens at once.  The proof is a parallelized Schnorr protocol for the common-exponent case taken from [Hen14] and adapted for non-interactivity:
 
