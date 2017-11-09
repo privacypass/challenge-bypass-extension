@@ -104,11 +104,11 @@ The proof follows the standard non-interactive Schnorr pattern. For a group of p
 
 7. Verifier hashes
 
-        c' = H_3(G,H,M,Z,A',B')
+        c' = H_3(G,Y,M,Z,A',B')
 
    and checks that `c == c'`.
 
-If all users share a consistent view of the tuple `(Y, G)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js). 
+If all users share a consistent view of the tuple `(G, Y)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js). 
 
 ## Batch Requests
 
@@ -116,7 +116,7 @@ In practice, the issuance protocol operates over sets of tokens rather than just
 
 Generating an independent proof of equality for each point implies excess overhead in both computation and bandwidth consumption. Therefore, we employ a batch proof to show consistent key usage for an entire set of tokens at once.  The proof is a parallelized Schnorr protocol for the common-exponent case taken from [Hen14] and adapted for non-interactivity:
 
-Given `(G, Y, q)`; `(M_1,...,M_m)`, `(Z_1, ... ,Z_m)`; `Z_i = k(M_i)` for i = 1...m
+Given `(G, Y, q)`; `(M_1,...,M_m)`, `(Z_1, ... ,Z_m)`; `Z_i = x(M_i)` for i = 1...m
 
 1. Prover calculates a seed using a Fiat-Shamir transform:
 
@@ -131,15 +131,15 @@ Given `(G, Y, q)`; `(M_1,...,M_m)`, `(Z_1, ... ,Z_m)`; `Z_i = k(M_i)` for i = 1.
         M = (c_1*M_1) + (c_2*M_2) + ... + (c_m*M_m)
         Z = (c_1*Z_1) + (c_2*Z_2) + ... + (c_m*Z_m)
 
-4. Prover sends proof
+4. Prover sends proof<sup>1</sup>
 
         (c, s) <-- DLEQ(Z/M == Y/G)
 
 5. Verifier recalculates the PRNG seed from protocol state, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
 
-We can see why this works in a reduced case.
+<sup>1</sup>: In the actual instantiation of the protocol we also send the values of `M` and `Z` for both the batch and DLEQ proofs. The client then recomputes the values of `M` and `Z` themselves using the tokens in the response and checks that these values are equal before verifying the proof.
 
-For `(M_1, M_2)`, `(Z_1, Z_2)`, and `(c_1, c_2)`:
+We can see why this works in a reduced case for `(M_1, M_2)`, `(Z_1, Z_2)`, and `(c_1, c_2)`:
 
     Z_1 = x(M_1)
     Z_2 = x(M_2)

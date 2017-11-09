@@ -127,9 +127,11 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - `<signed-tokens>` is an array of compressed elliptic curve point, as above, that have been 'signed' by the edge. In the VOPRF model the 'signed' point is essentially a commitment to the edge's private key
 
-- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains base64 encodings of compressed elliptic curve points `G,Y,M,Z` along with response values `R` and `C` for streamlining the proof verification. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md) for more details.
+- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains base64 encodings of compressed elliptic curve points `G,Y,M[i],Z[i]` along with response values `R` and `C` for streamlining the proof verification. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md) for more details.
 
 - `<M>` and `<Z>` are base64 encoded compressed elliptic curve points 
+
+- `<C>` is the output of a PRNG over the values `G,Y,M[i],Z[i]`
 
 - `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2,3</sup>
 
@@ -138,11 +140,11 @@ Marshaled array used for sending signed tokens back to the user. This message is
 		"proof":"<proof>",
 		"M":"<M>",
 		"Z":"<Z>",
+		"C":"<C>"
 	}
 	```
-
 <sup>2</sup> Other [VRF implementations](https://datatracker.ietf.org/doc/draft-goldbe-vrf/?include_text=1) use different notation to us. We have tried to coincide as much as possible with these works.
-<sup>3</sup> Note that we send the server generated`M` and `Z` with the proof. During client proof verification, we recompute `M'` and `Z'` from the client's view of the signed tokens and check that `M == M'` and `Z == Z'`. 
+<sup>3</sup> Note that we send the server generated`M` and `Z` with the proof. During client proof verification, we recompute `M'` and `Z'` from the client's view of the signed tokens and check that `M == M'` and `Z == Z'`before verifying. 
 
 - `<Batch-DLEQ-Resp>`:
 	
