@@ -426,6 +426,10 @@ function isBatchProofCompleteAndSane(bp, chkM, chkZ) {
             return false;
         }
     }
+
+    // [TODO]: Recompute the PRNG state using knowledge of the tokens that are received.
+    // Verification is not complete until this is done.
+    
     return true;
 }
 
