@@ -370,6 +370,7 @@ function parseIssueResponse(data, tokens) {
     })
 
     // Verify the DLEQ batch proof before handing back the usable points
+    // [TODO]: Recompute the PRNG state using knowledge of the tokens that are received
     if (!verifyBatchProof(batchProof, tokens, usablePoints)) {
         throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
     }

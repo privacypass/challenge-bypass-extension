@@ -1,6 +1,6 @@
 # Overview of protocol
 
-We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the [JKK14] with the addition of a batch NIZK proof.
+We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the [JKK14] with the addition of a batch NIZK proof. As mentioned before, support for DLEQ proof verification in the extension is still in development and is not considered completely consistent with the protocol description below.
 
 ## Notation 
 
@@ -135,9 +135,11 @@ Given `(G, Y, q)`; `(M_1,...,M_m)`, `(Z_1, ... ,Z_m)`; `Z_i = x(M_i)` for i = 1.
 
         (c, s) <-- DLEQ(Z/M == Y/G)
 
-5. Verifier recalculates the PRNG seed from protocol state, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
+5. Verifier recalculates the PRNG seed from protocol state<sup>2</sup>, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
 
-<sup>1</sup>: In the actual instantiation of the protocol we also send the values of `M` and `Z` for both the batch and DLEQ proofs. The client then recomputes the values of `M` and `Z` themselves using the tokens in the response and checks that these values are equal before verifying the proof.
+<sup>1</sup>In the actual instantiation of the protocol we also send the values of `M` and `Z` for both the batch and DLEQ proofs. The client then recomputes the values of `M` and `Z` themselves using the tokens in the response and checks that these values are equal before verifying the proof.
+
+<sup>2</sup>The extension does not recompute the PRNG state currently, the value sent by the server is sent instead. Until this is done we consider the verification of batch DLEQ proofs by the extension to still be in beta.
 
 We can see why this works in a reduced case for `(M_1, M_2)`, `(Z_1, Z_2)`, and `(c_1, c_2)`:
 
