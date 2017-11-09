@@ -173,6 +173,13 @@ The process of key rotation is simple: the edge generates a new private key and,
 
 We mitigate this risk out-of-protocol by applying further arbitrary processing to the requests (for instance, using a WAF or rate limiting) such that even an attacker in possession of many passes cannot effectively damage the origins.
 
+### Token exhaustion
+Privacy Pass uses a finite list of low-entropy characteristics to determine whether a token should be redeemed or not. In the case of Cloudflare CAPTCHAs, the extension looks for the presence of a HTTP response header and particular status code. Alternative methods that check the HTML tags of a challenge page could also be used. Unfortunately, this means that it is easy to recreate the characteristics that are required by the extension to sanction a redemption. 
+
+To view the attack at its most powerful, consider a sub-resource that manages to embed itself widely on many webpages with high visitation that is able to trigger token redemptions. Such a resource would be able to drain the extension of all its tokens by triggering redemptions until all the tokens were used. While it is unclear why such an attack would be useful, it is important to acknowledge that it is indeed possible to carry out and would thus render the usage of Privacy Pass useless if the sub-resource was especially prevalent.
+
+We mitigate this loosely by preventing token redemptions occurring for the same URL in quick succession (until some action has occurred such as the browser window closing or the tokens being cleared). This prevents a sub-resource from continually draining tokens after each spend, it also spreads out the redemptions considerably. While this does not prevent the attack from occurring outright, it makes it quite expensive to launch and also non-trivial to carry out. Notice that the sub-resource would have to schedule a page reload each time the extension is adjudged to have cleared the set of URLs that have been interacted with.
+
 #### Tor-specific public key publication
 
 A better way to publish H is to run a long-lived Tor relay with the public key placed in some of the descriptor fields. The descriptor will be included in the Tor network consensus and thus queryable by any Tor client with control port access - which includes Tor Browser. The descriptor is signed and addressed by a public key under our control that will develop a reputation weighting in the consensus over time. This gives us a reasonably trusted publication mechanism that, by protocol necessity, provides a consistent view to all participants in the Tor network while allowing us to update the values at any time.
