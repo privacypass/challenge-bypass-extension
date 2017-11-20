@@ -3,7 +3,7 @@
   "description": "Handles passes containing cryptographically blinded tokens for bypassing internet challenge.",
   "manifest_version": 2,
   "name": "Privacy Pass",
-  "version": "1.0",
+  "version": "1.0.1",
   "icons": {
     "48": "icons/ticket-48.png"
   },
@@ -14,7 +14,8 @@
         "scripts/config.js",
         "scripts/crypto.js",
         "scripts/tokens.js",
-        "scripts/background.js"
+        "scripts/background.js",
+        "scripts/keccak.js"
     ]
   },
 

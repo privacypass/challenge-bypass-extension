@@ -4,7 +4,7 @@ The Privacy Pass extension allows a user to bypass internet challenge pages on w
 
 The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md). 
 
-The protocol has received extensive review and testing, but this extension is a work in progress. In particular, *support for DLEQ verification is still in beta*, see Issue #2 for full details. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
+The protocol has received extensive review and testing, but this extension is a work in progress and we regard all components as beta releases. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
 Privacy Pass is currently supported by Cloudflare to allow users to redeem validly signed tokens instead of completing CAPTCHA solutions. Clients receive 30 signed tokens for each CAPTCHA that is initially solved.
 
@@ -129,24 +129,16 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - `<signed-tokens>` is an array of compressed elliptic curve point, as above, that have been 'signed' by the edge. In the VOPRF model the 'signed' point is essentially a commitment to the edge's private key
 
-- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains base64 encodings of compressed elliptic curve points `G,Y,M[i],Z[i]` along with response values `R` and `C` for streamlining the proof verification. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md) for more details.
+- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains response values `R` and `C` for verifying that the key used in signing is the same as the key stored in the commitment files. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md) for more details.
 
-- `<M>` and `<Z>` are base64 encoded compressed elliptic curve points 
-
-- `<C>` is the output of a PRNG over the values `G,Y,M[i],Z[i]`
-
-- `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2,3</sup>
+- `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2</sup>
 
 	```
 	{
 		"proof":"<proof>",
-		"M":"<M>",
-		"Z":"<Z>",
-		"C":"<C>"
 	}
 	```
 <sup>2</sup> Other [VRF implementations](https://datatracker.ietf.org/doc/draft-goldbe-vrf/?include_text=1) use different notation to us. We have tried to coincide as much as possible with these works.
-<sup>3</sup> Note that we send the server generated`M` and `Z` with the proof. During client proof verification, we recompute `M'` and `Z'` from the client's view of the signed tokens and check that `M == M'` and `Z == Z'`before verifying. 
 
 - `<Batch-DLEQ-Resp>`:
 	
