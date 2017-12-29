@@ -19,6 +19,7 @@
 
 var p256 = sjcl.ecc.curves.c256;
 const BATCH_PROOF_PREFIX = "batch-proof=";
+const UNCOMPRESSED_POINT_PREFIX = "04";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
@@ -444,6 +445,6 @@ function getBigNumFromHex(hex) {
 // PRNG encode point
 function encodePointForPRNG(point) {
     let hex = sjcl.codec.hex.fromBits(point.toBits());
-    let newHex = "04" + hex;
+    let newHex = UNCOMPRESSED_POINT_PREFIX + hex;
     return sjcl.codec.hex.toBits(newHex);
 }
