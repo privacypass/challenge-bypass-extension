@@ -43,7 +43,7 @@ let redirectCount = new Map();
 // Set if a spend has occurred for a req id
 let spendId = new Map();
 
-// used for checking if we've already spent a token for this host to 
+// used for checking if we've already spent a token for this host to
 // prevent token DoS attacks
 let spentHosts = new Map();
 
@@ -67,7 +67,7 @@ let spentTab = new Map();
 
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
-    - web navigation listener sets the target url for the execution 
+    - web navigation listener sets the target url for the execution
     - cookie listener clears cookie for captcha.website to enable getting more
     tokens in the future
 */
@@ -370,8 +370,7 @@ function parseIssueResponse(data, tokens) {
     })
 
     // Verify the DLEQ batch proof before handing back the usable points
-    // [TODO]: Recompute the PRNG state using knowledge of the tokens that are received
-    if (!verifyBatchProof(batchProof, tokens, usablePoints)) {
+    if (!verifyProof(batchProof, tokens, usablePoints)) {
         throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
     }
 
@@ -600,7 +599,7 @@ function getTabId(tabId) {
     return id;
 }
 
-// Checks whether a transition is deemed to be bad to prevent loading subresources 
+// Checks whether a transition is deemed to be bad to prevent loading subresources
 // in address bar
 function badTransition(href, type, transitionType) {
     if (httpsRedirect[href]) {

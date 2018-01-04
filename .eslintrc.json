@@ -26,8 +26,9 @@
         "GenerateNewTokens": true,
         "BuildIssueRequest": true,
         "BuildRedeemHeader": true,
-        "verifyBatchProof": true,
-        "ProdCommitmentConfig": true
+        "verifyProof": true,
+        "ProdCommitmentConfig": true,
+        "createShake256": true
     },
     "rules": {
         "no-trailing-spaces": "error",
