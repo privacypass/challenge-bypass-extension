@@ -28,7 +28,12 @@
         "BuildRedeemHeader": true,
         "verifyProof": true,
         "ProdCommitmentConfig": true,
-        "createShake256": true
+        "PPConfigs": true,
+        "CHL_BYPASS_SUPPORT": true,
+        "CHL_BYPASS_RESPONSE": true,
+        "ACTIVE_CONFIG": true,
+        "createShake256": true,
+        "setActiveCommitments": true
     },
     "rules": {
         "no-trailing-spaces": "error",

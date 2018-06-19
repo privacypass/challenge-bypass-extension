@@ -17,12 +17,14 @@ The extension is compatible with [Chrome](https://chrome.google.com/webstore/det
      * [Firefox](#firefox)
      * [Chrome](#chrome)
   * [Plugin overview](#plugin-overview)
+	 * [Configuration](#configuration)
      * [Workflow](#workflow)
      * [Message formatting](#message-formatting)
         * [Issuance request](#issuance-request)
         * [Issue response](#issue-response)
         * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
+  * [Integrating with Privacy Pass](integrating-with-privacy-pass)
   * [Team](#team)
   * [Design](#design)
   * [Cryptography](#cryptography)
@@ -57,7 +59,7 @@ Same as above, except the extension should be loaded at `chrome://extensions` in
 
 - background.js: Processes the necessary interactions with web-pages directly. Sends messages and processes edge replies
 
-- config.js: Config file containing commitments to edge private key for checking DLEQ proofs
+- config.js: Config file that decides the workflow for Privacy Pass
 
 - content.js: (currently unused) Content script for reading page html
 
@@ -70,6 +72,10 @@ Same as above, except the extension should be loaded at `chrome://extensions` in
 - In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. 
 
 - A pass refers to the object that the extension sends to the edge in order to bypass an internet challenge. We will safely assume throughout that challenges manifest themselves as CAPTCHAs
+
+### Configuration
+
+The configuration of Privacy Pass is now determined by the values set in config.js. We have currently have an example configuration along with one that is used for bypassing Cloudflare CAPTCHAs. Integrating with Privacy Pass essentially amounts to writing a new configuration. We provide documentation of each of the config options in [CONFIG.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/CONFIG.md).
 
 ### Workflow
 
@@ -193,6 +199,10 @@ Server response header used if errors occur when verifying the privacy pass.
 - Header: 
 
 	`"CF-Chl-Bypass-Resp":"<error-resp>"`
+
+## Integrating with Privacy Pass
+
+Privacy Pass is completely open-source, integrations can be handled by writing a new config to be placed in config.js. See [Configuration](#configuration) for more details.
 
 ## Team
 

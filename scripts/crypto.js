@@ -2,6 +2,7 @@
  * This implements a 2HashDH-based token scheme using the SJCL ecc package.
  *
  * @author: George Tankersley
+ * @author: Alex Davidson
  */
 
 /*global sjcl*/
@@ -15,6 +16,7 @@
 /* exported signPoint */
 /* exported unblindPoint */
 /* exported verifyProof */
+/* exported setActiveCommitments */
 "use strict";
 
 var p256 = sjcl.ecc.curves.c256;
@@ -25,8 +27,9 @@ const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
 
-let activeG = ProdCommitmentConfig.G;
-let activeH = ProdCommitmentConfig.H;
+let ACTIVE_CONFIG = PPConfigs[0];
+let activeG = ACTIVE_CONFIG["commitments"]["prod"]["G"];
+let activeH = ACTIVE_CONFIG["commitments"]["prod"]["H"];
 
 // Performs the scalar multiplication k*P
 //
@@ -447,4 +450,9 @@ function encodePointForPRNG(point) {
     let hex = sjcl.codec.hex.fromBits(point.toBits());
     let newHex = UNCOMPRESSED_POINT_PREFIX + hex;
     return sjcl.codec.hex.toBits(newHex);
+}
+
+function setActiveCommitments() {
+    activeG = ACTIVE_CONFIG["commitments"]["prod"]["G"];
+    activeH = ACTIVE_CONFIG["commitments"]["prod"]["H"];
 }
