@@ -15,6 +15,7 @@ var URL = window.URL;
 */
 const EXAMPLE_HREF = "https://www.example.com";
 const beforeSendHeaders = workflow.__get__('beforeSendHeaders');
+const setConfig = workflow.__get__('setConfig');
 const b64EncodedToken = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOltbMjQsNjIsNTYsMTAyLDc2LDEyNywyMDEsMTExLDE2MSwyMTgsMjQ5LDEwOSwzNCwxMjIsMTYwLDIxOSw5MywxODYsMjQ2LDEyLDE3OCwyNDksMjQxLDEwOCw2OSwxODEsNzcsMTQwLDE1OCwxMywyMTYsMTg0XSxbMjI3LDExLDk1LDIxNSwxNSwyMTUsMTM1LDI0LDEzNywxNzQsMjMzLDgsODYsMTQ4LDEzMCwxOTEsNDYsMTgzLDkyLDEwOCwxNjAsMjQ5LDE1OCwyMzEsMTU5LDIxOCwyNTQsODAsMTQ4LDQ0LDI5LDI1NF1dfQ==";
 let localStorage;
 let details;
@@ -26,8 +27,8 @@ let setSpendFlag;
 beforeEach(() => {
     let storedTokens = `[ { "token":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"token":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
     localStorage = {
-        "cf-bypass-tokens": storedTokens,
-        "cf-token-count": 2
+        "bypass-tokens-1": storedTokens,
+        "bypass-tokens-count-1": 2
     }
     details = {
         method: "GET",
@@ -37,12 +38,20 @@ beforeEach(() => {
     };
     url = new URL(EXAMPLE_HREF);
     setMockFunctions();
+    setConfig(1); // set the CF config
+
 });
 
 /**
 * Tests
 */
 describe("redemptions are not attempted", () => {
+    test("redemption is off", () => {
+        workflow.__set__("DO_REDEEM", false);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
     test("spend flag not set", () => {
         let redeemHdrs = beforeSendHeaders(details, url);
         expect(redeemHdrs.cancel).toBeFalsy();
@@ -79,6 +88,15 @@ describe("redemptions are not attempted", () => {
         expect(redeemHdrs.cancel).toBeFalsy();
         expect(redeemHdrs.requestHeaders).toBeFalsy();
     });
+    test("redemption method is not reload", () => {
+        setSpendFlag(url.host, true);
+        setSpentHosts(url.host, 0);
+        setSpentUrl(url.href, false);
+        workflow.__set__("REDEEM_METHOD", "invalid");
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
     test("no token to spend", () => {
         localStorage = {
             "cf-bypass-tokens": `{}`,
@@ -86,6 +104,7 @@ describe("redemptions are not attempted", () => {
         };
         setSpentUrl(url.href, false);
         setSpendFlag(url.host, true);
+        workflow.__set__("REDEEM_METHOD", "reload");
         let redeemHdrs = beforeSendHeaders(details, url);
         expect(redeemHdrs.cancel).toBeFalsy();
         expect(redeemHdrs.requestHeaders).toBeFalsy();
@@ -97,14 +116,17 @@ describe("redemption attempted", () => {
     test("redemption header added", () => {
         setSpendFlag(url.host, true);
         setSpentUrl(url.href, false);
+        workflow.__set__("REDEEM_METHOD", "reload");
         let redeemHdrs = beforeSendHeaders(details, url);
         let reqHeaders = redeemHdrs.requestHeaders;
-        expect(reqHeaders).toBeTruthy();
-        expect(reqHeaders[0].name == "challenge-bypass-token").toBeTruthy();
-        expect(reqHeaders[0].value == b64EncodedToken).toBeTruthy();
+        expect(getSpendFlag(url.host)).toBeFalsy();
         expect(getSpendId([details.requestId])).toBeTruthy();
         expect(getSpentUrl([url.href])).toBeTruthy();
         expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
+        expect(reqHeaders).toBeTruthy();
+        let headerName = workflow.__get__("HEADER_NAME");
+        expect(reqHeaders[0].name == headerName).toBeTruthy();
+        expect(reqHeaders[0].value == b64EncodedToken).toBeTruthy();
     });
 });
 

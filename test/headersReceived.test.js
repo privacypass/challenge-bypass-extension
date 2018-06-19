@@ -13,10 +13,14 @@ var URL = window.URL;
 const EXAMPLE_HREF = "https://www.example.com";
 const processHeaders = workflow.__get__('processHeaders');
 const isBypassHeader = workflow.__get__('isBypassHeader');
+const setConfig = workflow.__get__('setConfig');
 const updateIconMock = jest.fn();
 function getMock() {
     return 1;
 }
+beforeEach(() => {
+    setConfig(1); // set the CF config
+});
 
 /**
 * Tests
@@ -76,10 +80,11 @@ describe("check redemption attempt conditions", () => {
     const CHL_BYPASS_SUPPORT  = "cf-chl-bypass";
     let url;
     let details;
-    let header = {name: CHL_BYPASS_SUPPORT, value: "1"};
+    let header;
     // We have to set mock functions for testing
     setMockFunctions();
     beforeEach(() => {
+        header = {name: CHL_BYPASS_SUPPORT, value: "1"};
         details = {
             statusCode: 403,
             responseHeaders: [header]
@@ -96,7 +101,7 @@ describe("check redemption attempt conditions", () => {
     test("redemption is attempted on general domains", () => {
         let fired = processHeaders(details, url);
         expect(fired).toBeTruthy;
-        expect(updateIconMock).toBeCalledTimes(1);
+        expect(updateIconMock).toBeCalledTimes(3);
     });
     
     test("not fired if status code != 403", () => {
@@ -109,7 +114,111 @@ describe("check redemption attempt conditions", () => {
         getMock = function() { return 0; };
         workflow.__set__("get", getMock);
         processHeaders(details, url);
-        expect(updateIconMock).toBeCalledTimes(2);
+        expect(updateIconMock).toBeCalledTimes(4);
+    });
+
+    describe("SPEND_IFRAME setting", () => {
+        beforeEach(() => {
+            getMock = function() { return 2; };
+            workflow.__set__("get", getMock);
+        });
+
+        test("not set", () => {
+            workflow.__set__("SPEND_IFRAME", false);
+            let fired = processHeaders(details, url);
+            expect(fired).toBeTruthy;
+            expect(updateIconMock).toBeCalledTimes(3);
+        });
+
+        test("set and iframe", () => {
+            workflow.__set__("SPEND_IFRAME", true);
+            workflow.__set__("iframe", true);
+            let fired = processHeaders(details, url);
+            expect(fired).toBeTruthy;
+            expect(updateIconMock).toBeCalledTimes(3);
+        });
+
+        test("set and not iframe", () => {
+            workflow.__set__("SPEND_IFRAME", true);
+            workflow.__set__("iframe", false);
+            let fired = processHeaders(details, url);
+            expect(fired).toBeTruthy;
+            expect(updateIconMock).not.toBeCalled;
+        });
+    });
+
+    describe("setting of readySign", () => {
+        beforeEach(() => {
+            getMock = function() { return 0; };
+            workflow.__set__("get", getMock);
+        });
+
+        describe("signing enabled", () => {
+            beforeEach(() => {
+                workflow.__set__("DO_SIGN", true);
+                workflow.__set__("readySign", false);
+            });
+
+            test("no tokens", () => {
+                let fired = processHeaders(details, url);
+                expect(fired).toBeFalsy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeTruthy();
+                expect(updateIconMock).toBeCalledWith("!");
+            });
+
+            test("not activated", () => {
+                header = { name: "Different-header-name", value: "1" };
+                details.responseHeaders = [header];
+                let fired = processHeaders(details, url);
+                expect(fired).toBeFalsy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeFalsy();
+            });
+
+            test("tokens > 0", () => {
+                getMock = function() { return 2; };
+                workflow.__set__("get", getMock);
+                let fired = processHeaders(details, url);
+                expect(fired).toBeTruthy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeFalsy();
+            });
+
+            test("tokens > 0 but captcha.website", () => {
+                url = new URL("https://captcha.website");
+                getMock = function() { return 2; };
+                workflow.__set__("get", getMock);
+                let fired = processHeaders(details, url);
+                expect(fired).toBeFalsy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeTruthy();
+            });
+
+            test("redemption off", () => {
+                workflow.__set__("DO_REDEEM", false);
+                let fired = processHeaders(details, url);
+                expect(fired).toBeFalsy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeTruthy();
+            });
+        });
+
+        describe("signing disabled", () => {
+            beforeEach(() => {
+                workflow.__set__("readySign", false);
+                workflow.__set__("DO_SIGN", false);
+            });
+    
+            test("signing is not activated", () => {
+                header = { name: "Different-header-name", value: "1" };
+                details.responseHeaders = [header];
+                let fired = processHeaders(details, url);
+                expect(fired).toBeFalsy();
+                let readySign = workflow.__get__("readySign");
+                expect(readySign).toBeFalsy();
+            });
+        });
     });
 });
 

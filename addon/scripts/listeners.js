@@ -3,7 +3,10 @@
  *
  * @author: Alex Davidson
  */
+/* exported LISTENER_URLS */
 "use strict";
+
+let LISTENER_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
 
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
@@ -14,7 +17,7 @@
 
 chrome.webRequest.onCompleted.addListener(
     function(details) { handleCompletion(details); },
-    { urls: ["<all_urls>"] },
+    { urls: [LISTENER_URLS] },
 );
 
 chrome.webRequest.onBeforeRedirect.addListener(
@@ -23,7 +26,7 @@ chrome.webRequest.onBeforeRedirect.addListener(
         let newUrl = new URL(details.redirectUrl);
         processRedirect(details, oldUrl, newUrl);
     },
-    { urls: ["<all_urls>"] },
+    { urls: [LISTENER_URLS] },
 );
 
 // Watches headers for CF-Chl-Bypass and CF-Chl-Bypass-Resp headers.
@@ -32,7 +35,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         let url = new URL(details.url);
         processHeaders(details, url);
     },                 // callback
-    { urls: ["<all_urls>"] },       // targeted pages
+    { urls: [LISTENER_URLS] },       // targeted pages
     ["responseHeaders", "blocking"] // desired traits
 );
 
@@ -42,7 +45,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         let url = new URL(details.url);
         return beforeSendHeaders(details, url);
     },        // callback
-    { urls: ["<all_urls>"] }, // targeted pages
+    { urls: [LISTENER_URLS] }, // targeted pages
     ["requestHeaders", "blocking"]
 );
 
@@ -56,7 +59,7 @@ chrome.webRequest.onBeforeRequest.addListener(
         }
         return {redirectUrl: "javascript:void(0)"};
     },            // callback
-    { urls: ["<all_urls>"] }, // targeted pages
+    { urls: [LISTENER_URLS] }, // targeted pages
     ["blocking"]              // desired traits
 );
 

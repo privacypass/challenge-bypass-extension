@@ -2,13 +2,22 @@
 
 The Privacy Pass extension allows a user to bypass internet challenge pages on websites supporting Privacy Pass using a 'blind signature' protocol. This extension alleviates the burden of completing large numbers of internet challenges (such as CAPTCHAs) for honest users by allowing tokens to be gained for an initial solution. These tokens can be spent by the extension when future challenges are displayed to prevent human interaction. The 'blind' capability of the protocol that we use means that tokens that are issued by a server cannot be linked to tokens that are later redeemed. An example server implementation that is compatible with this extension is available [here](https://github.com/privacypass/challenge-bypass-server).
 
-The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/docs/PROTOCOL.md). 
+The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](docs/PROTOCOL.md). 
 
 The protocol has received extensive review and testing, but this extension is a work in progress and we regard all components as beta releases. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
 Privacy Pass is currently supported by Cloudflare to allow users to redeem validly signed tokens instead of completing CAPTCHA solutions. Clients receive 30 signed tokens for each CAPTCHA that is initially solved.
 
 The extension is compatible with [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/) (v48+).
+
+## Quickstart
+
+```
+git clone https://github.com/privacypass/challenge-bypass-extension.git && cd challenge-bypass-extension
+yarn install
+yarn build
+yarn test
+```
 
 ### Contents
 
@@ -17,12 +26,14 @@ The extension is compatible with [Chrome](https://chrome.google.com/webstore/det
      * [Firefox](#firefox)
      * [Chrome](#chrome)
   * [Plugin overview](#plugin-overview)
+	 * [Configuration](#configuration)
      * [Workflow](#workflow)
      * [Message formatting](#message-formatting)
         * [Issuance request](#issuance-request)
         * [Issue response](#issue-response)
         * [Redemption request (privacy pass)](#redemption-request-privacy-pass)
         * [Redemption response](#redemption-response)
+  * [Integrating with Privacy Pass](integrating-with-privacy-pass)
   * [Team](#team)
   * [Design](#design)
   * [Cryptography](#cryptography)
@@ -37,11 +48,11 @@ Download the latest stable release of the extension:
 
 ## Development
 
-- `git clone git@github.com:privacypass/challenge-bypass-extension.git`
+- `git clone https://github.com/privacypass/challenge-bypass-extension.git`
 - To build a new version of the extension: `yarn build`.
 - To run integration tests: `yarn test`.
 - To prepare a new distribution: `yarn dist`.
-- For linting: `cd addon && eslint .`
+- For linting: `yarn lint`
 - To test in the browser see below.
 
 ### Firefox
@@ -71,7 +82,7 @@ The following script files are used for the workflow of Privacy Pass and are fou
 
 - browserUtils.js: General utility functions that are used by background.js. We separate them so that we separate the specific browser API calls from the actual workflow.
 
-- config.js: Config file containing commitments to edge private key for checking DLEQ proofs
+- config.js: Config file that decides the workflow for Privacy Pass
 
 - content.js: (currently unused) Content script for reading page html
 
@@ -86,6 +97,10 @@ The following script files are used for the workflow of Privacy Pass and are fou
 Files that are used for testing are found in `test/`. These test files use their own compiled test file in `compiled/test_compiled.js`.
 
 In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. A pass refers to the object that the extension sends to the edge in order to bypass an internet challenge. We will safely assume throughout that challenges manifest themselves as CAPTCHAs
+
+### Configuration
+
+The configuration of Privacy Pass is now determined by the values set in config.js. We have provided an example configuration, along with one that is used for bypassing Cloudflare CAPTCHAs. Integrating with Privacy Pass essentially amounts to writing a new configuration. We provide documentation of each of the config options in [CONFIG.md](docs/CONFIG.md).
 
 ### Workflow
 
@@ -145,7 +160,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - `<signed-tokens>` is an array of compressed elliptic curve point, as above, that have been 'signed' by the edge. In the VOPRF model the 'signed' point is essentially a commitment to the edge's private key
 
-- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains response values `R` and `C` for verifying that the key used in signing is the same as the key stored in the commitment files. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/docs/PROTOCOL.md) for more details.
+- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains response values `R` and `C` for verifying that the key used in signing is the same as the key stored in the commitment files. See [PROTOCOL.md](docs/PROTOCOL.md) for more details.
 
 - `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2</sup>
 
@@ -209,6 +224,10 @@ Server response header used if errors occur when verifying the privacy pass.
 - Header: 
 
 	`"CF-Chl-Bypass-Resp":"<error-resp>"`
+
+## Integrating with Privacy Pass
+
+Privacy Pass is completely open-source, integrations can be handled by writing a new config to be placed in config.js. See [Configuration](#configuration) for more details.
 
 ## Team
 

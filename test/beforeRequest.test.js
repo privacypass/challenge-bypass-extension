@@ -23,6 +23,7 @@ const sendXhrSignReq = workflow.__get__('sendXhrSignReq');
 const BuildIssueRequest = workflow.__get__('BuildIssueRequest');
 const getBigNumFromBytes = workflow.__get__('getBigNumFromBytes');
 const sec1DecodePointFromBytes = workflow.__get__('sec1DecodePointFromBytes');
+const setConfig = workflow.__get__('setConfig');
 let localStorage;
 let details;
 let url;
@@ -108,8 +109,8 @@ let _xhr;
 beforeEach(() => {
     let storedTokens = `[ { "token":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"token":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
     localStorage = {
-        "cf-bypass-tokens": storedTokens,
-        "cf-token-count": 2
+        "bypass-tokens-1": storedTokens,
+        "bypass-tokens-count-1": 2
     }
     details = {
         method: "GET",
@@ -122,12 +123,25 @@ beforeEach(() => {
     setMockFunctions();
     setXHR(_xhr);
     setTimeSinceLastResp(Date.now());
+    setConfig(1); // set the CF config
+    workflow.__set__("readySign", true);
+    workflow.__set__("TOKENS_PER_REQUEST", 3); // limit the # of tokens for tests
 });
 
 /**
 * Tests
 */
 describe("signing request is cancelled", () => {
+    test("signing off", () => {
+        workflow.__set__("DO_SIGN", false);
+        let b = beforeRequest(details, url);
+        expect(b).toBeFalsy();
+    });
+    test("signing not activated", () => {
+        workflow.__set__("readySign", false);
+        let b = beforeRequest(details, url);
+        expect(b).toBeFalsy();
+    });
     test("url is not captcha request", () => {
         let b = beforeRequest(details, url);
         expect(b).toBeFalsy();
@@ -153,10 +167,36 @@ describe("signing request is cancelled", () => {
 });
 
 describe("test XHR request", () => {
+    const TOKEN_COUNT_STR = "bypass-tokens-count-1";
+    
+    test("incorrect config id", () => {
+        function tryRun() {
+            workflow.__set__("CONFIG_ID", 3);
+            beforeRequest(details, newUrl);
+        }
+        let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+        expect(tryRun).toThrowError("Incorrect config ID");
+    });
+
     test("test that true is returned", () => {
         let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
         let b = beforeRequest(details, newUrl);
         expect(b).toBeTruthy();
+    });
+
+    test("invalid signature response format does not sign", () => {
+        setTimeSinceLastResp(0); // reset the variables
+        workflow.__set__("SIGN_RESPONSE_FMT", "bad_fmt");
+        _xhr = mockXHRGood;
+        setXHR(_xhr);
+        let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+        let b = beforeRequest(details, newUrl);
+        expect(b).toBeTruthy();
+        let xhr = b.xhr;
+        expect(xhr.onreadystatechange).toThrowError("invalid signature response format");
+        expect(xhr.body).toContain("blinded-tokens=");
+        expect(updateIconMock).toBeCalledTimes(2);
+        expect(updateBrowserTabMock).not.toBeCalled();
     });
 
     test("bad status does not sign", () => {
@@ -169,7 +209,7 @@ describe("test XHR request", () => {
         let xhr = b.xhr;
         xhr.onreadystatechange();
         expect(xhr.body).toContain("blinded-tokens=");
-        expect(updateIconMock).toBeCalledTimes(1);
+        expect(updateIconMock).toBeCalledTimes(2);
         expect(updateBrowserTabMock).not.toBeCalled();
     });
 
@@ -182,7 +222,7 @@ describe("test XHR request", () => {
         expect(b).toBeTruthy();
         let xhr = b.xhr;
         xhr.onreadystatechange();
-        expect(updateIconMock).toBeCalledTimes(1);
+        expect(updateIconMock).toBeCalledTimes(2);
         expect(updateBrowserTabMock).not.toBeCalled();
     });
 
@@ -193,10 +233,10 @@ describe("test XHR request", () => {
             xhr.onreadystatechange();
         };
         setTimeSinceLastResp(0); // reset the variables
-        setMock("cf-token-count", 400);
+        setMock(TOKEN_COUNT_STR, 400);
         let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
         expect(run).toThrowError("upper bound");
-        expect(updateIconMock).toBeCalledTimes(2);
+        expect(updateIconMock).toBeCalledTimes(3);
         expect(updateBrowserTabMock).not.toBeCalled();
     });
 
@@ -209,17 +249,18 @@ describe("test XHR request", () => {
                 tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
             }
             const request = BuildIssueRequest(tokens);
-            let xhr = sendXhrSignReq(details, newUrl, tokens, request); 
+            const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens}
+            let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId); 
             xhr.responseText = respText;
-            before = getMock("cf-token-count");
+            before = getMock(TOKEN_COUNT_STR);
             xhr.onreadystatechange();
-            after = getMock("cf-token-count");
+            after = getMock(TOKEN_COUNT_STR);
         };
         setTimeSinceLastResp(0); // reset the variables
-        setMock("cf-token-count", 0);
+        setMock(TOKEN_COUNT_STR, 0);
         let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
         expect(run).not.toThrow();
-        expect(updateIconMock).toBeCalledTimes(3);
+        expect(updateIconMock).toBeCalledTimes(4);
         expect(updateBrowserTabMock).toBeCalled();
         expect(after == before+3).toBeTruthy();
         expect(getSpendFlag(newUrl.host)).toBeTruthy();
@@ -234,17 +275,45 @@ describe("test XHR request", () => {
                 tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
             }
             const request = BuildIssueRequest(tokens);
-            let xhr = sendXhrSignReq(details, newUrl, tokens, request); 
+            const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens}
+            let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId); 
             xhr.responseText = respText;
-            before = getMock("cf-token-count");
+            before = getMock(TOKEN_COUNT_STR);
             xhr.onreadystatechange();
-            after = getMock("cf-token-count");
+            after = getMock(TOKEN_COUNT_STR);
         };
         setTimeSinceLastResp(0); // reset the variables
-        setMock("cf-token-count", 0);
+        setMock(TOKEN_COUNT_STR, 0);
         let newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
         expect(run).not.toThrow();
-        expect(updateIconMock).toBeCalledTimes(3);
+        expect(updateIconMock).toBeCalledTimes(4);
+        expect(updateBrowserTabMock).not.toBeCalled();
+        expect(after == before+3).toBeTruthy();
+        expect(getSpendFlag(newUrl.host)).toBeFalsy();
+    });
+
+    test("reloading off after sign", () => {
+        let before;
+        let after;
+        function run() { 
+            let tokens = [];
+            for (let i=0; i<testTokens.length; i++) {
+                tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
+            }
+            const request = BuildIssueRequest(tokens);
+            const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens}
+            let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId); 
+            xhr.responseText = respText;
+            before = getMock(TOKEN_COUNT_STR);
+            xhr.onreadystatechange();
+            after = getMock(TOKEN_COUNT_STR);
+        };
+        setTimeSinceLastResp(0); // reset the variables
+        setMock(TOKEN_COUNT_STR, 0);
+        workflow.__set__("RELOAD_ON_SIGN", false);
+        let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+        expect(run).not.toThrow();
+        expect(updateIconMock).toBeCalledTimes(4);
         expect(updateBrowserTabMock).not.toBeCalled();
         expect(after == before+3).toBeTruthy();
         expect(getSpendFlag(newUrl.host)).toBeFalsy();
@@ -259,10 +328,10 @@ describe("test XHR request", () => {
                 xhr.onreadystatechange();
             };
             setTimeSinceLastResp(0); // reset the variables
-            setMock("cf-token-count", 0);
+            setMock(TOKEN_COUNT_STR, 0);
             let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).toThrowError("signature response invalid");
-            expect(updateIconMock).toBeCalledTimes(1);
+            expect(updateIconMock).toBeCalledTimes(2);
             expect(updateBrowserTabMock).not.toBeCalled();
         });
         
@@ -274,10 +343,10 @@ describe("test XHR request", () => {
                 xhr.onreadystatechange();
             };
             setTimeSinceLastResp(0); // reset the variables
-            setMock("cf-token-count", 0);
+            setMock(TOKEN_COUNT_STR, 0);
             let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).toThrow();
-            expect(updateIconMock).toBeCalledTimes(1);
+            expect(updateIconMock).toBeCalledTimes(2);
             expect(updateBrowserTabMock).not.toBeCalled();
         });
 
@@ -290,10 +359,10 @@ describe("test XHR request", () => {
                     xhr.onreadystatechange();
                 };
                 setTimeSinceLastResp(0); // reset the variables
-                setMock("cf-token-count", 0);
+                setMock(TOKEN_COUNT_STR, 0);
                 let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrow();
-                expect(updateIconMock).toBeCalledTimes(1);
+                expect(updateIconMock).toBeCalledTimes(2);
                 expect(updateBrowserTabMock).not.toBeCalled();
             });
 
@@ -305,10 +374,27 @@ describe("test XHR request", () => {
                     xhr.onreadystatechange();
                 };
                 setTimeSinceLastResp(0); // reset the variables
-                setMock("cf-token-count", 0);
+                setMock(TOKEN_COUNT_STR, 0);
                 let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrow();
-                expect(updateIconMock).toBeCalledTimes(1);
+                expect(updateIconMock).toBeCalledTimes(2);
+                expect(updateBrowserTabMock).not.toBeCalled();
+            });
+
+            test("proof should not verify (bad lengths)", () => {
+                function run() { 
+                    let b = beforeRequest(details, newUrl); 
+                    let xhr = b.xhr;
+                    xhr.responseText = respBadProof;
+                    xhr.onreadystatechange();
+                };
+                setTimeSinceLastResp(0); // reset the variables
+                setMock(TOKEN_COUNT_STR, 0);
+                workflow.__set__("TOKENS_PER_REQUEST", 4);
+                let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                expect(run).toThrowError("Unable to verify DLEQ");
+                expect(run).not.toThrowError(workflow.__get__("DIGEST_INEQUALITY_ERR"));
+                expect(updateIconMock).toBeCalledTimes(2);
                 expect(updateBrowserTabMock).not.toBeCalled();
             });
 
@@ -319,11 +405,16 @@ describe("test XHR request", () => {
                     xhr.responseText = respBadProof;
                     xhr.onreadystatechange();
                 };
+                let consoleNew = {
+                    error: jest.fn()
+                }
+                workflow.__set__("console", consoleNew); // fake the console to check logs
                 setTimeSinceLastResp(0); // reset the variables
-                setMock("cf-token-count", 0);
+                setMock(TOKEN_COUNT_STR, 0);
                 let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrowError("Unable to verify DLEQ");
-                expect(updateIconMock).toBeCalledTimes(1);
+                expect(consoleNew.error).toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
+                expect(updateIconMock).toBeCalledTimes(2);
                 expect(updateBrowserTabMock).not.toBeCalled();
             });
         });
