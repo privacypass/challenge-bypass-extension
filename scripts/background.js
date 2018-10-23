@@ -161,14 +161,8 @@ function processHeaders(details) {
         if (isBypassHeader(header) && SPEND_STATUS_CODE.indexOf(details.statusCode) > -1) {
             let iframe = (details.frameId > 0);
             // check if the token should only be spent on an iframe
-            if (SPEND_IFRAME) {
-                if (!iframe) {
-                    activated = false;
-                } else {
-                    activated = true;
-                }
-            } else {
-                activated = true;
+            if ((SPEND_IFRAME && iframe) || !SPEND_IFRAME) {
+                activated = true
             }
         }
     }
@@ -177,7 +171,7 @@ function processHeaders(details) {
     if (activated && !spentUrl[url.href]) {
         let redeemOccurred = false;
         if (DO_REDEEM) {
-            if (countStoredTokens() > 0 && activated) {
+            if (countStoredTokens() > 0) {
                 redeemOccurred = attemptRedeem(url, details.tabId);
             } else if (countStoredTokens() == 0) {
                 // Update icon to show user that token may be spent here

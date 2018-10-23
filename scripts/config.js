@@ -9,7 +9,7 @@
 /* exported CHL_BYPASS_RESPONSE */
 /* exported PPConfigs */
 
-const CHL_BYPASS_SUPPORT  = "cf-chl-bypass"; // header from server to indicate that
+const CHL_BYPASS_SUPPORT  = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 
 const exampleConfig = {
