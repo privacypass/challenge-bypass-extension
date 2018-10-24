@@ -224,7 +224,7 @@ function attemptRedeem(url, respTabId) {
     } else {
         // If cookies aren't checked then we always attempt to redeem.
         fireRedeem(url, respTabId);
-        return true;
+        fired = true;
     }
     return fired;
 }
@@ -241,7 +241,7 @@ function fireRedeem(url, respTabId) {
             futureReload[respTabId] = url.href;
         }
     } else {
-        throw new Error("[privacy-pass]: Incompatible redeem method selected.");
+        throw new Error("[privacy-pass]: Incompatible redeem method selected. Only 'reload' is supported currently.");
     }
 }
 
@@ -330,7 +330,7 @@ function beforeRequest(details) {
     xhrSignRequest(xhrInfo, details.url, details.tabId);
 
     // Cancel the original request
-    return {cancel: true};
+    return {redirectUrl: "javascript:void(0)"};
 }
 
 // Sending tokens to be signed for Cloudflare
