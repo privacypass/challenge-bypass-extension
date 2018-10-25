@@ -96,5 +96,3 @@ function BuildRedeemHeader(token, host, path) {
 
     return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
 }
-
-
