@@ -10,12 +10,7 @@
 
   "background": {
     "scripts": [
-        "scripts/sjcl.js",
-        "scripts/config.js",
-        "scripts/crypto.js",
-        "scripts/tokens.js",
-        "scripts/background.js",
-        "scripts/keccak.js"
+        "compiled/bg_compiled.js"
     ]
   },
 
