@@ -34,9 +34,6 @@ const POTENTIALLY_GOOD_TRANSITIONS = ["link", "typed", "auto_bookmark", "reload"
 // Used for resetting variables below
 let timeSinceLastResp = 0;
 
-// store the url of captcha pages here for future reloading
-let storedUrl = null;
-
 // Prevent too many redirections from exhausting tokens
 let redirectCount = new Map();
 
@@ -156,13 +153,6 @@ function processHeaders(details) {
         if (countStoredTokens() > 0) {
             attemptRedeem(url, details.tabId);
         } else {
-            // Store the url for redirection after captcha is solved
-            // Manual check for favicon urls
-            storedUrl = url.href;
-            let faviconIndex = storedUrl.indexOf("favicon");
-            if (faviconIndex != -1) {
-                storedUrl = storedUrl.substring(0, faviconIndex);
-            }
             // Update icon to show user that token may be spent here
             updateIcon("!");
         }
@@ -296,7 +286,7 @@ function beforeRequest(details) {
                 let captchaPath = url.pathname;
                 let pathIndex = url.href.indexOf(captchaPath);
                 let reloadUrl = url.href.substring(0, pathIndex+1);
-                setSpendFlag(reloadUrl, true);
+                setSpendFlag(url.host, true);
                 chrome.tabs.update(details.tabId, { url: reloadUrl });
             }
         } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
