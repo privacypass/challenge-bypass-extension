@@ -2,7 +2,7 @@
 
 The Privacy Pass extension allows a user to bypass internet challenge pages on websites supporting Privacy Pass using a 'blind signature' protocol. This extension alleviates the burden of completing large numbers of internet challenges (such as CAPTCHAs) for honest users by allowing tokens to be gained for an initial solution. These tokens can be spent by the extension when future challenges are displayed to prevent human interaction. The 'blind' capability of the protocol that we use means that tokens that are issued by a server cannot be linked to tokens that are later redeemed. An example server implementation that is compatible with this extension is available [here](https://github.com/privacypass/challenge-bypass-server).
 
-The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md). 
+The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/docs/PROTOCOL.md). 
 
 The protocol has received extensive review and testing, but this extension is a work in progress and we regard all components as beta releases. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
@@ -40,7 +40,7 @@ Download the latest stable release of the extension:
 - Clone this repository
 - Open Firefox and go to `about:debugging`
 - Click 'Load Temporary Add-on' button
-- Select manifest.json from <your-repos>/challenge-bypass-extension/
+- Select manifest.json from <your-repos>/challenge-bypass-extension/addon/
 - Check extension logo appears in top-right corner and 0 passes are stored (by clicking on it)
 - Go to a web page supporting Privacy Pass where internet challenges are displayed (e.g. https://captcha.website)
 - Solve CAPTCHA and check that some passes are stored in the extension now
@@ -129,7 +129,7 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - `<signed-tokens>` is an array of compressed elliptic curve point, as above, that have been 'signed' by the edge. In the VOPRF model the 'signed' point is essentially a commitment to the edge's private key
 
-- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains response values `R` and `C` for verifying that the key used in signing is the same as the key stored in the commitment files. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/PROTOCOL.md) for more details.
+- `<proof>` is a base64 encoded JSON struct containing the necessary information for carrying out a DLEQ proof verification. In particular it contains response values `R` and `C` for verifying that the key used in signing is the same as the key stored in the commitment files. See [PROTOCOL.md](https://github.com/privacypass/challenge-bypass-extension/blob/master/docs/PROTOCOL.md) for more details.
 
 - `<batch-proof>` is a base64 encoded JSON struct of the form:<sup>2</sup>
 
