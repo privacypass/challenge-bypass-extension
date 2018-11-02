@@ -1,0 +1,155 @@
+/**
+* Integrations tests for when headers are sent by the browser
+* 
+* @author: Alex Davidson
+*/
+import btoa from "btoa";
+import atob from "atob";
+
+import rewire from "rewire";
+var workflow = rewire("../addon/compiled/test_compiled.js");
+var URL = window.URL;
+
+/**
+* Functions/variables
+*/
+const EXAMPLE_HREF = "https://www.example.com";
+const beforeSendHeaders = workflow.__get__('beforeSendHeaders');
+const b64EncodedToken = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOltbMjQsNjIsNTYsMTAyLDc2LDEyNywyMDEsMTExLDE2MSwyMTgsMjQ5LDEwOSwzNCwxMjIsMTYwLDIxOSw5MywxODYsMjQ2LDEyLDE3OCwyNDksMjQxLDEwOCw2OSwxODEsNzcsMTQwLDE1OCwxMywyMTYsMTg0XSxbMjI3LDExLDk1LDIxNSwxNSwyMTUsMTM1LDI0LDEzNywxNzQsMjMzLDgsODYsMTQ4LDEzMCwxOTEsNDYsMTgzLDkyLDEwOCwxNjAsMjQ5LDE1OCwyMzEsMTU5LDIxOCwyNTQsODAsMTQ4LDQ0LDI5LDI1NF1dfQ==";
+let localStorage;
+let details;
+let url;
+let getMock;
+let setMock;
+let getSpendFlag;
+let setSpendFlag;
+beforeEach(() => {
+    let storedTokens = `[ { "token":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"token":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
+    localStorage = {
+        "cf-bypass-tokens": storedTokens,
+        "cf-token-count": 2
+    }
+    details = {
+        method: "GET",
+        requestHeaders: [],
+        requestId: "212",
+        tabId: "101"
+    };
+    url = new URL(EXAMPLE_HREF);
+    setMockFunctions();
+});
+
+/**
+* Tests
+*/
+describe("redemptions are not attempted", () => {
+    test("spend flag not set", () => {
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
+    test("url is error page", () => {
+        let newUrl = EXAMPLE_HREF + "/cdn-cgi/styles/";
+        url = new URL(newUrl);
+        setSpendFlag(url.host, true);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
+    test("url is favicon", () => {
+        let newUrl = EXAMPLE_HREF + "/favicon.ico";
+        url = new URL(newUrl);
+        setSpendFlag(url.host, true);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
+    test("max spend has been reached", () => {
+        setSpendFlag(url.host, true);
+        setSpentHosts(url.host, 31);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
+    test("spend has been attempted for url", () => {
+        setSpendFlag(url.host, true);
+        setSpentHosts(url.host, 0);
+        setSpentUrl(url.href, true);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+    });
+    test("no token to spend", () => {
+        localStorage = {
+            "cf-bypass-tokens": `{}`,
+            "cf-token-count": 0
+        };
+        setSpentUrl(url.href, false);
+        setSpendFlag(url.host, true);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        expect(redeemHdrs.cancel).toBeFalsy();
+        expect(redeemHdrs.requestHeaders).toBeFalsy();
+        expect(getSpendFlag(url.host)).toBeFalsy();
+    });
+});
+
+describe("redemption attempted", () => {
+    test("redemption header added", () => {
+        setSpendFlag(url.host, true);
+        setSpentUrl(url.href, false);
+        let redeemHdrs = beforeSendHeaders(details, url);
+        let reqHeaders = redeemHdrs.requestHeaders;
+        expect(reqHeaders).toBeTruthy();
+        expect(reqHeaders[0].name == "challenge-bypass-token").toBeTruthy();
+        expect(reqHeaders[0].value == b64EncodedToken).toBeTruthy();
+        expect(getSpendId([details.requestId])).toBeTruthy();
+        expect(getSpentUrl([url.href])).toBeTruthy();
+        expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
+    });
+});
+
+function setMockFunctions() {
+    getMock = function(key) {
+        return localStorage[key];
+    }
+    setMock = function(key, value) {
+        localStorage[key] = value; 
+    }
+    getSpendFlag = function(key) {
+        return getMock(key);
+    }
+    setSpendFlag = function(key, value) {
+        setMock(key, value);
+    }
+    const updateIconMock = jest.fn();
+    workflow.__set__("getSpendFlag", getSpendFlag);
+    workflow.__set__("setSpendFlag", setSpendFlag);
+    workflow.__set__("updateIcon", updateIconMock);
+    workflow.__set__("get", getMock);
+    workflow.__set__("set", setMock);
+    workflow.__set__("atob", atob);
+    workflow.__set__("btoa", btoa);
+}
+
+function getSpentUrl(key) {
+    let spentUrl = workflow.__get__("spentUrl");
+    return spentUrl[key];
+}
+function getSpendId(key) {
+    let spendId = workflow.__get__("spendId");
+    return spendId[key];
+}
+function getSpentTab(key) {
+    let spentTab = workflow.__get__("spentTab");
+    return spentTab[key];
+}
+function setSpentUrl(key, value) {
+    let spentUrl = new Map();
+    spentUrl[key] = value;
+    workflow.__set__("spentUrl", spentUrl);
+}
+function setSpentHosts(key, value) {
+    let spentHosts = new Map();
+    spentHosts[key] = value;
+    workflow.__set__("spentHosts", spentHosts);
+}

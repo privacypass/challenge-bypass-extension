@@ -1,7 +1,8 @@
-/*
+/**
  * This implements a 2HashDH-based token scheme using the SJCL ecc package.
  *
  * @author: George Tankersley
+ * @author: Alex Davidson
  */
 
 /*global sjcl*/
@@ -15,6 +16,7 @@
 /* exported signPoint */
 /* exported unblindPoint */
 /* exported verifyProof */
+/* exported getBigNumFromBytes */
 "use strict";
 
 var p256 = sjcl.ecc.curves.c256;
@@ -263,8 +265,13 @@ function sec1EncodePoint(P) {
 function sec1DecodePoint(p) {
     const sec1Bits = sjcl.codec.base64.toBits(p);
     const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
+    return sec1DecodePointFromBytes(sec1Bytes);
+}
+
+// Decode point when it is in byte format rather than base64
+function sec1DecodePointFromBytes(sec1Bytes) {
     if (sec1Bytes[0] != 0x04) {
-        throw new Error("[privacy-pass]: attempted sec1DecodePoint with incorrect tag: " + p);
+        throw new Error("[privacy-pass]: attempted sec1 point decoding with incorrect tag: " + sec1Bytes);
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
@@ -434,6 +441,12 @@ function parseDleqProof(proofStr) {
 // Return a bignum from a base-64 encoded string
 function getBigNumFromB64(b64Str) {
     let bits = sjcl.codec.base64.toBits(b64Str);
+    return sjcl.bn.fromBits(bits);
+}
+
+// Return a big number from an array of bytes
+function getBigNumFromBytes(bytes) {
+    let bits = sjcl.codec.bytes.toBits(bytes);
     return sjcl.bn.fromBits(bits);
 }
 

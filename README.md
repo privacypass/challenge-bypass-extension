@@ -37,7 +37,9 @@ Download the latest stable release of the extension:
 
 - `git clone git@github.com:privacypass/challenge-bypass-extension.git`
 - To build a new version of the extension: `yarn build`.
+- To run integration tests: `yarn test`.
 - To prepare a new distribution: `yarn dist`.
+- For linting: `cd addon && eslint .`
 - To test in the browser see below.
 
 ### Firefox
@@ -78,6 +80,8 @@ The following script files are used for the workflow of Privacy Pass and are fou
 - sjcl.js: Local copy of SJCL library
 
 - keccak.js: Local implementation of the Keccak hash function (taken from <https://github.com/cryptocoinjs/keccak>).
+
+Files that are used for testing are found in `test/`. These test files use their own compiled test file in `compiled/test_compiled.js`.
 
 In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. A pass refers to the object that the extension sends to the edge in order to bypass an internet challenge. We will safely assume throughout that challenges manifest themselves as CAPTCHAs
 
