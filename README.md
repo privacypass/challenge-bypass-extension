@@ -13,7 +13,7 @@ The extension is compatible with [Chrome](https://chrome.google.com/webstore/det
 ### Contents
 
   * [Stable releases](#stable-releases)
-  * [Testing](#testing)
+  * [Development](#development)
      * [Firefox](#firefox)
      * [Chrome](#chrome)
   * [Plugin overview](#plugin-overview)
@@ -33,14 +33,18 @@ Download the latest stable release of the extension:
 - [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 
-## Testing
+## Development
+
+- `git clone git@github.com:privacypass/challenge-bypass-extension.git`
+- To build a new version of the extension: `yarn build`.
+- To prepare a new distribution: `yarn dist`.
+- To test in the browser see below.
 
 ### Firefox
 
-- Clone this repository
 - Open Firefox and go to `about:debugging`
 - Click 'Load Temporary Add-on' button
-- Select manifest.json from <your-repos>/challenge-bypass-extension/addon/
+- Select manifest.json from addon/
 - Check extension logo appears in top-right corner and 0 passes are stored (by clicking on it)
 - Go to a web page supporting Privacy Pass where internet challenges are displayed (e.g. https://captcha.website)
 - Solve CAPTCHA and check that some passes are stored in the extension now
@@ -55,7 +59,13 @@ Same as above, except the extension should be loaded at `chrome://extensions` in
 
 ## Plugin overview
 
-- background.js: Processes the necessary interactions with web-pages directly. Sends messages and processes edge replies
+The following script files are used for the workflow of Privacy Pass and are found in `addon/scripts`. They are compiled into a single file (`compiled/bg_compiled.js`) that is then loaded into the browser.
+
+- listeners.js: Initialises the listener functions that are used for the webRequest and webNavigation frameworks.
+
+- background.js: Determines the bulk of the browser-based workflow for Privacy Pass. Decides whether to initiate the token issuance and redemption phases of the protocols.
+
+- browserUtils.js: General utility functions that are used by background.js. We separate them so that we separate the specific browser API calls from the actual workflow.
 
 - config.js: Config file containing commitments to edge private key for checking DLEQ proofs
 
@@ -67,9 +77,9 @@ Same as above, except the extension should be loaded at `chrome://extensions` in
 
 - sjcl.js: Local copy of SJCL library
 
-- In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. 
+- keccak.js: Local implementation of the Keccak hash function (taken from <https://github.com/cryptocoinjs/keccak>).
 
-- A pass refers to the object that the extension sends to the edge in order to bypass an internet challenge. We will safely assume throughout that challenges manifest themselves as CAPTCHAs
+In the following we may use 'pass' or 'token' interchangeably. In short, a token refers to the random nonce that is blind signed by the edge. A pass refers to the object that the extension sends to the edge in order to bypass an internet challenge. We will safely assume throughout that challenges manifest themselves as CAPTCHAs
 
 ### Workflow
 

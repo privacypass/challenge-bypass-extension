@@ -6,3 +6,5 @@ yarn-error.log
 coverage-final.json
 lcov.info
 coverage/
+dist/
+*.zip

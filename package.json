@@ -1,8 +1,11 @@
 {
   "dependencies": {
+    "atob": "^2.1.2",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-env": "^1.7.0",
+    "btoa": "^1.2.1",
     "jest": "^23.6.0",
+    "json": "^9.0.6",
     "puppeteer": "^1.9.0",
     "rewire": "^4.0.1",
     "stringify": "^5.2.0"
@@ -11,11 +14,13 @@
     "babel-core": "^6.26.3",
     "babel-jest": "^23.6.0",
     "babel-plugin-rewire": "^1.2.0",
+    "bestzip": "^2.1.2",
+    "google-closure-compiler-js": "^20180610.0.0",
     "regenerator-runtime": "^0.12.1",
     "sinon-chrome": "^2.3.2"
   },
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "build": "google-closure-compiler addon/scripts/sjcl.js addon/scripts/config.js addon/scripts/crypto.js addon/scripts/tokens.js addon/scripts/browserUtils.js addon/scripts/background.js addon/scripts/listeners.js addon/scripts/keccak.js > addon/compiled/bg_compiled.js",
+    "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
   }
 }
