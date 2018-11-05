@@ -22,6 +22,7 @@
         "sec1DecodePoint": true,
         "signPoint": true,
         "unblindPoint": true,
+        "getBigNumFromBytes": true,
         "CreateBlindToken": true,
         "GenerateNewTokens": true,
         "BuildIssueRequest": true,

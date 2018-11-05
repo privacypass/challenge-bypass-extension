@@ -1,4 +1,8 @@
-/* This page is for the popup in the browser toolbar */
+/**
+ * This page is for the popup in the browser toolbar
+ *
+ * @author: Alex Davidson
+ */
 "use strict";
 
 let background = chrome.extension.getBackgroundPage();
