@@ -4,10 +4,10 @@ jobs:
   build:
     docker:
       - image: circleci/node:8.12
-    working_directory: ~/challenge-bypass-extension/addon
+    working_directory: ~/challenge-bypass-extension
     steps:
       - checkout
-      - run: sudo npm install -g eslint google-closure-compiler jest
+      - run: yarn install
       - run: yarn lint
       - run: yarn build
       - run: yarn test
