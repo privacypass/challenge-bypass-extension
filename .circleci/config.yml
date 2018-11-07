@@ -7,7 +7,7 @@ jobs:
     working_directory: ~/challenge-bypass-extension/addon
     steps:
       - checkout
-      - run: sudo npm install -g eslint google-closure-compiler
+      - run: sudo npm install -g eslint google-closure-compiler jest
       - run: yarn lint
       - run: yarn build
       - run: yarn test
