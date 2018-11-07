@@ -234,7 +234,7 @@ We would also like to thank Eric Tsai for creating the logo and extension design
 
 ## FAQs
 
-### What do I have to acquire new passes?
+### What do I have to do to acquire new passes?
 
 * Click "Get More Passes" in the extension pop-up (or navigate to "https://captcha.website").
 * Solve the CAPTCHA that is presented on the webpage
