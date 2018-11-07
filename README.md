@@ -26,6 +26,8 @@ The extension is compatible with [Chrome](https://chrome.google.com/webstore/det
   * [Team](#team)
   * [Design](#design)
   * [Cryptography](#cryptography)
+  * [Acknowledgements](#acknowledgements)
+  * [FAQs](#faqs)
 
 ## Stable releases
 
@@ -230,3 +232,14 @@ The creation of Privacy Pass has been a joint effort by the team made up of Geor
 
 We would also like to thank Eric Tsai for creating the logo and extension design, Dan Boneh for helping us develop key parts of the protocol, as well as Peter Wu and Blake Loring for their helpful code reviews. We would also like to acknowledge Sharon Goldberg, Christopher Wood, Peter Eckersley, Brian Warner, Zaki Manian, Tony Arcieri, Prateek Mittal, Zhuotao Liu, Isis Lovecruft, Henry de Valence, Mike Perry, Trevor Perrin, Zi Lin, Justin Paine, Marek Majkowski, Eoin Brady, Aaran McGuire, and many others who were involved in one way or another and whose efforts are appreciated.
 
+## FAQs
+
+### What do I have to do to acquire new passes?
+
+* Click "Get More Passes" in the extension pop-up (or navigate to "https://captcha.website").
+* Solve the CAPTCHA that is presented on the webpage
+* Your extension should be populated with new passes.
+
+### Are passes stored after a browser restart?
+
+Depending on your browser settings, the local storage of your browser may be cleared when it is restarted. Privacy Pass stores passes in local storage and so these will also be cleared. This behavior may also be observed if you clear out the cache of your browser.
