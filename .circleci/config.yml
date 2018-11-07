@@ -1,0 +1,13 @@
+# CircleCI config
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.12
+    working_directory: ~/challenge-bypass-extension/addon
+    steps:
+      - checkout
+      - run: sudo npm install -g eslint google-closure-compiler
+      - run: yarn lint
+      - run: yarn build
+      - run: yarn test

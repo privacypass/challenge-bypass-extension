@@ -22,7 +22,9 @@
   "scripts": {
     "build": "google-closure-compiler addon/scripts/sjcl.js addon/scripts/config.js addon/scripts/crypto.js addon/scripts/tokens.js addon/scripts/browserUtils.js addon/scripts/background.js addon/scripts/listeners.js addon/scripts/keccak.js > addon/compiled/bg_compiled.js",
     "test": "google-closure-compiler addon/scripts/sjcl.js addon/scripts/config.js addon/scripts/crypto.js addon/scripts/tokens.js addon/scripts/browserUtils.js addon/scripts/background.js addon/scripts/keccak.js > addon/compiled/test_compiled.js && jest",
+    "test:quick": "jest",
     "test:watch": "google-closure-compiler addon/scripts/sjcl.js addon/scripts/config.js addon/scripts/crypto.js addon/scripts/tokens.js addon/scripts/browserUtils.js addon/scripts/background.js addon/scripts/keccak.js > addon/compiled/test_compiled.js && jest --watch",
+    "lint": "cd addon && eslint .",
     "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
   }
 }
