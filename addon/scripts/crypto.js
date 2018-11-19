@@ -6,15 +6,14 @@
  */
 
 /*global sjcl*/
-/* exported CreateBlindToken */
 /* exported checkRequestBinding */
 /* exported compressPoint */
 /* exported decodeStorablePoint */
 /* exported deriveKey */
 /* exported encodeStorablePoint */
 /* exported sec1DecodePoint */
-/* exported signPoint */
-/* exported unblindPoint */
+/* exported newRandomPoint */
+/* exported blindPoint, unblindPoint */
 /* exported verifyProof */
 /* exported getBigNumFromBytes */
 "use strict";
@@ -61,17 +60,6 @@ function blindPoint(P) {
 function unblindPoint(b, Q) {
     const binv = b.inverseMod(p256.r);
     return _scalarMult(binv, Q);
-}
-
-// multiplies the point by the secret scalar "key"
-//
-// inputs:
-//  key: bigint scalar (not field element or bits!)
-//  P: sjcl point
-// returns:
-//  sjcl point
-function signPoint(key, P) {
-    return _scalarMult(key, P);
 }
 
 // Derives the shared key used for redemption MACs
@@ -138,19 +126,8 @@ function checkRequestBinding(key, data, mac) {
     return sjcl.bitArray.equal(macBits, observedBits);
 }
 
-// Creates
-// Inputs:
-//  none
-// Returns:
-//  token bytes
-//  T sjcl point
-//  r blinding factor, sjcl bignum
-function CreateBlindToken() {
-    let t = newRandomPoint();
-    let bpt = blindPoint(t.point);
-    return { token: t.token, point: bpt.point, blind: bpt.blind };
-}
-
+// Creates a new random point on the curve by sampling random bytes and then
+// hashing to the chosen curve.
 function newRandomPoint() {
     const byteLength = 32;
     const wordLength = byteLength / 4; // SJCL 4 bytes to a word
@@ -158,7 +135,11 @@ function newRandomPoint() {
     // TODO Use webcrypto instead. This is JavaScript Fortuna from 2010.
     var random = sjcl.random.randomWords(wordLength, 10); // paranoia 10
     var point = hashToCurve(random);
-    return { token: sjcl.codec.bytes.fromBits(random), point: point};
+    let t;
+    if (point) {
+        t = { token: sjcl.codec.bytes.fromBits(random), point: point};
+    }
+    return t;
 }
 
 // input: bits

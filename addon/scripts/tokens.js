@@ -23,17 +23,27 @@
 //  r blinding factor, sjcl bignum
 function CreateBlindToken() {
     let t = newRandomPoint();
-    let bpt = blindPoint(t.point);
-    return { token: t.token, point: bpt.point, blind: bpt.blind };
+    let tok;
+    if (t) {
+        let bpt = blindPoint(t.point);
+        tok = { token: t.token, point: bpt.point, blind: bpt.blind };
+    }
+    return tok;
 }
 
 // returns: array of blind tokens
 function GenerateNewTokens(n) {
-    let i = 0;
-    let tokens = new Array(n);
-    for (i = 0; i < tokens.length; i++) {
-        tokens[i] = CreateBlindToken();
+    let tokens = [];
+    for (let i=0; i<n; i++) {
+        let tok = CreateBlindToken();
+        if (!tok) {
+            console.warn("[privacy-pass]: Tried to generate a random point on the curve, but failed.");
+            console.warn("[privacy-pass]: Will drop the null point.");
+        }
+        tokens[i] = tok;
     }
+    // remove array entries that are null
+    tokens = tokens.filter(function(ele) { return !!ele; });
     return tokens;
 }
 

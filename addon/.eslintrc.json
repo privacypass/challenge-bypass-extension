@@ -20,7 +20,6 @@
         "decodeStorablePoint": true,
         "newRandomPoint": true,
         "sec1DecodePoint": true,
-        "signPoint": true,
         "unblindPoint": true,
         "getBigNumFromBytes": true,
         "CreateBlindToken": true,
@@ -76,7 +75,7 @@
         ],
         "no-console": [
             "error", {
-                "allow": ["error"]
+                "allow": ["error", "warn"]
             }
         ]
     }
