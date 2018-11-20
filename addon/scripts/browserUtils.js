@@ -8,7 +8,7 @@
  * @author: Alex Davidson
  */
 
- /* exported STORAGE_KEY_COUNT, STORAGE_KEY_TOKENS */
+/* exported CHECK_COOKIES */
 /* exported attemptRedeem */
 /* exported reloadTabForCookie */
 /* exported setSpendFlag */
@@ -24,40 +24,55 @@
 /* exported UpdateCallback */
 "use strict"
 
-const STORAGE_KEY_TOKENS = "cf-bypass-tokens";
-const STORAGE_KEY_COUNT  = "cf-token-count";
+let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
 
-function attemptRedeem(url, respTabId, clearanceCookieName, target, futureReload) {
-    chrome.cookies.getAllCookieStores(function(stores) {
-        let clearanceHeld = false;
-        stores.forEach( function(store, index) {
-            var tabIds = store.tabIds;
-            if (tabIds.length && tabIds[0].id !== undefined) {
-                tabIds = tabIds.map((tab) => respTabId.id);
-            }
-            var storeMatches = tabIds.indexOf(respTabId) >= 0;
-            if (storeMatches) {
-                chrome.cookies.get({"url": url.href, "name": clearanceCookieName, "storeId": store.id}, function(cookie) {
-                    // Require an existing, non-expired cookie.
-                    if (cookie) {
-                        clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
-                    }
-                });
+function attemptRedeem(url, respTabId, target, futureReload) {
+    // Check all cookie stores to see if a clearance cookie is held
+    if (CHECK_COOKIES) {
+        chrome.cookies.getAllCookieStores(function(stores) {
+            let clearanceHeld = false;
+            stores.forEach( function(store, index) {
+                var tabIds = store.tabIds;
+                if (tabIds.length > 0 && tabIds[0].id !== undefined) {
+                    // some browser use the id key to store the id instead
+                    tabIds = tabIds.map((tab) => tab.id);
+                }
+
+                if (tabIds.includes(respTabId)) {
+                    chrome.cookies.get({"url": url.href, "name": CHL_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
+                        // Require an existing, non-expired cookie.
+                        if (cookie) {
+                            clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
+                        }
+                    });
+                }
+            });
+
+            // If a clearance cookie is not held then set the spend flag
+            if (!clearanceHeld) {
+                fireRedeem(url, respTabId, target, futureReload);
             }
         });
+    } else {
+        // If cookies aren't checked then we always attempt to redeem.
+        fireRedeem(url, respTabId, target, futureReload);
+    }
+}
 
-        // If a clearance cookie is not held then set the spend flag
-        if (!clearanceHeld) {
-            setSpendFlag(url.host, true);
-            let targetUrl = target[respTabId];
-            if (url.href == targetUrl) {
-                chrome.tabs.update(respTabId, { url: targetUrl });
-            } else if (!targetUrl || (targetUrl != url.href)) {
-                // set a reload in the future when the target has been inited
-                futureReload[respTabId] = url.href;
-            }
+// Actually activate the redemption request
+function fireRedeem(url, respTabId, target, futureReload) {
+    if (REDEEM_METHOD == "reload") {
+        setSpendFlag(url.host, true);
+        let targetUrl = target[respTabId];
+        if (url.href == targetUrl) {
+            chrome.tabs.update(respTabId, { url: targetUrl });
+        } else if (!targetUrl || (targetUrl != url.href)) {
+            // set a reload in the future when the target has been inited
+            futureReload[respTabId] = url.href;
         }
-    });
+    } else {
+        throw new Error("[privacy-pass]: Incompatible redeem method selected.");
+    }
 }
 
 // Reload the chosen tab
@@ -87,13 +102,13 @@ function reloadTabForCookie(cookieDomain) {
 
 // Check if the cookie is defined for that tab
 function isCookieForTab(hrefs, cookieDomain) {
-    if (hrefs.indexOf(cookieDomain) > -1) {
+    if (hrefs.includes(cookieDomain)) {
         return true;
     }
     // remove preceding dot and try again
     if (cookieDomain[0] == ".") {
         let noDot = cookieDomain.substring(1);
-        if (hrefs.indexOf(noDot) > -1) {
+        if (hrefs.includes(noDot)) {
             return true;
         }
     }
@@ -126,7 +141,7 @@ function getSpendFlag(key) {
 
 // Update the icon and badge colour if tokens have changed
 function updateIcon(count) {
-    let warn = (count.toString().indexOf("!") != -1)
+    let warn = (count.toString().includes("!") != -1)
     if (count != 0 && !warn) {
         chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
@@ -155,9 +170,7 @@ function isErrorPage(url) {
     let found = false;
     const errorPagePaths = ["/cdn-cgi/styles/", "/cdn-cgi/scripts/", "/cdn-cgi/images/"];
     errorPagePaths.forEach(function(str) {
-        if (url.indexOf(str) != -1) {
-            found = true;
-        }
+        found = url.includes(str) || found;
     });
     return found;
 }
