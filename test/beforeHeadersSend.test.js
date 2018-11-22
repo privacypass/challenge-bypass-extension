@@ -42,6 +42,31 @@ beforeEach(() => {
 
 });
 
+/* mock XHR implementations */
+function mockXHR(_xhr) {
+    _xhr.open = function(method, url) {
+        _xhr.method = method;
+        _xhr.url = url;
+    };
+    _xhr.requestHeaders = new Map();
+    _xhr.getRequestHeader = function(name) {
+        return _xhr.requestHeaders[name];
+    }
+    _xhr.setRequestHeader = function(name, value) {
+        _xhr.requestHeaders[name] = value;
+    }
+    _xhr.overrideMimeType = jest.fn();
+    _xhr.body;
+    _xhr.send = function(str) {
+        _xhr.body = str;
+    }
+    _xhr.onreadystatechange = function() {};
+}
+
+function mockXHRCommitments() {
+    mockXHR(this);
+}
+
 /**
 * Tests
 */
@@ -151,6 +176,7 @@ function setMockFunctions() {
     workflow.__set__("set", setMock);
     workflow.__set__("atob", atob);
     workflow.__set__("btoa", btoa);
+    setXHR(mockXHRCommitments);
 }
 
 function getSpentUrl(key) {
@@ -174,4 +200,7 @@ function setSpentHosts(key, value) {
     let spentHosts = new Map();
     spentHosts[key] = value;
     workflow.__set__("spentHosts", spentHosts);
+}
+function setXHR(xhr) {
+    workflow.__set__("XMLHttpRequest", xhr);
 }

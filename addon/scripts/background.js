@@ -20,15 +20,17 @@
 /* exported CHL_CAPTCHA_DOMAIN */
 /* exported CHL_CLEARANCE_COOKIE */
 /* exported REDEEM_METHOD */
-/* exported spentTab, spendId, timeSinceLastResp */
-/* exported ACTIVE_CONFIG */
+/* exported spentTab, spendId, timeSinceLastResp, futureReload */
+/* exported DEV, COMMITMENTS_KEY */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
+let DEV = ACTIVE_CONFIG["dev"];
 let CHL_CLEARANCE_COOKIE = ACTIVE_CONFIG["cookies"]["clearance-cookie"];
 let CHL_CAPTCHA_DOMAIN = ACTIVE_CONFIG["captcha-domain"]; // cookies have dots prepended
 let CHL_VERIFICATION_ERROR = ACTIVE_CONFIG["error-codes"]["connection-error"];
 let CHL_CONNECTION_ERROR = ACTIVE_CONFIG["error-codes"]["verify-error"];
+let COMMITMENTS_KEY = ACTIVE_CONFIG["commitments"];
 let SPEND_MAX = ACTIVE_CONFIG["max-spends"];
 let MAX_TOKENS = ACTIVE_CONFIG["max-tokens"];
 let DO_SIGN = ACTIVE_CONFIG["sign"];
@@ -122,7 +124,6 @@ function processRedirect(details, oldUrl, newUrl) {
     }
 }
 function validRedirect(oldUrl, redirectUrl) {
-
     if (oldUrl.includes("http://")) {
         let urlStr = oldUrl.substring(7);
         let valids = VALID_REDIRECTS;
@@ -143,6 +144,11 @@ function validRedirect(oldUrl, redirectUrl) {
  * @param url request URL object
  */
 function processHeaders(details, url) {
+    // We're not interested in running this logic for favicons
+    if (isFaviconUrl(url.href)) {
+        return false;
+    }
+
     let activated = false;
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
@@ -167,7 +173,7 @@ function processHeaders(details, url) {
         let count = countStoredTokens();
         if (DO_REDEEM) {
             if (count > 0 && !url.host.includes(CHL_CAPTCHA_DOMAIN)) {
-                attemptRedeem(url, details.tabId, target, futureReload);
+                attemptRedeem(url, details.tabId, target);
                 attempted = true;
             } else if (count == 0) {
                 // Update icon to show user that token may be spent here
@@ -404,12 +410,12 @@ function committedNavigation(details, url) {
     if (!BAD_NAV.includes(details.transitionType)
         && (!badTransition(url.href, redirect, details.transitionType))
         && !isNewTab(url.href)) {
-        target[tabId] = url.href;
         let id = getTabId(tabId);
+        target[id] = url.href;
         // If a reload was attempted but target hadn't been inited then reload now
-        if (futureReload[id] == target[tabId]) {
+        if (futureReload[id] == target[id]) {
             futureReload[id] = false;
-            updateBrowserTab(id, target[tabId]);
+            updateBrowserTab(id, target[id]);
         }
     }
 }
@@ -548,11 +554,6 @@ function clearStorage() {
 
 /* Utility functions */
 
-//  Favicons have caused us problems...
-function isFaviconUrl(url) {
-    return url.includes("favicon");
-}
-
 // Checks whether a transition is deemed to be bad to prevent loading subresources
 // in address bar
 function badTransition(href, type, transitionType) {
@@ -610,10 +611,12 @@ function isBypassHeader(header) {
 function setConfig(val) {
     ACTIVE_CONFIG = PPConfigs[val]
     CONFIG_ID = ACTIVE_CONFIG["id"];
+    DEV = ACTIVE_CONFIG["dev"];
     CHL_CLEARANCE_COOKIE = ACTIVE_CONFIG["cookies"]["clearance-cookie"];
     CHL_CAPTCHA_DOMAIN = ACTIVE_CONFIG["captcha-domain"]; // cookies have dots prepended
     CHL_VERIFICATION_ERROR = ACTIVE_CONFIG["error-codes"]["connection-error"];
     CHL_CONNECTION_ERROR = ACTIVE_CONFIG["error-codes"]["verify-error"];
+    COMMITMENTS_KEY = ACTIVE_CONFIG["commitments"];
     SPEND_MAX = ACTIVE_CONFIG["max-spends"];
     MAX_TOKENS = ACTIVE_CONFIG["max-tokens"];
     DO_SIGN = ACTIVE_CONFIG["sign"];

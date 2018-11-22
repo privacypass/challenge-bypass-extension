@@ -18,6 +18,7 @@
 /* exported updateBrowserTab */
 /* exported reloadBrowserTab */
 /* exported isErrorPage */
+/* exported isFaviconUrl */
 /* exported clear */
 /* exported get */
 /* exported set */
@@ -26,7 +27,8 @@
 
 let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
 
-function attemptRedeem(url, respTabId, target, futureReload) {
+// Attempts to redeem a token if the series of checks passes
+function attemptRedeem(url, respTabId, target) {
     // Check all cookie stores to see if a clearance cookie is held
     if (CHECK_COOKIES) {
         chrome.cookies.getAllCookieStores(function(stores) {
@@ -50,25 +52,27 @@ function attemptRedeem(url, respTabId, target, futureReload) {
 
             // If a clearance cookie is not held then set the spend flag
             if (!clearanceHeld) {
-                fireRedeem(url, respTabId, target, futureReload);
+                fireRedeem(url, respTabId, target);
             }
         });
     } else {
         // If cookies aren't checked then we always attempt to redeem.
-        fireRedeem(url, respTabId, target, futureReload);
+        fireRedeem(url, respTabId, target);
     }
 }
 
 // Actually activate the redemption request
-function fireRedeem(url, respTabId, target, futureReload) {
+function fireRedeem(url, respTabId, target) {
     if (REDEEM_METHOD == "reload") {
         setSpendFlag(url.host, true);
         let targetUrl = target[respTabId];
         if (url.href == targetUrl) {
             chrome.tabs.update(respTabId, { url: targetUrl });
-        } else if (!targetUrl || (targetUrl != url.href)) {
-            // set a reload in the future when the target has been inited
+        } else {
+            // set a reload in the future when the target has been inited, also
+            // reset timer for resetting vars
             futureReload[respTabId] = url.href;
+            timeSinceLastResp = Date.now();
         }
     } else {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
@@ -141,7 +145,7 @@ function getSpendFlag(key) {
 
 // Update the icon and badge colour if tokens have changed
 function updateIcon(count) {
-    let warn = (count.toString().includes("!") != -1)
+    let warn = (count.toString().includes("!"))
     if (count != 0 && !warn) {
         chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
@@ -173,6 +177,11 @@ function isErrorPage(url) {
         found = url.includes(str) || found;
     });
     return found;
+}
+
+//  Favicons have caused us problems...
+function isFaviconUrl(url) {
+    return url.includes("favicon");
 }
 
 // localStorage API function for getting values

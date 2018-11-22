@@ -1,5 +1,5 @@
 /**
-* Integration tests for token generation functionality
+* Integration tests for token generation and commitment functionality
 * 
 * @author: Alex Davidson
 */
