@@ -17,6 +17,7 @@
 /* exported verifyProof */
 /* exported getBigNumFromBytes */
 /* exported setActiveCommitments */
+/* exported ACTIVE_CONFIG */
 "use strict";
 
 var p256 = sjcl.ecc.curves.c256;
@@ -27,9 +28,9 @@ const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
 
+const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 let ACTIVE_CONFIG = PPConfigs[0];
-let activeG = ACTIVE_CONFIG["commitments"]["prod"]["G"];
-let activeH = ACTIVE_CONFIG["commitments"]["prod"]["H"];
+let activeG, activeH;
 
 // Performs the scalar multiplication k*P
 //
@@ -448,7 +449,29 @@ function encodePointForPRNG(point) {
     return sjcl.codec.hex.toBits(newHex);
 }
 
+// Retrieves the commitments from the GH beacon and sets them as global variables
+// (we return the xhr object for testing purposes)
 function setActiveCommitments() {
-    activeG = ACTIVE_CONFIG["commitments"]["prod"]["G"];
-    activeH = ACTIVE_CONFIG["commitments"]["prod"]["H"];
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        // Parse as JSON and retrieve commitments
+        if (xhr.status < 300 && xhr.readyState == 4) {
+            const respBody = xhr.responseText;
+            let resp = JSON.parse(respBody);
+            let comms = resp[COMMITMENTS_KEY];
+            if (comms) {
+                if (DEV) {
+                    activeG = comms["dev"]["G"];
+                    activeH = comms["dev"]["H"];
+                } else {
+                    activeG = comms["1.0"]["G"];
+                    activeH = comms["1.0"]["H"];
+                }
+            }
+        }
+    };
+    xhr.open("GET", COMMITMENT_URL, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send();
+    return xhr;
 }

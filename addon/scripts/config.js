@@ -13,7 +13,8 @@ const CHL_BYPASS_SUPPORT  = "cf-chl-bypass"; // header from server to indicate t
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 
 const exampleConfig = {
-	"id": 0,
+    "id": 0, // unique integer identifying each individual config
+    "dev": true, // sets whether the configuration should only be used in development
 	"sign": true, // sets whether tokens should be sent for signing
 	"redeem": true, // sets whether tokens should be sent for redemption
 	"sign-reload": true, // whether pages should be reloaded after signing tokens (e.g. to immediately redeem a token)
@@ -23,16 +24,7 @@ const exampleConfig = {
 	"tokens-per-request": 5, // number of tokens sent for each signing request (e.g. 30 for CF)
 	"var-reset": true, // whether variables should be reset after time limit expires
 	"var-reset-ms": 100, // variable reset time limit
-	"commitments": {
-		"dev": {
-			"G": "",
-			"H": "",
-		},
-		"prod": {
-			"G": "", // public generator of P256
-			"H": "", // public generator raised by power of secret key in GF(p)
-		}
-	}, // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
+	"commitments": "example", // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
 	"spending-restrictions": {
 		"status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
 		"max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
@@ -60,7 +52,8 @@ const exampleConfig = {
 
 // The configuration used by Cloudflare
 const cfConfig = {
-	"id": 1,
+    "id": 1,
+    "dev": false,
 	"sign": true,
 	"redeem": true,
 	"sign-reload": true,
@@ -71,16 +64,7 @@ const cfConfig = {
 	"tokens-per-request": 30,
 	"var-reset": true,
 	"var-reset-ms": 2000,
-	"commitments": {
-		"dev": {
-			"G": "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=",
-			"H": "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=",
-		},
-		"prod": {
-			"G": "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=",
-			"H": "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=",
-		}
-	},
+	"commitments": "CF",
 	"spending-restrictions": {
 		"status-code": [403],
 		"max-redirects": "3",
