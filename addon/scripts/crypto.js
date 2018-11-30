@@ -16,8 +16,7 @@
 /* exported blindPoint, unblindPoint */
 /* exported verifyProof */
 /* exported getBigNumFromBytes */
-/* exported setActiveCommitments */
-/* exported ACTIVE_CONFIG */
+/* exported validateAndStoreTokens */
 "use strict";
 
 var p256 = sjcl.ecc.curves.c256;
@@ -29,8 +28,6 @@ const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal 
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
 
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
-let ACTIVE_CONFIG = PPConfigs[0];
-let activeG, activeH;
 
 // Performs the scalar multiplication k*P
 //
@@ -281,6 +278,103 @@ function decodeStorablePoint(s) {
     return p256.fromBits(bits);
 }
 
+/**
+ * Server response validation logic
+ */
+
+/**
+ * Validates the tokens and the DLEQ proof that have been sent, using the version
+ * of commitments specified by the server.
+ * (return the xhr for testing)
+ * @param {string} version commitment version string
+ */
+function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, version) {
+    let cXhr = createVerificationXHR(url, tabId, tokens, signatures, batchProof, version);
+    // The response to the XHR will trigger cXhr.onreadystatechange()
+    cXhr.send();
+    return cXhr;
+}
+
+/**
+ * Retrieves the commitments from the GH beacon
+ * (return the xhr object for testing purposes)
+ * @param {string} version commitment version string
+ */
+function createVerificationXHR(url, tabId, tokens, signatures, batchProof, version) {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", COMMITMENT_URL, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.status < 300 && xhr.readyState == 4) {
+            const commitments = retrieveCommitments(xhr, version);
+            if (!commitments.G || !commitments.H) {
+                throw new Error("[privacy-pass]: commitments are undefined for specified version: " + version);
+            }
+            const sigPoints = getCurvePoints(signatures);
+
+            // Verify the DLEQ batch proof before handing back the usable points
+            if (!verifyProof(batchProof, tokens, sigPoints, commitments)) {
+                throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
+            }
+
+            // Store the tokens for future usage
+            storeNewTokens(tokens, sigPoints);
+
+            // Reload the page for the originally intended url
+            if (RELOAD_ON_SIGN && !url.href.includes(CHL_CAPTCHA_DOMAIN)) {
+                let captchaPath = url.pathname;
+                let pathIndex = url.href.indexOf(captchaPath);
+                let reloadUrl = url.href.substring(0, pathIndex+1);
+                setSpendFlag(url.host, true);
+                updateBrowserTab(tabId, reloadUrl);
+            }
+        }
+    };
+    return xhr;
+}
+
+/**
+ * Decodes the received curve points
+ * @param signatures encoded signed points
+ */
+function getCurvePoints(signatures) {
+    let usablePoints = [];
+    signatures.forEach(function(signature) {
+        let usablePoint = sec1DecodePoint(signature);
+        if (usablePoint == null) {
+            throw new Error("[privacy-pass]: unable to decode point " + signature + " in " + JSON.stringify(signatures));
+        }
+        usablePoints.push(usablePoint);
+    });
+    return usablePoints;
+}
+
+/**
+ * Retrieves the public commitments that are used for validating the DLEQ proof
+ * @param {XMLHttpRequest} xhr XHR for retrieving the active EC commitments
+ * @param {string} version commitment version string
+ */
+function retrieveCommitments(xhr, version) {
+    let commG;
+    let commH;
+    const respBody = xhr.responseText;
+    let resp = JSON.parse(respBody);
+    let comms = resp[COMMITMENTS_KEY];
+    if (comms) {
+        if (DEV) {
+            commG = comms["dev"]["G"];
+            commH = comms["dev"]["H"];
+        } else if (version) {
+            commG = comms[version]["G"];
+            commH = comms[version]["H"];
+        } else {
+            commG = comms["1.0"]["G"];
+            commH = comms["1.0"]["H"];
+        }
+    }
+
+    return {G: commG, H: commH};
+}
 
 /**
  * DLEQ proof verification logic
@@ -290,7 +384,7 @@ function decodeStorablePoint(s) {
 //
 // input: marshaled JSON DLEQ proof
 // output: bool
-function verifyProof(proofObj, tokens, signatures) {
+function verifyProof(proofObj, tokens, signatures, commitments) {
     let bp = getMarshaledBatchProof(proofObj);
     const dleq = retrieveProof(bp);
     if (!dleq) {
@@ -302,15 +396,15 @@ function verifyProof(proofObj, tokens, signatures) {
     if (chkM.length !== chkZ.length) {
         return false;
     }
-    const pointG = sec1DecodePoint(activeG);
-    const pointH = sec1DecodePoint(activeH);
+    const pointG = sec1DecodePoint(commitments.G);
+    const pointH = sec1DecodePoint(commitments.H);
 
     // Recompute A and B for proof verification
     let cH = _scalarMult(dleq.C, pointH);
     let rG = _scalarMult(dleq.R, pointG);
     const A = cH.toJac().add(rG).toAffine();
 
-    let composites = recomputeComposites(chkM, chkZ);
+    let composites = recomputeComposites(chkM, chkZ, pointG, pointH);
     let cZ = _scalarMult(dleq.C, composites.Z);
     let rM = _scalarMult(dleq.R, composites.M);
     const B = cZ.toJac().add(rM).toAffine();
@@ -335,8 +429,8 @@ function verifyProof(proofObj, tokens, signatures) {
 }
 
 // Recompute the composite M and Z values for verifying DLEQ
-function recomputeComposites(chkM, chkZ) {
-    let seed = getSeedPRNG(chkM, chkZ);
+function recomputeComposites(chkM, chkZ, pointG, pointH) {
+    let seed = getSeedPRNG(chkM, chkZ, pointG, pointH);
     let shake = createShake256();
     shake.update(seed, "hex");
     let cM;
@@ -381,10 +475,10 @@ function getShakeScalar(shake) {
     return rnd
 }
 
-function getSeedPRNG(chkM, chkZ) {
+function getSeedPRNG(chkM, chkZ, pointG, pointH) {
     let sha256 = new sjcl.hash.sha256();
-    sha256.update(encodePointForPRNG(sec1DecodePoint(activeG)));
-    sha256.update(encodePointForPRNG(sec1DecodePoint(activeH)));
+    sha256.update(encodePointForPRNG(pointG));
+    sha256.update(encodePointForPRNG(pointH));
     for (let i=0; i<chkM.length; i++) {
         sha256.update(encodePointForPRNG(chkM[i].point));
         sha256.update(encodePointForPRNG(chkZ[i]));
@@ -447,31 +541,4 @@ function encodePointForPRNG(point) {
     let hex = sjcl.codec.hex.fromBits(point.toBits());
     let newHex = UNCOMPRESSED_POINT_PREFIX + hex;
     return sjcl.codec.hex.toBits(newHex);
-}
-
-// Retrieves the commitments from the GH beacon and sets them as global variables
-// (we return the xhr object for testing purposes)
-function setActiveCommitments() {
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        // Parse as JSON and retrieve commitments
-        if (xhr.status < 300 && xhr.readyState == 4) {
-            const respBody = xhr.responseText;
-            let resp = JSON.parse(respBody);
-            let comms = resp[COMMITMENTS_KEY];
-            if (comms) {
-                if (DEV) {
-                    activeG = comms["dev"]["G"];
-                    activeH = comms["dev"]["H"];
-                } else {
-                    activeG = comms["1.0"]["G"];
-                    activeH = comms["1.0"]["H"];
-                }
-            }
-        }
-    };
-    xhr.open("GET", COMMITMENT_URL, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send();
-    return xhr;
 }

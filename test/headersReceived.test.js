@@ -14,45 +14,15 @@ const EXAMPLE_HREF = "https://www.example.com";
 const processHeaders = workflow.__get__('processHeaders');
 const isBypassHeader = workflow.__get__('isBypassHeader');
 const setConfig = workflow.__get__('setConfig');
-const setActiveCommitments = workflow.__get__('setActiveCommitments');
 const updateIconMock = jest.fn();
 const chkG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
 const chkH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 function getMock() {
     return 1;
 }
-workflow.__set__("XMLHttpRequest", mockXHRCommitments); // mock the XHR framework
 beforeEach(() => {
     setConfig(1); // set the CF config
 });
-
-/* mock XHR implementations */
-function mockXHR(_xhr) {
-    _xhr.open = function(method, url) {
-        _xhr.method = method;
-        _xhr.url = url;
-    };
-    _xhr.requestHeaders = new Map();
-    _xhr.getRequestHeader = function(name) {
-        return _xhr.requestHeaders[name];
-    }
-    _xhr.setRequestHeader = function(name, value) {
-        _xhr.requestHeaders[name] = value;
-    }
-    _xhr.overrideMimeType = jest.fn();
-    _xhr.body;
-    _xhr.send = function(str) {
-        _xhr.body = str;
-    }
-    _xhr.onreadystatechange = function() {};
-}
-
-function mockXHRCommitments() {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-    this.responseText = `{"CF":{"dev":{"G": "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=","H": "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo="},"1.0":{"G":"BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=","H":"BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY="}}}`;
-}
 
 /**
 * Tests
@@ -258,17 +228,6 @@ describe("check redemption attempt conditions", () => {
                 expect(readySign).toBeFalsy();
             });
         });
-    });
-});
-
-describe("commitments parsing", () => {
-    test("parse correctly", () => {
-        let xhr = setActiveCommitments();
-        xhr.onreadystatechange();
-        let activeG = workflow.__get__("activeG");
-        let activeH = workflow.__get__("activeH");
-        expect(chkG == activeG).toBeTruthy();
-        expect(chkH == activeH).toBeTruthy();
     });
 });
 

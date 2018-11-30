@@ -7,6 +7,7 @@
 /* exported ProdCommitmentConfig */
 /* exported CHL_BYPASS_SUPPORT */
 /* exported CHL_BYPASS_RESPONSE */
+/* exported ACTIVE_CONFIG */
 /* exported PPConfigs */
 
 const CHL_BYPASS_SUPPORT  = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
@@ -93,3 +94,4 @@ const cfConfig = {
 // Ordering of configs should correspond to value of cf-chl-bypass header
 // i.e. the first config should have "id": 1, the second "id":2, etc.
 const PPConfigs = [exampleConfig,cfConfig];
+let ACTIVE_CONFIG = PPConfigs[0];

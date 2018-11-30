@@ -156,7 +156,7 @@ JSON struct used for sending blinded tokens to be signed by the edge, this messa
 
 #### Issue response
 
-Marshaled array used for sending signed tokens back to the user. This message is appended to the response body by the edge after a valid CAPTCHA is submitted.
+A response string that is appended to the response body by the edge after a valid CAPTCHA is submitted. Contains signed points that can be used for redemptions in the future and the DLEQ proof for verification.
 
 - `<signed-tokens>` is an array of compressed elliptic curve point, as above, that have been 'signed' by the edge. In the VOPRF model the 'signed' point is essentially a commitment to the edge's private key
 
@@ -169,6 +169,9 @@ Marshaled array used for sending signed tokens back to the user. This message is
 		"proof":"<proof>",
 	}
 	```
+
+- `<version-string>` is a string determining which version of commitments to use.
+
 <sup>2</sup> Other [VRF implementations](https://datatracker.ietf.org/doc/draft-goldbe-vrf/?include_text=1) use different notation to us. We have tried to coincide as much as possible with these works.
 
 - `<Batch-DLEQ-Resp>`:
@@ -177,7 +180,21 @@ Marshaled array used for sending signed tokens back to the user. This message is
 
 - Issue response:
 	
-	`"signatures=" || <signed-tokens> || <Batch-DLEQ-Resp>`
+	- __Deprecated format__: Marshaled array used for sending signed tokens back to the user of the form:
+		```
+		"signatures=" || <signed-tokens> || <Batch-DLEQ-Resp>
+		```
+		This will be phased out in the near future
+
+	- __New format__: JSON struct of the form: 
+
+		```
+		{
+			sigs: <signed-tokens>,
+			proof: <batch-proof>,
+			version: <version-string>
+		}
+		```
 
 #### Redemption request (privacy pass)
 
