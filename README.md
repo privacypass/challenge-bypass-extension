@@ -2,7 +2,7 @@
 
 The Privacy Pass extension allows a user to bypass internet challenge pages on websites supporting Privacy Pass using a 'blind signature' protocol. This extension alleviates the burden of completing large numbers of internet challenges (such as CAPTCHAs) for honest users by allowing tokens to be gained for an initial solution. These tokens can be spent by the extension when future challenges are displayed to prevent human interaction. The 'blind' capability of the protocol that we use means that tokens that are issued by a server cannot be linked to tokens that are later redeemed. An example server implementation that is compatible with this extension is available [here](https://github.com/privacypass/challenge-bypass-server).
 
-The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](docs/PROTOCOL.md). 
+The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](docs/PROTOCOL.md). All cryptography is implemented using the Stanford Javascript Cryptography Library (sjcl).
 
 The protocol has received extensive review and testing, but this extension is a work in progress and we regard all components as beta releases. We welcome contributions from the wider community, and also feel free to notify us of any issues that occur. Pull requests and reviews of the extension detailed here are welcome and encouraged.
 
@@ -11,12 +11,12 @@ Privacy Pass is currently supported by Cloudflare to allow users to redeem valid
 The extension is compatible with [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/) (v48+).
 
 ## Quickstart
-
+**Requires installation of a [JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html) for building sjcl**
 ```
 git clone https://github.com/privacypass/challenge-bypass-extension.git && cd challenge-bypass-extension
 yarn install
-yarn build
-yarn test
+yarn build:all
+yarn test:all
 ```
 
 ### Contents
@@ -49,11 +49,28 @@ Download the latest stable release of the extension:
 ## Development
 
 - `git clone https://github.com/privacypass/challenge-bypass-extension.git`
-- To build a new version of the extension: `yarn build`.
-- To run integration tests: `yarn test`.
-- To prepare a new distribution: `yarn dist`.
-- For linting: `yarn lint`
-- To test in the browser see below.
+- `git submodule update --init`
+- Directory:
+	- `src`: The source files that are used for establishing the extension
+		- `ext`: Source files that are specific to the extension
+		- `crypto`: External source files that provide cryptographic functionality
+			- `sjcl`: sjcl submodule
+			- `keccak`: Browserified implementation of Keccak taken from <https://github.com/cryptocoinjs/keccak>
+	- `addon`: Extension directory
+	- `test`: Test scripts for using the jest integration test framework
+	- `docs`: Documentation
+- Commands:
+	- `yarn install`: Installs all dependencies
+	- `build:all`: Builds all source files (including sjcl) and compiles them (using closure) into bg_compiled.js
+	- `test:all`: Compiles all source files, excluding `browserUtils.js`, and compiles them (using closure) into test_compiled.js. Runs sjcl tests and the jest test framework for the extension
+	- `build:ext`: Builds all extension source files and compiles them (using closure) into bg_compiled.js
+	- `test:ext`: Builds all extension source files, excluding `browserUtils.js`, and compiles them (using closure) into bg_compiled.js. Runs the jest test framework for the extension
+	- `test:ext-quick`: Runs the jest test framework for the extension
+	- `build:sjcl`: Builds sjcl
+	- `test:sjcl`: Runs the sjcl tests
+	- `test:watch`: Runs test:all using the jest --watch flag.
+	- `lint`: Lints the source files
+	- `dist`: Zips the extension files
 
 ### Firefox
 

@@ -5,7 +5,7 @@
 */
 import btoa from "btoa";
 import atob from "atob";
-import createShake256 from "../addon/scripts/keccak.js"
+import createShake256 from "../src/crypto/keccak/keccak.js"
 
 import rewire from "rewire";
 var workflow = rewire("../addon/compiled/test_compiled.js");
