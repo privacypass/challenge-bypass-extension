@@ -7,7 +7,6 @@
  * @author: Alex Davidson
  */
 
-/*global sjcl*/
 /* exported handleCompletion */
 /* exported handleMessage */
 /* exported processRedirect */
@@ -20,8 +19,11 @@
 /* exported CHL_CAPTCHA_DOMAIN */
 /* exported CHL_CLEARANCE_COOKIE */
 /* exported REDEEM_METHOD */
+/* exported RELOAD_ON_SIGN */
 /* exported spentTab, spendId, timeSinceLastResp, futureReload */
-/* exported DEV, COMMITMENTS_KEY */
+/* exported DEV */
+/* exported COMMITMENTS_KEY */
+/* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -309,19 +311,8 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
         // When we receive a response...
         if (xhr.status < 300 && xhr.readyState == 4 && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             const resp_data = xhr.responseText;
-            const signedPoints = parseIssueResponse(resp_data, tokens);
-            if (signedPoints !== null) {
-                storeNewTokens(tokens, signedPoints);
-            }
-
-            // Reload the page for the originally intended url
-            if (RELOAD_ON_SIGN && !url.href.includes(CHL_CAPTCHA_DOMAIN)) {
-                let captchaPath = url.pathname;
-                let pathIndex = url.href.indexOf(captchaPath);
-                let reloadUrl = url.href.substring(0, pathIndex+1);
-                setSpendFlag(url.host, true);
-                updateBrowserTab(tabId, reloadUrl);
-            }
+            // Validates the response and stores the signed points for redemptions
+            validateResponse(url, tabId, resp_data, tokens);
         } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
@@ -335,12 +326,14 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     return xhr;
 }
 
-// An issue response takes the form "signatures=[b64 blob]"
-// The blob is an array of base64-encoded marshaled curve points.
-// The points are uncompressed (TODO).
-//
-// If the blinded points are P = H(t)rB, these are Q = kP.
-function parseIssueResponse(data, tokens) {
+/**
+ * Validates the server response and stores the new signed points for future
+ * redemptions
+ * @param data An issue response takes the form "signatures=[b64 blob]"
+ *             where the blob is an array of b64-encoded curve points
+ * @param tokens client-generated tokens that correspond to the signed points
+ */
+function validateResponse(url, tabId, data, tokens) {
     let signaturesJSON;
     switch (SIGN_RESPONSE_FMT) {
         case "string":
@@ -358,27 +351,16 @@ function parseIssueResponse(data, tokens) {
     }
     // parses into JSON
     const issueResp = JSON.parse(signaturesJSON);
-    let batchProof = issueResp[issueResp.length - 1];
-    let signatures = issueResp.slice(0, issueResp.length - 1);
-    if (!batchProof) {
+    let out = parsePointsAndProof(issueResp);
+    if (!out.signatures) {
+        throw new Error("[privacy-pass]: No signed tokens provided");
+    }
+    else if (!out.proof) {
         throw new Error("[privacy-pass]: No batch proof provided");
     }
 
-    let usablePoints = [];
-    signatures.forEach(function(signature) {
-        let usablePoint = sec1DecodePoint(signature);
-        if (usablePoint == null) {
-            throw new Error("[privacy-pass]: unable to decode point " + signature + " in " + JSON.stringify(signatures));
-        }
-        usablePoints.push(usablePoint);
-    })
-
-    // Verify the DLEQ batch proof before handing back the usable points
-    if (!verifyProof(batchProof, tokens, usablePoints)) {
-        throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
-    }
-
-    return usablePoints;
+    // Validate the received information and store the tokens
+    validateAndStoreTokens(url, tabId, tokens, out.signatures, out.proof, out.version);
 }
 
 // Parses signatures that are sent back in JSON format
@@ -396,6 +378,27 @@ function parseSigString(data) {
     }
     // Data should always be b64 encoded
     return atob(split[1]);
+}
+
+/**
+ * Retrieves the batchProof and signatures, depending on the type of object received
+ * @param {JSON/array} issueResp object containing signed points, DLEQ proof and potentially commitment version
+ * @return {literal} Formatted object for inputs
+ */
+function parsePointsAndProof(issueResp) {
+    let signatures;
+    let batchProof;
+    let version;
+    // If this is not an array then the object is probably JSON.
+    if (!issueResp[0]) {
+        signatures = issueResp.sigs;
+        batchProof = issueResp.proof;
+        version = issueResp.version;
+    } else {
+        batchProof = issueResp[issueResp.length - 1];
+        signatures = issueResp.slice(0, issueResp.length - 1);
+    }
+    return {signatures: signatures, proof: batchProof, version: version};
 }
 
 // Set the target URL for the spend and update the tab if necessary
@@ -446,19 +449,6 @@ function checkMaxSpend(host) {
     return true
 }
 
-// Counts the tokens that are stored for the background page
-function countStoredTokens() {
-    const count = get(STORAGE_KEY_COUNT);
-    if (count == null) {
-        return 0;
-    }
-
-    // We change the png file to show if tokens are stored or not
-    const countInt = JSON.parse(count);
-    updateIcon(countInt);
-    return countInt;
-}
-
 // Pops a token from storage for a redemption
 function GetTokenForSpend() {
     let tokens = loadTokens();
@@ -472,75 +462,7 @@ function GetTokenForSpend() {
     return tokenToSpend;
 }
 
-/**
- * This is for persisting valid tokens after some manipulation, like a spend.
- * @param tokens set of tokens to store
- */
-function storeTokens(tokens) {
-    let storableTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-        let t = tokens[i];
-        storableTokens[i] = getTokenEncoding(t,t.point);
-    }
-    const json = JSON.stringify(storableTokens);
-    set(STORAGE_KEY_TOKENS, json);
-    set(STORAGE_KEY_COUNT, tokens.length);
 
-    // Update the count on the actual icon
-    updateIcon(tokens.length);
-}
-
-/**
- * This is for storing tokens that we've just received from a new issuance response.
- * @param tokens set of tokens to store
- * @param signedPoints signed tokens that have been received from server
- */
-function storeNewTokens(tokens, signedPoints) {
-    let storableTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-        let t = tokens[i];
-        storableTokens[i] = getTokenEncoding(t,signedPoints[i]);
-    }
-    // Append old tokens to the newly received tokens
-    if (countStoredTokens() > 0) {
-        let oldTokens = loadTokens();
-        for (let i=0; i<oldTokens.length; i++) {
-            let oldT = oldTokens[i];
-            storableTokens.push(getTokenEncoding(oldT,oldT.point));
-        }
-    }
-    const json = JSON.stringify(storableTokens);
-    set(STORAGE_KEY_TOKENS, json);
-    set(STORAGE_KEY_COUNT, storableTokens.length);
-
-    // Update the count on the actual icon
-    updateIcon(storableTokens.length);
-}
-
-// SJCL points are cyclic as objects, so we have to flatten them.
-function getTokenEncoding(t, curvePoint) {
-    let storablePoint = encodeStorablePoint(curvePoint);
-    let storableBlind = t.blind.toString();
-    return { token: t.token, point: storablePoint, blind: storableBlind };
-}
-
-// Load tokens from browser storage
-function loadTokens() {
-    const storedJSON = get(STORAGE_KEY_TOKENS);
-    if (storedJSON == null) {
-        return null;
-    }
-
-    let usableTokens = [];
-    const storedTokens = JSON.parse(storedJSON);
-    for (var i = 0; i < storedTokens.length; i++) {
-        let t = storedTokens[i];
-        let usablePoint = decodeStorablePoint(t.point);
-        let usableBlind = new sjcl.bn(t.blind);
-        usableTokens[i] = { token: t.token, point: usablePoint, blind: usableBlind };
-    }
-    return usableTokens;
-}
 
 // Clears the stored tokens and other variables
 function clearStorage() {
@@ -609,7 +531,7 @@ function isBypassHeader(header) {
 }
 
 function setConfig(val) {
-    ACTIVE_CONFIG = PPConfigs[val]
+    ACTIVE_CONFIG = PPConfigs[val];
     CONFIG_ID = ACTIVE_CONFIG["id"];
     DEV = ACTIVE_CONFIG["dev"];
     CHL_CLEARANCE_COOKIE = ACTIVE_CONFIG["cookies"]["clearance-cookie"];
@@ -639,6 +561,5 @@ function setConfig(val) {
     VALID_TRANSITIONS = ACTIVE_CONFIG["spending-restrictions"]["valid-transitions"];
     VAR_RESET = ACTIVE_CONFIG["var-reset"];
     VAR_RESET_MS = ACTIVE_CONFIG["var-reset-ms"];
-    setActiveCommitments();
     countStoredTokens();
 }
