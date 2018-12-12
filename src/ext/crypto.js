@@ -19,13 +19,14 @@
 /* exported validateAndStoreTokens */
 "use strict";
 
-var p256 = sjcl.ecc.curves.c256;
+const curve = sjcl.ecc.curves.c256;
 const BATCH_PROOF_PREFIX = "batch-proof=";
 const UNCOMPRESSED_POINT_PREFIX = "04";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
+const INCOMPATIBLE_H2C_ERR = "[privacy-pass]: Incompatible hash-to-curve algorithm specified";
 
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
@@ -44,7 +45,7 @@ function _scalarMult(k, P) {
 // blindPoint generates a random scalar blinding factor, multiplies the
 // supplied point by it, and returns both values.
 function blindPoint(P) {
-    const bF = sjcl.bn.random(p256.r, 10);
+    const bF = sjcl.bn.random(curve.r, 10);
     const bP = _scalarMult(bF, P);
     return { point: bP, blind: bF };
 }
@@ -58,7 +59,7 @@ function blindPoint(P) {
 // returns:
 //  sjcl point
 function unblindPoint(b, Q) {
-    const binv = b.inverseMod(p256.r);
+    const binv = b.inverseMod(curve.r);
     return _scalarMult(binv, Q);
 }
 
@@ -131,10 +132,18 @@ function checkRequestBinding(key, data, mac) {
 function newRandomPoint() {
     const byteLength = 32;
     const wordLength = byteLength / 4; // SJCL 4 bytes to a word
+    const random = sjcl.random.randomWords(wordLength, 10); // TODO Use webcrypto instead.
 
-    // TODO Use webcrypto instead. This is JavaScript Fortuna from 2010.
-    var random = sjcl.random.randomWords(wordLength, 10); // paranoia 10
-    var point = hashToCurve(random);
+    // Choose hash-to-curve method
+    let point;
+    if (HASH_TO_CURVE == "increment") {
+        point = hashAndIncToCurve(random);
+    } else if (HASH_TO_CURVE == "swu") {
+        point = h2Curve(random, curve, 0); // mode 0 uses affine point representation
+    } else {
+        throw new Error(INCOMPATIBLE_H2C_ERR + ": " + HASH_TO_CURVE);
+    }
+
     let t;
     if (point) {
         t = { token: sjcl.codec.bytes.fromBits(random), point: point};
@@ -144,7 +153,7 @@ function newRandomPoint() {
 
 // input: bits
 // output: point
-function hashToCurve(seed) {
+function hashAndIncToCurve(seed) {
     const h = new sjcl.hash.sha256();
 
     // Need to match the Go curve hash, so we decode the exact bytes of the
@@ -191,25 +200,25 @@ function hashToCurve(seed) {
 // input: bits of an x coordinate, the even/odd tag
 // output: point
 function decompressPoint(xbits, tag) {
-    const x = p256.field.fromBits(xbits).normalize();
+    const x = curve.field.fromBits(xbits).normalize();
     const sign = tag & 1;
 
     // y^2 = x^3 - 3x + b (mod p)
     let rh = x.power(3);
     let threeTimesX = x.mul(3);
-    rh = rh.sub(threeTimesX).add(p256.b).mod(p256.field.modulus); // mod() normalizes
+    rh = rh.sub(threeTimesX).add(curve.b).mod(curve.field.modulus); // mod() normalizes
 
     // modsqrt(z) for p = 3 mod 4 is z^(p+1/4)
-    const sqrt = p256.field.modulus.add(1).normalize().halveM().halveM();
-    let y = rh.powermod(sqrt, p256.field.modulus);
+    const sqrt = curve.field.modulus.add(1).normalize().halveM().halveM();
+    let y = rh.powermod(sqrt, curve.field.modulus);
 
     let parity = y.limbs[0] & 1;
 
     if (parity != sign) {
-        y = p256.field.modulus.sub(y).normalize();
+        y = curve.field.modulus.sub(y).normalize();
     }
 
-    let point = new sjcl.ecc.point(p256, x, y);
+    let point = new sjcl.ecc.point(curve, x, y);
     if (!point.isValid()) {
         return null;
     }
@@ -256,7 +265,7 @@ function sec1DecodePointFromBytes(sec1Bytes) {
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
-    return p256.fromBits(pointBits);
+    return curve.fromBits(pointBits);
 }
 
 // Marshals a point in an SJCL-internal format that can be used with
@@ -275,7 +284,7 @@ function encodeStorablePoint(p) {
 // ouput: point
 function decodeStorablePoint(s) {
     const bits = sjcl.codec.base64.toBits(s);
-    return p256.fromBits(bits);
+    return curve.fromBits(bits);
 }
 
 /**
@@ -453,7 +462,7 @@ function recomputeComposites(chkM, chkZ, pointG, pointH) {
 
 // Squeeze a seeded shake for output
 function getShakeScalar(shake) {
-    const curveOrder = p256.r;
+    const curveOrder = curve.r;
     const bitLen = sjcl.bitArray.bitLength(curveOrder.toBits());
     const mask = MASK[bitLen % 8];
     let rnd;
