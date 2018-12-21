@@ -160,7 +160,11 @@ function processHeaders(details, url) {
             if (header.value == CHL_VERIFICATION_ERROR
                 || header.value == CHL_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
-                // Either tokens are bad or some resource is calling the server in a bad way
+                // Either tokens are bad or some resource is calling the server
+                // in a bad way
+                if (header.value == CHL_VERIFICATION_ERROR) {
+                    clearStorage();
+                }
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
             }
         }
