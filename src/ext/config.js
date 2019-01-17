@@ -48,7 +48,8 @@ const exampleConfig = {
 	"error-codes": {
 		"verify-error": "5", // error code sent by server for verification error
 		"connection-error": "6", // error code sent by server for connection error
-	} // generic error codes (can add more)
+	}, // generic error codes (can add more)
+	"hash-to-curve": "increment" // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)
 }
 
 // The configuration used by Cloudflare
@@ -88,7 +89,8 @@ const cfConfig = {
 	"error-codes": {
 		"verify-error": "5",
 		"connection-error": "6",
-	}
+	},
+	"hash-to-curve": "increment"
 };
 
 // Ordering of configs should correspond to value of cf-chl-bypass header
