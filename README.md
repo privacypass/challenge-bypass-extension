@@ -13,10 +13,11 @@ The extension is compatible with [Chrome](https://chrome.google.com/webstore/det
 ## Quickstart
 **Requires installation of a [JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html) for building sjcl**
 ```
-git clone https://github.com/privacypass/challenge-bypass-extension.git && cd challenge-bypass-extension
-yarn install
-yarn build:all
-yarn test:all
+$ git clone https://github.com/privacypass/challenge-bypass-extension.git && cd challenge-bypass-extension
+$ git submodule update --init
+$ yarn install
+$ yarn build:all
+$ yarn test:all
 ```
 
 ### Contents
@@ -141,7 +142,7 @@ We describe a generic workflow where a user attempts to visit multiple webpages 
 
 - Redemption:
 	- User visits an origin and a CAPTCHA page is returned
-	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates a ['privacy pass'](#redemption-request) 
+	- The plugin catches the response and gets an unspent blinded token and signature from the store and creates a ['privacy pass'](#redemption-request)
 	- The plugin sets up a new HTTP request with a header `challenge-bypass-token`; with the value set to the value of the pass
 	- The edge verifies the redemption request and checks that the pass has not been used before
 	- If all is fine, the edge grants the user access to the origin
@@ -168,7 +169,7 @@ JSON struct used for sending blinded tokens to be signed by the edge, this messa
 	```
 
 - Body contents:
-	
+
 	`"blinded-tokens=" || base64.encode(<Issue-JSON-struct>)`
 
 #### Issue response
@@ -192,18 +193,18 @@ A response string that is appended to the response body by the edge after a vali
 <sup>2</sup> Other [VRF implementations](https://datatracker.ietf.org/doc/draft-goldbe-vrf/?include_text=1) use different notation to us. We have tried to coincide as much as possible with these works.
 
 - `<Batch-DLEQ-Resp>`:
-	
-	`"batch-proof=" || <batch-proof>` 
+
+	`"batch-proof=" || <batch-proof>`
 
 - Issue response:
-	
+
 	- __Deprecated format__: Marshaled array used for sending signed tokens back to the user of the form:
 		```
 		"signatures=" || <signed-tokens> || <Batch-DLEQ-Resp>
 		```
 		This will be phased out in the near future
 
-	- __New format__: JSON struct of the form: 
+	- __New format__: JSON struct of the form:
 
 		```
 		{
@@ -228,7 +229,7 @@ JSON struct sent in a request header to bypass CAPTCHA pages.
 - `HMAC()` is a HMAC function that uses SHA256 as underlying hash function
 
 - `<derived-key>` is the derived key (computed over `<data> = (<token> || <shared-point>)`) output by:
-	
+
 	`HMAC("hash_derive_key", <data>)`
 
 - `<request-binding>` is the output (computed over `<data> = (<derived-key> || <host> || <path>)`) of the following:
@@ -255,7 +256,7 @@ Server response header used if errors occur when verifying the privacy pass.
 
 - `<error-resp>` is the error value returned by the privacy pass verifier. Takes the value 5 or 6, where 5 is an edge-side connection error and 6 is a pass verification error.
 
-- Header: 
+- Header:
 
 	`"CF-Chl-Bypass-Resp":"<error-resp>"`
 
