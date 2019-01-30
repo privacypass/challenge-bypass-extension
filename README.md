@@ -1,5 +1,7 @@
 # Challenge Bypass Extension
 
+[![CircleCI](https://circleci.com/gh/privacypass/challenge-bypass-extension.svg?style=svg)](https://circleci.com/gh/privacypass/challenge-bypass-extension)
+
 The Privacy Pass extension allows a user to bypass internet challenge pages on websites supporting Privacy Pass using a 'blind signature' protocol. This extension alleviates the burden of completing large numbers of internet challenges (such as CAPTCHAs) for honest users by allowing tokens to be gained for an initial solution. These tokens can be spent by the extension when future challenges are displayed to prevent human interaction. The 'blind' capability of the protocol that we use means that tokens that are issued by a server cannot be linked to tokens that are later redeemed. An example server implementation that is compatible with this extension is available [here](https://github.com/privacypass/challenge-bypass-server).
 
 The protocol we use is based on a realization of a 'Verifiable, Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki et al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the protocol see the [PROTOCOL.md](docs/PROTOCOL.md). All cryptography is implemented using the Stanford Javascript Cryptography Library (sjcl).
