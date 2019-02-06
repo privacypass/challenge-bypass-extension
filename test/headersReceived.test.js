@@ -15,12 +15,19 @@ const processHeaders = workflow.__get__('processHeaders');
 const isBypassHeader = workflow.__get__('isBypassHeader');
 const setConfig = workflow.__get__('setConfig');
 const updateIconMock = jest.fn();
-const chkG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
-const chkH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 function getMock() {
     return 1;
 }
+
+
+/**
+ * local storage set up
+ */
+let localStorage = new Map();
+localStorage.clear = function() { localStorage.token = null };
 beforeEach(() => {
+    localStorage.token = "some_token";
+    workflow.__set__("localStorage", localStorage);
     setConfig(1); // set the CF config
 });
 
@@ -42,15 +49,17 @@ describe("ensure that errors are handled properly", () => {
             processHeaders(details, url);
         }
         expect(processConnError).toThrowError("error code: 5");
+        expect(localStorage.token).toBeTruthy();
     });
     test("verification error", () => {
-        function processConnError() {
+        function processVerifyError() {
             let details = {
                 responseHeaders: [{ name: CHL_BYPASS_RESPONSE, value: CHL_VERIFICATION_ERROR }]
             }
             processHeaders(details, url);
         }
-        expect(processConnError).toThrowError("error code: 6");
+        expect(processVerifyError).toThrowError("error code: 6");
+        expect(localStorage.token).toBeFalsy();
     });
 });
 
