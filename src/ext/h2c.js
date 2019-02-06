@@ -2,17 +2,15 @@
  * Implements the methods of hashing to elliptic curves
  * that are described in draft-irtf-cfrg-hash-to-curve
  * @author Alex Davidson
- * Note: None of the algorithms are written in a constant-time manner.
- * Fortunately, in the use-case of Privacy Pass with Cloudflare this does not
- * matter since the computation is masked by human completion of the CAPTCHA.
+ * Note: The SWU algorithm is constant-time except for the conditional checks in
+ * the final two lines. The implementation follows a regular execution pattern.
  */
 
- /* global sjcl */
- /* exported h2Curve */
+/* global sjcl */
+/* exported h2Curve */
 
- // We only support hashing to curve using the affine representation for now
- const SWU_MODE = 0;
- const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
+const SWU_POINT_REPRESENTATION = 0; // 0 = affine, 1 = jacobian
+const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
 
 /**
  * hashes bits to the base field (as described in
@@ -34,20 +32,20 @@ function h2Base(x, curve, hash, label) {
 /**
  * hashes bits to the chosen elliptic curve
  * @param {sjcl.bitArray} alpha bits to be encoded onto curve
- * @param {literal} ecSettings the curve settings being used by the extension 
+ * @param {literal} ecSettings the curve settings being used by the extension
  * @return {sjcl.ecc.point} point on curve
  */
 function h2Curve(alpha, ecSettings) {
   let point;
   switch (ecSettings.method) {
     case "swu":
-      point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_MODE);
+      point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_POINT_REPRESENTATION);
       break;
     case "increment":
       point = hashAndInc(alpha, ecSettings.curve, ecSettings.hash);
       break;
     default:
-      throw new Error("[privacy-pass]: Incompatible curve chosen for hashing: " + sjcl.ecc.curveName(ecSettings.curve));
+      throw new Error("[privacy-pass]: Incompatible curve chosen for hashing, SJCL chosen curve: " + sjcl.ecc.curveName(ecSettings.curve));
   }
   return point;
 }
@@ -207,7 +205,7 @@ function getCurveParams(curve) {
  * DEPRECATED: Method for hashing to curve based on the principal of attempting
  * to hash the bytes multiple times and recover a curve point. Has non-negligble
  * probailistic failure conditions.
- * @param {sjcl.codec.bitArray} seed 
+ * @param {sjcl.codec.bitArray} seed
  * @param {sjcl.ecc.curve} curve elliptic curve
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
  */
@@ -224,30 +222,30 @@ function hashAndInc(seed, curve, hash) {
   let i = 0;
   // Increased increments to decrease chance of failure
   for (i = 0; i < 20; i++) {
-      // little endian uint32
-      let ctr = new Uint8Array(4);
-      // typecast hack: number -> Uint32, bitwise Uint8
-      ctr[0] = (i >>> 0) & 0xFF;
-      let ctrBits = sjcl.codec.bytes.toBits(ctr);
+    // little endian uint32
+    let ctr = new Uint8Array(4);
+    // typecast hack: number -> Uint32, bitwise Uint8
+    ctr[0] = (i >>> 0) & 0xFF;
+    let ctrBits = sjcl.codec.bytes.toBits(ctr);
 
-      // H(s||ctr)
-      h.update(seed);
-      h.update(ctrBits);
+    // H(s||ctr)
+    h.update(seed);
+    h.update(ctrBits);
 
-      const digestBits = h.finalize();
+    const digestBits = h.finalize();
 
-      let point = decompressPoint(digestBits, curve, 0x02);
-      if (point !== null) {
-          return point;
-      }
+    let point = decompressPoint(digestBits, curve, 0x02);
+    if (point !== null) {
+      return point;
+    }
 
-      point = decompressPoint(digestBits, curve, 0x03);
-      if (point !== null) {
-          return point;
-      }
+    point = decompressPoint(digestBits, curve, 0x03);
+    if (point !== null) {
+      return point;
+    }
 
-      seed = digestBits;
-      h.reset();
+    seed = digestBits;
+    h.reset();
   }
 
   return null;

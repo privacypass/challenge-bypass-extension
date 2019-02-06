@@ -1,0 +1,6 @@
+src/crypto/sjcl/*
+src/crypto/keccak/*
+test/*
+addon/*
+coverage/*
+jest.config.js

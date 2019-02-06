@@ -14,6 +14,7 @@
         "blindPoint": true,
         "checkRequestBinding": true,
         "compressPoint": true,
+        "decompressPoint": true,
         "createRequestBinding": true,
         "deriveKey": true,
         "encodeStorablePoint": true,

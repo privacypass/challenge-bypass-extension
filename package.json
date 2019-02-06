@@ -26,7 +26,7 @@
     "build:sjcl": "cd src/crypto/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex && make sjcl.js",
     "test:sjcl": "make test -C src/crypto/sjcl",
     "test:watch": "yarn test:all --watch",
-    "lint": "cd addon && eslint .",
+    "lint": "eslint .",
     "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
   }
 }

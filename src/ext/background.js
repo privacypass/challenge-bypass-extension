@@ -538,7 +538,7 @@ function isBypassHeader(header) {
 /**
  * CHanges the active configuration when the client receives a new configuration
  * value.
- * @param {int} val 
+ * @param {int} val
  */
 function setConfig(val) {
     ACTIVE_CONFIG = PPConfigs[val];
