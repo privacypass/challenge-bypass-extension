@@ -75,7 +75,7 @@
         "countStoredTokens": true,
         "STORAGE_KEY_TOKENS": true,
         "STORAGE_KEY_COUNT": true,
-        "HASH_TO_CURVE": true,
+        "initECSettings": true,
         "h2Curve": true
     },
     "rules": {

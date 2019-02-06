@@ -24,7 +24,6 @@
 /* exported DEV */
 /* exported COMMITMENTS_KEY */
 /* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
-/* exported HASH_TO_CURVE */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -50,13 +49,13 @@ let BAD_NAV = ACTIVE_CONFIG["spending-restrictions"]["bad-navigation"];
 let BAD_TRANSITION = ACTIVE_CONFIG["spending-restrictions"]["bad-transition"];
 let VALID_REDIRECTS = ACTIVE_CONFIG["spending-restrictions"]["valid-redirects"];
 let VALID_TRANSITIONS = ACTIVE_CONFIG["spending-restrictions"]["valid-transitions"];
-let HASH_TO_CURVE = ACTIVE_CONFIG["hash-to-curve"];
 let VAR_RESET = ACTIVE_CONFIG["var-reset"];
 let VAR_RESET_MS = ACTIVE_CONFIG["var-reset-ms"];
 const STORAGE_STR = "bypass-tokens-";
 const COUNT_STR = STORAGE_STR + "count-";
 let STORAGE_KEY_TOKENS = STORAGE_STR + ACTIVE_CONFIG["id"];
 let STORAGE_KEY_COUNT = COUNT_STR + ACTIVE_CONFIG["id"];
+initECSettings(ACTIVE_CONFIG["h2c-params"]);
 
 // Used for resetting variables below
 let timeSinceLastResp = 0;
@@ -536,6 +535,11 @@ function isBypassHeader(header) {
     return false;
 }
 
+/**
+ * CHanges the active configuration when the client receives a new configuration
+ * value.
+ * @param {int} val 
+ */
 function setConfig(val) {
     ACTIVE_CONFIG = PPConfigs[val];
     CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -567,6 +571,6 @@ function setConfig(val) {
     VALID_TRANSITIONS = ACTIVE_CONFIG["spending-restrictions"]["valid-transitions"];
     VAR_RESET = ACTIVE_CONFIG["var-reset"];
     VAR_RESET_MS = ACTIVE_CONFIG["var-reset-ms"];
-    HASH_TO_CURVE = ACTIVE_CONFIG["hash-to-curve"];
+    initECSettings(ACTIVE_CONFIG["h2c-params"]);
     countStoredTokens();
 }

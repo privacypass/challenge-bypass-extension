@@ -30,7 +30,7 @@ function CreateBlindToken() {
     let tok;
     if (t) {
         let bpt = blindPoint(t.point);
-        tok = { token: t.token, point: bpt.point, blind: bpt.blind };
+        tok = { data: t.data, point: bpt.point, blind: bpt.blind };
     }
     return tok;
 }
@@ -93,7 +93,7 @@ function BuildIssueRequest(tokens) {
 // key is derived from the signed point corresponding to the token preimage.
 function BuildRedeemHeader(token, host, path) {
     const sharedPoint = unblindPoint(token.blind, token.point);
-    const derivedKey = deriveKey(sharedPoint, token.token);
+    const derivedKey = deriveKey(sharedPoint, token.data);
 
     // TODO: this could be more efficient, but it's easier to check correctness when everything is bytes
     const hostBits = sjcl.codec.utf8String.toBits(host);
@@ -102,11 +102,16 @@ function BuildRedeemHeader(token, host, path) {
     const pathBits = sjcl.codec.utf8String.toBits(path);
     const pathBytes = sjcl.codec.bytes.fromBits(pathBits);
 
+    const h2cString = JSON.stringify(ACTIVE_CONFIG["h2c-params"]);
+    const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
+    const h2cBytes = sjcl.codec.bytes.fromBits(h2cBits);
+
     const binding = createRequestBinding(derivedKey, [hostBytes, pathBytes]);
 
     let contents = [];
-    contents.push(token.token);
+    contents.push(token.data);
     contents.push(binding);
+    contents.push(h2cBytes);
 
     return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
 }
@@ -160,7 +165,7 @@ function storeTokens(tokens) {
 function getTokenEncoding(t, curvePoint) {
     let storablePoint = encodeStorablePoint(curvePoint);
     let storableBlind = t.blind.toString();
-    return { token: t.token, point: storablePoint, blind: storableBlind };
+    return { data: t.data, point: storablePoint, blind: storableBlind };
 }
 
 // Load tokens from browser storage
@@ -176,7 +181,7 @@ function loadTokens() {
         let t = storedTokens[i];
         let usablePoint = decodeStorablePoint(t.point);
         let usableBlind = new sjcl.bn(t.blind);
-        usableTokens[i] = { token: t.token, point: usablePoint, blind: usableBlind };
+        usableTokens[i] = { data: t.data, point: usablePoint, blind: usableBlind };
     }
     return usableTokens;
 }
