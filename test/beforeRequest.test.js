@@ -19,9 +19,9 @@ const EXAMPLE_HREF = "https://example.com";
 const CAPTCHA_HREF = "https://captcha.website";
 const EXAMPLE_SUFFIX = "/cdn-cgi/l/chk_captcha?id=4716480f5bb534e8&g-recaptcha-response=03AMGVjXh24S6n8-HMQadfr8AmSr-2i87s1TTWUrhfnrIcti9hw1DigphUtiZzhU5R44VlJ3CmoH1W6wZaqde7iJads2bFaErY2bok29QfgZrbhO8q6UBbwLMkVlZ803M1UyDYhA9xYJqLR4kVtKhrHkDsUEKN4vXKc3CNxQpysmvdTqdt31Lz088ptkkksGLzRluDu-Np11ER6NX8XaH2S4iwIR823r3txm4eaMoEeoLfOD5S_6WHD5RhH0B7LRa_l7Vp5ksEB-0vyHQPLQQLOYixrC_peP3dG3dnaTY5UcUAUxZK4E74glzCu2PyRpKNnQ9akFz-niWiFCY0z-cuJeOArMvGOQCC9Q";
 const CAPTCHA_BYPASS_SUFFIX = "&captcha-bypass=true";
+const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const beforeRequest = workflow.__get__('beforeRequest');
 const sendXhrSignReq = workflow.__get__('sendXhrSignReq');
-const BuildIssueRequest = workflow.__get__('BuildIssueRequest');
 const getBigNumFromBytes = workflow.__get__('getBigNumFromBytes');
 const sec1DecodePointFromBytes = workflow.__get__('sec1DecodePointFromBytes');
 const createVerificationXHR = workflow.__get__('createVerificationXHR');
@@ -31,6 +31,8 @@ const validateAndStoreTokens = workflow.__get__('validateAndStoreTokens');
 const parsePointsAndProof = workflow.__get__('parsePointsAndProof');
 const parseSigString = workflow.__get__('parseSigString')
 const setConfig = workflow.__get__('setConfig');
+const getCachedCommitments = workflow.__get__('getCachedCommitments');
+const cacheCommitments = workflow.__get__('cacheCommitments');
 let localStorage;
 let details;
 let url;
@@ -58,15 +60,20 @@ let respBadJson = `signatures=WyJCTGZQdW9FdGxueHNic0p5dE5uUHg3Yk45N2l0KzQvd0dRVV
 let respBadPoints = `signatures=WyJCTGZQdW9FdGxueHNic0p5dE5uUHg3Yk45N2l0KzQvd0dRVVVDWG1OM1lUcC9OOUpmMk9tWjk0TkM0WDBCbFJSTUltRUNLdUMrUlVXMm1wZlc4b1JxZG89IiwiQk5rSnBybVpVK3N1QngrWDY2Q3BEZyt4QkJlK0MzT1Z2K0U4VWhuelg0dG9ZOWgxYUo1ZUhvSmQvNHE1MjRTRUwrMHlPUjk1b2xaKzNWUVJ3ZUxqcjNzPSIsIkJOdHBFeEY4OHJTb0lwNjMvam9oMGJ0UWgyMFgwYk1TQnZMR1pCVFdKS3VzbDBZSHBzZ3FJbkNwcEpEUTJYb2xqQXV5Z250ZUh6MnR3S0lER3A2UExnND0iLCJleUpRSWpvZ0ltVjVTbE5KYW05blNXeHNkRkp0ZEZsTlZYQnRXa2N4UjJNeVVsaFdWREJwVEVOQmFWRjVTVFpKUTBwYVlsVmFjbGRFUWs5YWJWSjBVbTVPYTFZeFZUbEpiakE5SW4wPSJd`;
 let testTokens = JSON.parse(`[{"token":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,178,119,34,84,93,23,7,255,30,232,166,5,142,110,153,178,32,198,114,30,102,86,121,195,92,214,144,84,155,61,235,94,227,235,75,30,198,92,206,234,196,86,106,0,79,14,9,225,63,249,58,139,100,21,117,195,204,225,53,217,141,220,224,35],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"token":[254,122,184,29,171,157,229,38,101,187,66,154,255,160,164,128,17,142,250,241,176,89,123,12,53,24,236,91,58,3,212,217],"point":[4,237,62,141,228,215,60,240,129,29,36,33,222,205,76,22,88,238,41,234,39,29,92,3,210,140,190,200,19,7,124,159,211,84,135,68,248,26,255,98,27,27,64,190,169,189,78,27,215,84,16,210,253,206,22,194,168,165,138,228,13,211,203,173,131],"blind":[44,0,207,19,25,28,76,114,193,226,49,111,160,152,161,102,207,170,195,9,31,220,120,202,182,50,135,83,7,2,134,21]},{"token":[223,42,23,79,237,61,125,106,86,135,234,109,171,67,86,202,166,142,77,238,69,175,78,67,214,214,246,171,20,178,166,251],"point":[4,1,217,22,212,2,213,172,249,228,15,57,187,210,224,69,225,254,67,195,37,79,189,197,43,1,57,213,66,100,118,118,239,41,145,71,177,212,83,25,55,198,198,40,110,29,155,189,82,17,11,156,4,99,60,168,157,182,156,187,166,71,251,176,191],"blind":[74,150,233,91,28,35,116,26,6,87,77,9,8,200,166,69,152,61,192,210,236,207,68,138,250,104,16,195,92,232,43,132]}]`);
 let testTokensBadLength = JSON.parse(`[{"token":[254,122,184,29,171,157,229,38,101,187,66,154,255,160,164,128,17,142,250,241,176,89,123,12,53,24,236,91,58,3,212,217],"point":[4,237,62,141,228,215,60,240,129,29,36,33,222,205,76,22,88,238,41,234,39,29,92,3,210,140,190,200,19,7,124,159,211,84,135,68,248,26,255,98,27,27,64,190,169,189,78,27,215,84,16,210,253,206,22,194,168,165,138,228,13,211,203,173,131],"blind":[44,0,207,19,25,28,76,114,193,226,49,111,160,152,161,102,207,170,195,9,31,220,120,202,182,50,135,83,7,2,134,21]},{"token":[223,42,23,79,237,61,125,106,86,135,234,109,171,67,86,202,166,142,77,238,69,175,78,67,214,214,246,171,20,178,166,251],"point":[4,1,217,22,212,2,213,172,249,228,15,57,187,210,224,69,225,254,67,195,37,79,189,197,43,1,57,213,66,100,118,118,239,41,145,71,177,212,83,25,55,198,198,40,110,29,155,189,82,17,11,156,4,99,60,168,157,182,156,187,166,71,251,176,191],"blind":[74,150,233,91,28,35,116,26,6,87,77,9,8,200,166,69,152,61,192,210,236,207,68,138,250,104,16,195,92,232,43,132]}]`);
+let testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
+let testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
+let testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
+let testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
 
 /* mock impls */
-function setActiveCommitmentsMock() {}
-workflow.__set__("setActiveCommitments", setActiveCommitmentsMock);
 function getMock(key) {
     return localStorage[key];
 }
 function setMock(key, value) {
     localStorage[key] = value; 
+}
+function clearCachedCommitmentsMock(key) {
+    localStorage[CACHED_COMMITMENTS_STRING] = null;
 }
 function getSpendFlag(key) {
     return getMock(key);
@@ -92,9 +99,7 @@ function mockXHR(_xhr) {
     }
     _xhr.overrideMimeType = jest.fn();
     _xhr.body;
-    _xhr.send = function(str) {
-        _xhr.body = str;
-    }
+    _xhr.send = jest.fn();
     _xhr.onreadystatechange = function() {};
 }
 
@@ -120,7 +125,7 @@ function mockXHRCommitments() {
     mockXHR(this);
     this.status = 200;
     this.readyState = 4;
-    this.responseText = `{"CF":{"dev":{"G": "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=","H": "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo="},"1.0":{"G":"BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=","H":"BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY="},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"}}}`;
+    this.responseText = `{"CF":{"dev":{"G": "` + testDevG + `","H": "` + testDevH + `"},"1.0":{"G":"` + testG + `","H":"` + testH + `"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"}}}`;
 }
 
 let _xhr;
@@ -142,8 +147,8 @@ beforeEach(() => {
     setTimeSinceLastResp(Date.now());
     setConfig(1); // set the CF config
     // Mock the active commitments because XHR is not available
-    workflow.__set__("activeG", "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=");
-    workflow.__set__("activeH", "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=");
+    workflow.__set__("activeG", testG);
+    workflow.__set__("activeH", testH);
     workflow.__set__("readySign", true);
     workflow.__set__("TOKENS_PER_REQUEST", 3); // limit the # of tokens for tests
 });
@@ -151,9 +156,7 @@ beforeEach(() => {
 /**
 * Tests
 */
-describe("commitments parsing", () => {
-    const chkG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
-    const chkH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
+describe("commitments parsing and caching", () => {
     beforeEach(() => {
         workflow.__set__("XMLHttpRequest", mockXHRCommitments);
         setXHR(mockXHRCommitments);
@@ -162,15 +165,15 @@ describe("commitments parsing", () => {
     test("parse correctly (null version)", () => {
         let xhr = createVerificationXHR(); // this usually takes params
         let commitments = retrieveCommitments(xhr);
-        expect(chkG == commitments.G).toBeTruthy();
-        expect(chkH == commitments.H).toBeTruthy();
+        expect(testG == commitments.G).toBeTruthy();
+        expect(testH == commitments.H).toBeTruthy();
     });
 
     test("parse correctly (v1.0)", () => {
         let xhr = createVerificationXHR(); // this usually takes params
         let commitments = retrieveCommitments(xhr, "1.0");
-        expect(chkG == commitments.G).toBeTruthy();
-        expect(chkH == commitments.H).toBeTruthy();
+        expect(testG == commitments.G).toBeTruthy();
+        expect(testH == commitments.H).toBeTruthy();
     });
 
     test("parse correctly (v1.1)", () => {
@@ -183,13 +186,22 @@ describe("commitments parsing", () => {
     });
 
     test("parse correctly (dev)", () => {
-        let devG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
-        let devH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
         workflow.__set__("DEV", true);
         let xhr = createVerificationXHR(); // this usually takes params
         let commitments = retrieveCommitments(xhr, "1.1");
-        expect(devG == commitments.G).toBeTruthy();
-        expect(devH == commitments.H).toBeTruthy();
+        expect(testDevG == commitments.G).toBeTruthy();
+        expect(testDevH == commitments.H).toBeTruthy();
+    });
+
+    test("caching commitments", () => {
+        cacheCommitments("1.0", testG, testH);
+        let cached10 = getCachedCommitments("1.0");
+        expect(cached10.G === testG).toBeTruthy();
+        expect(cached10.H === testH).toBeTruthy();
+        let cached11 = getCachedCommitments("1.1");
+        expect(cached11).toBeFalsy();
+        setConfig(0);
+        expect(getCachedCommitments("1.0")).toBeFalsy();
     });
 });
 
@@ -257,7 +269,6 @@ describe("test sending sign requests", () => {
         expect(b).toBeTruthy();
         let xhr = b.xhr;
         xhr.onreadystatechange();
-        expect(xhr.body).toContain("blinded-tokens=");
         expect(validateRespMock).not.toBeCalled();
         expect(updateIconMock).toBeCalledTimes(2);
         expect(updateBrowserTabMock).not.toBeCalled();
@@ -370,6 +381,7 @@ describe("test validating response", () => {
         test("test store tokens", () => {
             let before;
             let after;
+            let version;
             function run() { 
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
@@ -377,9 +389,12 @@ describe("test validating response", () => {
                 }
                 const out = parseRespString(respGoodProof); 
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
+                expect(xhr).toBeTruthy();
+                expect(xhr.send).toBeCalledTimes(1);
                 before = getMock(TOKEN_COUNT_STR);
                 xhr.onreadystatechange();
                 after = getMock(TOKEN_COUNT_STR);
+                version = out.version;
             };
             setTimeSinceLastResp(0); // reset the variables
             setMock(TOKEN_COUNT_STR, 0);
@@ -389,11 +404,86 @@ describe("test validating response", () => {
             expect(updateBrowserTabMock).toBeCalled();
             expect(after == before+3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            let cache = getCachedCommitments(version);
+            expect(cache.G === testG).toBeTruthy();
+            expect(cache.H == testH).toBeTruthy();
+        });
+
+        test("correct verify for cached commitments", () => {
+            let before;
+            let after;
+            let version;
+            cacheCommitments("1.0", testG, testH);
+            expect(getCachedCommitments("1.0").G === testG).toBeTruthy();
+            expect(getCachedCommitments("1.0").H === testH).toBeTruthy();
+            function run() { 
+                let tokens = [];
+                for (let i=0; i<testTokens.length; i++) {
+                    tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
+                }
+                const out = parseRespString(respGoodProof); 
+                before = getMock(TOKEN_COUNT_STR);
+                let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
+                expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
+                after = getMock(TOKEN_COUNT_STR);
+                version = out.version;
+            };
+            setTimeSinceLastResp(0); // reset the variables
+            setMock(TOKEN_COUNT_STR, 0);
+            let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            expect(run).not.toThrow();
+            expect(updateIconMock).toBeCalledTimes(3);
+            expect(updateBrowserTabMock).toBeCalled();
+            expect(after == before+3).toBeTruthy();
+            expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            let cache = getCachedCommitments(version);
+            expect(cache.G === testG).toBeTruthy();
+            expect(cache.H == testH).toBeTruthy();
+        });
+
+        test("correct verify when cached commitments are bad", () => {
+            let before;
+            let after;
+            let version;
+            // construct corrupted commitments
+            localStorage[CACHED_COMMITMENTS_STRING] = JSON.stringify({ "1.0": {L: testG, H: testH} });
+            function run() { 
+                let tokens = [];
+                for (let i=0; i<testTokens.length; i++) {
+                    tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
+                }
+                const out = parseRespString(respGoodProof); 
+                before = getMock(TOKEN_COUNT_STR);
+                let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
+                expect(xhr).toBeTruthy();
+                expect(xhr.send).toBeCalledTimes(1);
+                before = getMock(TOKEN_COUNT_STR);
+                xhr.onreadystatechange();
+                after = getMock(TOKEN_COUNT_STR);
+                version = out.version;
+            };
+            let consoleNew = {
+                warn: jest.fn()
+            }
+            workflow.__set__("console", consoleNew);
+            setTimeSinceLastResp(0); // reset the variables
+            setMock(TOKEN_COUNT_STR, 0);
+            let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            expect(run).not.toThrow();
+            expect(consoleNew.warn).toBeCalled();
+            expect(updateIconMock).toBeCalledTimes(3);
+            expect(updateBrowserTabMock).toBeCalled();
+            expect(after == before+3).toBeTruthy();
+            expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            let cache = getCachedCommitments(version);
+            expect(cache.G === testG).toBeTruthy();
+            expect(cache.H == testH).toBeTruthy();
         });
 
         test("test store tokens for captcha.website", () => {
             let before;
             let after;
+            let version;
             function run() { 
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
@@ -404,6 +494,7 @@ describe("test validating response", () => {
                 before = getMock(TOKEN_COUNT_STR);
                 xhr.onreadystatechange();
                 after = getMock(TOKEN_COUNT_STR);
+                version = out.version;
             };
             setTimeSinceLastResp(0); // reset the variables
             setMock(TOKEN_COUNT_STR, 0);
@@ -413,6 +504,9 @@ describe("test validating response", () => {
             expect(updateBrowserTabMock).not.toBeCalled();
             expect(after == before+3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeFalsy();
+            let cache = getCachedCommitments(version);
+            expect(cache.G === testG).toBeTruthy();
+            expect(cache.H == testH).toBeTruthy();
         });
 
         test("reloading off after sign", () => {
@@ -567,6 +661,7 @@ function setMockFunctions() {
     workflow.__set__("btoa", btoa);
     workflow.__set__("get", getMock);
     workflow.__set__("set", setMock);
+    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("updateIcon", updateIconMock);
     workflow.__set__("updateBrowserTab", updateBrowserTabMock);
     workflow.__set__("setSpendFlag", setSpendFlag);

@@ -184,6 +184,11 @@ function isFaviconUrl(url) {
     return url.includes("favicon");
 }
 
+// We have to remove the item using the direct call
+function clearCachedCommitments() {
+    localStorage.removeItem(CACHED_COMMITMENTS_STRING);
+}
+
 // localStorage API function for getting values
 function get(key) {
     return localStorage.getItem(key);

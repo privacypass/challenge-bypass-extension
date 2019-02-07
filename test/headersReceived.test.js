@@ -10,6 +10,7 @@ var URL = window.URL;
 /**
 * Functions
 */
+const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const EXAMPLE_HREF = "https://www.example.com";
 const processHeaders = workflow.__get__('processHeaders');
 const isBypassHeader = workflow.__get__('isBypassHeader');
@@ -18,7 +19,8 @@ const updateIconMock = jest.fn();
 function getMock() {
     return 1;
 }
-
+const setMock = jest.fn();
+const clearCachedCommitmentsMock = function () { localStorage[CACHED_COMMITMENTS_STRING] = null; }
 
 /**
  * local storage set up
@@ -85,6 +87,19 @@ describe("check bypass header is working", () => {
         found = isBypassHeader(header);
         expect(found).toBeFalsy();
     });
+    test("config is reset if ID changes", () => {
+        workflow.__set__("CONFIG_ID", 2);
+        let header = { name: CHL_BYPASS_SUPPORT, value: "1" };
+        found = isBypassHeader(header);
+        expect(found).toBeTruthy();
+        expect(updateIconMock).toBeCalledTimes(2);
+    });
+    test("config is not reset if ID does not change", () => {
+        let header = { name: CHL_BYPASS_SUPPORT, value: "1" };
+        found = isBypassHeader(header);
+        expect(found).toBeTruthy();
+        expect(updateIconMock).toBeCalledTimes(1);
+    });
 });
 
 describe("check redemption attempt conditions", () => {
@@ -119,7 +134,7 @@ describe("check redemption attempt conditions", () => {
     test("redemption is attempted on general domains", () => {
         let fired = processHeaders(details, url);
         expect(fired).toBeTruthy;
-        expect(updateIconMock).toBeCalledTimes(3);
+        expect(updateIconMock).toBeCalledTimes(2);
     });
     
     test("not fired if status code != 403", () => {
@@ -132,7 +147,7 @@ describe("check redemption attempt conditions", () => {
         getMock = function() { return 0; };
         workflow.__set__("get", getMock);
         processHeaders(details, url);
-        expect(updateIconMock).toBeCalledTimes(4);
+        expect(updateIconMock).toBeCalledTimes(3);
     });
 
     describe("SPEND_IFRAME setting", () => {
@@ -145,7 +160,7 @@ describe("check redemption attempt conditions", () => {
             workflow.__set__("SPEND_IFRAME", false);
             let fired = processHeaders(details, url);
             expect(fired).toBeTruthy;
-            expect(updateIconMock).toBeCalledTimes(3);
+            expect(updateIconMock).toBeCalledTimes(2);
         });
 
         test("set and iframe", () => {
@@ -153,7 +168,7 @@ describe("check redemption attempt conditions", () => {
             workflow.__set__("iframe", true);
             let fired = processHeaders(details, url);
             expect(fired).toBeTruthy;
-            expect(updateIconMock).toBeCalledTimes(3);
+            expect(updateIconMock).toBeCalledTimes(2);
         });
 
         test("set and not iframe", () => {
@@ -246,5 +261,7 @@ function setMockFunctions() {
     }
     workflow.__set__("attemptRedeem", attemptRedeemMock);
     workflow.__set__("get", getMock);
+    workflow.__set__("set", setMock);
+    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("updateIcon", updateIconMock);
 }

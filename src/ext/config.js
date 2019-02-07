@@ -4,7 +4,6 @@
  * @author: Alex Davidson
  */
 /* exported DevCommitmentConfig */
-/* exported ProdCommitmentConfig */
 /* exported CHL_BYPASS_SUPPORT */
 /* exported CHL_BYPASS_RESPONSE */
 /* exported ACTIVE_CONFIG */
