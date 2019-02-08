@@ -72,7 +72,8 @@ describe("check that null point errors are caught in token generation", () => {
 describe("building of redemption headers", () => {
     const byteLength = 32;
     const wordLength = byteLength / 4;
-    test("header value is built correctly", () => {
+
+    function testBuildHeader() {
         // Generate random bytes for token object
         const rnd1 = sjcl.random.randomWords(wordLength, 10);
         const rnd2 = sjcl.random.randomWords(wordLength, 10);
@@ -89,19 +90,31 @@ describe("building of redemption headers", () => {
         const encodedHeaderVal = BuildRedeemHeader(token, host, path);
         let decoded = atob(encodedHeaderVal);
         let json = JSON.parse(decoded);
+
         const type = json.type;
         const contents = json.contents;
-
-        // check header value is correct
         const chkBinding = reconstructRequestBinding(token.data, token.blind, token.point, host, path);
         expect(type === "Redeem").toBeTruthy();
-        expect(contents.length === 3).toBeTruthy();
         // check token data is correct
         expect(sjcl.bn.fromBits(contents[0]).equals(sjcl.bn.fromBits(token.data))).toBeTruthy();
         // check request binding (hex is easiest way)
         expect(sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits(contents[1])) 
             === sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits(chkBinding))).toBeTruthy();
-        // check h2cParams
+        
+        return contents;
+    }
+
+    test("header value is built correctly (SEND_H2C_PARAMS = false)", () => {
+        const contents = testBuildHeader();
+        // Test additional H2C parameters are omitted
+        expect(contents.length === 2).toBeTruthy();
+    });
+
+    test("header value is built correctly (SEND_H2C_PARAMS = true)", () => {
+        workflow.__set__("SEND_H2C_PARAMS", true);
+        const contents = testBuildHeader();
+        // Test additional H2C parameters are constructed correctly
+        expect(contents.length === 3).toBeTruthy();
         let h2cParams = JSON.parse(sjcl.codec.utf8String.fromBits(sjcl.codec.bytes.toBits(contents[2])));
         expect(h2cParams.curve === "p256").toBeTruthy();
         expect(h2cParams.hash === "sha256").toBeTruthy();

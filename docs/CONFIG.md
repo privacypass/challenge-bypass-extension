@@ -193,3 +193,10 @@ that will be deprecated moving forward. If it is set to "swu", then we use the
 affine version of the SWU algorithm implemented in h2c.js (see
 [HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a description of the algorithm in
 full).
+
+#### config["send-h2c-params"]
+
+A boolean that determines whether the contents of config["h2c-params"] should
+actually be sent to the server. This currently defaults to off for cfConfig
+because the data format for issue requests is sub-optimal, and sending these
+parameters incurs a larger overhead than required.

@@ -24,6 +24,7 @@
 /* exported DEV */
 /* exported COMMITMENTS_KEY */
 /* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
+/* exported SEND_H2C_PARAMS */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -55,7 +56,9 @@ const STORAGE_STR = "bypass-tokens-";
 const COUNT_STR = STORAGE_STR + "count-";
 let STORAGE_KEY_TOKENS = STORAGE_STR + ACTIVE_CONFIG["id"];
 let STORAGE_KEY_COUNT = COUNT_STR + ACTIVE_CONFIG["id"];
-initECSettings(ACTIVE_CONFIG["h2c-params"]);
+let H2C_PARAMS = ACTIVE_CONFIG["h2c-params"];
+let SEND_H2C_PARAMS = ACTIVE_CONFIG["send-h2c-params"];
+initECSettings(H2C_PARAMS);
 
 // Used for resetting variables below
 let timeSinceLastResp = 0;
@@ -571,6 +574,8 @@ function setConfig(val) {
     VALID_TRANSITIONS = ACTIVE_CONFIG["spending-restrictions"]["valid-transitions"];
     VAR_RESET = ACTIVE_CONFIG["var-reset"];
     VAR_RESET_MS = ACTIVE_CONFIG["var-reset-ms"];
-    initECSettings(ACTIVE_CONFIG["h2c-params"]);
+    H2C_PARAMS = ACTIVE_CONFIG["h2c-params"];
+    SEND_H2C_PARAMS = ACTIVE_CONFIG["send-h2c-params"];
+    initECSettings(H2C_PARAMS);
     countStoredTokens();
 }

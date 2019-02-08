@@ -102,16 +102,18 @@ function BuildRedeemHeader(token, host, path) {
     const pathBits = sjcl.codec.utf8String.toBits(path);
     const pathBytes = sjcl.codec.bytes.fromBits(pathBits);
 
-    const h2cString = JSON.stringify(ACTIVE_CONFIG["h2c-params"]);
-    const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
-    const h2cBytes = sjcl.codec.bytes.fromBits(h2cBits);
-
     const binding = createRequestBinding(derivedKey, [hostBytes, pathBytes]);
 
     let contents = [];
     contents.push(token.data);
     contents.push(binding);
-    contents.push(h2cBytes);
+
+    if (SEND_H2C_PARAMS) {
+        const h2cString = JSON.stringify(H2C_PARAMS);
+        const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
+        const h2cBytes = sjcl.codec.bytes.fromBits(h2cBits);
+        contents.push(h2cBytes);
+    }
 
     return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
 }
