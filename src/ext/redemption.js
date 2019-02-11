@@ -4,20 +4,21 @@
  * @author: Alex Davidson
  */
 
- /* exported BuildRedeemHeader */
+/*global sjcl*/
+/* exported BuildRedeemHeader */
 
 /**
  * Constructs the header 'challenge-bypass-token' for redeeming a token with the
  * server. Uses the same BlindTokenRequest as in BuildIssueRequest but sets
  * "type" to "Redeem" and "contents" to [ token_data , request_binding ].
- * 
+ *
  * @param {object} token token object to redeem
  * @param {string} host Host that is being requested
  * @param {string} path Path of the requested HTTP request
  */
 function BuildRedeemHeader(token, host, path) {
     const sharedPoint = unblindPoint(token.blind, token.point);
-    const derivedKey = deriveKey(sharedPoint, token.token);
+    const derivedKey = deriveKey(sharedPoint, token.data);
 
     // TODO: this could be more efficient, but it's easier to check correctness when everything is bytes
     const hostBits = sjcl.codec.utf8String.toBits(host);
@@ -29,8 +30,15 @@ function BuildRedeemHeader(token, host, path) {
     const binding = createRequestBinding(derivedKey, [hostBytes, pathBytes]);
 
     let contents = [];
-    contents.push(token.token);
+    contents.push(token.data);
     contents.push(binding);
+
+    if (SEND_H2C_PARAMS) {
+        const h2cString = JSON.stringify(H2C_PARAMS);
+        const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
+        const h2cBytes = sjcl.codec.bytes.fromBits(h2cBits);
+        contents.push(h2cBytes);
+    }
 
     return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
 }
@@ -39,7 +47,7 @@ function BuildRedeemHeader(token, host, path) {
  * Creates the binding to a particular HTTP request by evaluating a HMAC keyed
  * by key material derived from signed token data and evaluated over
  * request-specific data (host and http path)
- * 
+ *
  * @param {[]byte} key Derived HMAC key
  * @param {[]byte} data Input HMAC data
  */

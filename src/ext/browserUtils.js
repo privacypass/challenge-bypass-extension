@@ -9,6 +9,7 @@
  */
 
 /* exported CHECK_COOKIES */
+/* exported clearCachedCommitments */
 /* exported attemptRedeem */
 /* exported reloadTabForCookie */
 /* exported setSpendFlag */

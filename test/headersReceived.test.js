@@ -26,9 +26,9 @@ const clearCachedCommitmentsMock = function () { localStorage[CACHED_COMMITMENTS
  * local storage set up
  */
 let localStorage = new Map();
-localStorage.clear = function() { localStorage.token = null };
+localStorage.clear = function() { localStorage.data = null };
 beforeEach(() => {
-    localStorage.token = "some_token";
+    localStorage.data = "some_token";
     workflow.__set__("localStorage", localStorage);
     setConfig(1); // set the CF config
 });
@@ -51,7 +51,7 @@ describe("ensure that errors are handled properly", () => {
             processHeaders(details, url);
         }
         expect(processConnError).toThrowError("error code: 5");
-        expect(localStorage.token).toBeTruthy();
+        expect(localStorage.data).toBeTruthy();
     });
     test("verification error", () => {
         function processVerifyError() {
@@ -61,7 +61,7 @@ describe("ensure that errors are handled properly", () => {
             processHeaders(details, url);
         }
         expect(processVerifyError).toThrowError("error code: 6");
-        expect(localStorage.token).toBeFalsy();
+        expect(localStorage.data).toBeFalsy();
     });
 });
 

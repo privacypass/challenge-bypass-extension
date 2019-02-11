@@ -8,11 +8,15 @@
 /*global sjcl*/
 /* exported compressPoint */
 /* exported decompressPoint */
+/* exported sec1EncodePoint */
 /* exported decodeStorablePoint */
 /* exported encodeStorablePoint */
 /* exported newRandomPoint */
 /* exported blindPoint, unblindPoint */
 /* exported verifyProof */
+/* exported initECSettings */
+/* exported getCurvePoints */
+/* exported getBigNumFromBytes */
 "use strict";
 
 const curve = sjcl.ecc.curves.c256;
@@ -22,8 +26,6 @@ const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
-
-const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
 // Globals for keeping track of EC curve settings
 let CURVE;

@@ -21,11 +21,13 @@ import btoa from "btoa";
 import atob from "atob";
 let getMock = jest.fn();
 let updateIconMock = jest.fn();
+let clearCachedCommitmentsMock = jest.fn();
 let consoleMock = {
     warn: jest.fn()
 };
 workflow.__set__("get", getMock);
 workflow.__set__("updateIcon", updateIconMock);
+workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
 workflow.__set__("console", consoleMock);
 workflow.__set__("btoa", btoa);
 workflow.__set__("atob", atob);

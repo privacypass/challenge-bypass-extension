@@ -20,11 +20,11 @@
 /* exported CHL_CLEARANCE_COOKIE */
 /* exported REDEEM_METHOD */
 /* exported RELOAD_ON_SIGN */
-/* exported spentTab, timeSinceLastResp, futureReload */
+/* exported spentTab, timeSinceLastResp, futureReload, sentTokens */
 /* exported DEV */
 /* exported COMMITMENTS_KEY */
 /* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
-/* exported SEND_H2C_PARAMS */
+/* exported SEND_H2C_PARAMS, MAX_TOKENS, SIGN_RESPONSE_FMT, TOKENS_PER_REQUEST */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -367,11 +367,6 @@ function badTransition(href, type, transitionType) {
     return BAD_TRANSITION.includes(type);
 }
 
-// Mark the url so that a sign doesn't occur again.
-function markSignUrl(url) {
-    return url + "&captcha-bypass=true";
-}
-
 // Checks if the tab is deemed to be new or not
 function isNewTab(url) {
     for (let i=0; i<NEW_TABS.length; i++) {
@@ -401,7 +396,7 @@ function resetSpendVars() {
 /**
  * Checks whether a header should activate the extension. The value dictates
  * whether to swap to a new configuration
-* @param {header} header 
+* @param {header} header
  */
 function isBypassHeader(header) {
     let newConfigVal = parseInt(header.value);

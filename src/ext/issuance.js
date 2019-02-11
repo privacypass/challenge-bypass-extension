@@ -6,10 +6,12 @@
 
 /* exported signReqCF */
 /* exported sendXhrSignReq */
+/* export CACHED_COMMITMENTS_STRING */
 
-function xhrDone(readystate) { return readystate == 4; }; // readystate == 4 implies that the response has completed successfully
-function xhrGoodStatus(status) {return status == 200; }; // we used to check < 300 but we should be more specific
+function xhrDone(readystate) { return readystate == 4; } // readystate == 4 implies that the response has completed successfully
+function xhrGoodStatus(status) {return status == 200; } // we used to check < 300 but we should be more specific
 const CACHED_COMMITMENTS_STRING = "cached-commitments";
+const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
 /**
  * Constructs an issue request for sending tokens in Cloudflare-friendly format
@@ -53,7 +55,7 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         // When we receive a response...
-        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState) 
+        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
             && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             const resp_data = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
@@ -150,7 +152,7 @@ function parsePointsAndProof(issueResp) {
  * Creates an issuance request for the current set of stored tokens. The format
  * is base64(json(BlindTokenRequest)), where BlindTokenRequest is a JSON struct
  * with "type":"Issue" and "contents":[ base64.encode(compressed_curve_points) ]
- * 
+ *
  * @param {object array} tokens contains curve points to be signed by the server
  */
 function BuildIssueRequest(tokens) {
@@ -173,10 +175,10 @@ function BuildIssueRequest(tokens) {
  * @param {string} version version of commitments to use
  */
 function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, version) {
-    let cXhr; 
+    let cXhr;
     let commitments = getCachedCommitments(version);
     // If cached commitments exist then attempt to verify proof
-    if (!!commitments) {
+    if (commitments) {
         if (!commitments.G || !commitments.H) {
             console.warn("[privacy-pass]: cached commitments are corrupted: " + commitments + ", version: " + version + ", will retrieve via XHR.");
         } else {
@@ -274,7 +276,7 @@ function retrieveCommitments(xhr, version) {
 
 /**
  * Adds the specified commitment pair to the localStorage cache as a JSON string
- * (we have to use JSON.stringify as localStorage only deals in strings) 
+ * (we have to use JSON.stringify as localStorage only deals in strings)
  * @param {string} version the version of commitments as specified by the server
  * @param {string} G base64-encoded curve point
  * @param {string} H base64-encoded curve point
@@ -316,4 +318,12 @@ function getCachedCommitments(version) {
  */
 function checkVersion(version) {
     return version || "1.0";
+}
+
+/**
+ * Mark the url so that a sign doesn't occur again.
+ * @param {URL} url URL object for modification
+ */
+function markSignUrl(url) {
+    return url + "&captcha-bypass=true";
 }

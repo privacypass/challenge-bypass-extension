@@ -419,7 +419,7 @@ describe("test validating response", () => {
             function run() { 
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
-                    tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
+                    tokens[i] = { token: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
                 const out = parseRespString(respGoodProof); 
                 before = getMock(TOKEN_COUNT_STR);
@@ -450,7 +450,7 @@ describe("test validating response", () => {
             function run() { 
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
-                    tokens[i] = { token: testTokens[i].token, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
+                    tokens[i] = { token: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
                 const out = parseRespString(respGoodProof); 
                 before = getMock(TOKEN_COUNT_STR);

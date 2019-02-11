@@ -22,8 +22,10 @@ const getCurveParams = workflow.__get__('getCurveParams');
  */
 let getMock = jest.fn();
 let updateIconMock = jest.fn();
+let clearCachedCommitmentsMock = jest.fn();
 workflow.__set__("get", getMock);
 workflow.__set__("updateIcon", updateIconMock);
+workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock)
 
 /**
  * Configuration
