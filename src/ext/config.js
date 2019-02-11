@@ -49,7 +49,12 @@ const exampleConfig = {
 		"verify-error": "5", // error code sent by server for verification error
 		"connection-error": "6", // error code sent by server for connection error
 	}, // generic error codes (can add more)
-	"hash-to-curve": "increment" // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)
+	"h2c-params": { // parameters for establishing which hash-to-curve setting the client wants to use
+		"curve": "p256", // elliptic curve that generated tokens should be mapped to
+		"hash": "sha256", // hash function for mapping bytes to base-field of elliptic curve
+		"method": "increment", // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)
+	},
+	"send-h2c-params": false // specifies whether to send the additional h2c-params with issue requests
 }
 
 // The configuration used by Cloudflare
@@ -90,7 +95,12 @@ const cfConfig = {
 		"verify-error": "5",
 		"connection-error": "6",
 	},
-	"hash-to-curve": "increment"
+	"h2c-params": {
+		"curve": "p256",
+		"hash": "sha256",
+		"method": "increment",
+	},
+	"send-h2c-params": false
 };
 
 // Ordering of configs should correspond to value of cf-chl-bypass header

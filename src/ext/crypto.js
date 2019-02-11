@@ -6,8 +6,10 @@
  */
 
 /*global sjcl*/
+/* exported initECSettings */
 /* exported checkRequestBinding */
 /* exported compressPoint */
+/* exported decompressPoint */
 /* exported decodeStorablePoint */
 /* exported deriveKey */
 /* exported encodeStorablePoint */
@@ -26,9 +28,43 @@ const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
 const PARSE_ERR = "[privacy-pass]: Error parsing proof";
-const INCOMPATIBLE_H2C_ERR = "[privacy-pass]: Incompatible hash-to-curve algorithm specified";
 
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
+
+// Globals for keeping track of EC curve settings
+let CURVE;
+let CURVE_H2C_HASH;
+let CURVE_H2C_METHOD;
+
+/**
+ * Sets the curve parameters for the current session based on the contents of
+ * ACTIVE_CONFIG.h2c-params
+ * @param {JSON} h2cParams
+ */
+function initECSettings(h2cParams) {
+    let curveStr = h2cParams.curve;
+    let hashStr = h2cParams.hash;
+    let methodStr = h2cParams.method;
+    switch (curveStr) {
+        case "p256":
+            if (methodStr != "swu" && methodStr != "increment") {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
+            } else if (hashStr != "sha256") {
+                throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
+            }
+            CURVE = sjcl.ecc.curves.c256;
+            CURVE_H2C_HASH = sjcl.hash.sha256;
+            CURVE_H2C_METHOD = methodStr;
+            break;
+        default:
+            throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
+    }
+}
+
+// Returns the active configuration for the elliptic curve setting
+function getActiveECSettings() {
+    return { curve: CURVE, hash: CURVE_H2C_HASH, method: CURVE_H2C_METHOD };
+}
 
 // Performs the scalar multiplication k*P
 //
@@ -135,63 +171,23 @@ function newRandomPoint() {
     const random = sjcl.random.randomWords(wordLength, 10); // TODO Use webcrypto instead.
 
     // Choose hash-to-curve method
-    let point;
-    if (HASH_TO_CURVE == "increment") {
-        point = hashAndIncToCurve(random);
-    } else if (HASH_TO_CURVE == "swu") {
-        point = h2Curve(random, curve, 0); // mode 0 uses affine point representation
-    } else {
-        throw new Error(INCOMPATIBLE_H2C_ERR + ": " + HASH_TO_CURVE);
-    }
+    let point = h2Curve(random, getActiveECSettings());
 
     let t;
     if (point) {
-        t = { token: sjcl.codec.bytes.fromBits(random), point: point};
+        t = { data: sjcl.codec.bytes.fromBits(random), point: point};
     }
     return t;
 }
 
-// input: bits
-// output: point
-function hashAndIncToCurve(seed) {
-    const h = new sjcl.hash.sha256();
-
-    // Need to match the Go curve hash, so we decode the exact bytes of the
-    // string "1.2.840.100045.3.1.7 point generation seed" instead of relying
-    // on the utf8 codec that didn't match.
-    const separator = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
-
-    h.update(separator);
-
-    let i = 0;
-    for (i = 0; i < 10; i++) {
-        // little endian uint32
-        let ctr = new Uint8Array(4);
-        // typecast hack: number -> Uint32, bitwise Uint8
-        ctr[0] = (i >>> 0) & 0xFF;
-        let ctrBits = sjcl.codec.bytes.toBits(ctr);
-
-        // H(s||ctr)
-        h.update(seed);
-        h.update(ctrBits);
-
-        const digestBits = h.finalize();
-
-        let point = decompressPoint(digestBits, 0x02);
-        if (point !== null) {
-            return point;
-        }
-
-        point = decompressPoint(digestBits, 0x03);
-        if (point !== null) {
-            return point;
-        }
-
-        seed = digestBits;
-        h.reset();
-    }
-
-    return null;
+// Compresses a point according to SEC1.
+// input: point
+// output: base64-encoded bytes
+function compressPoint(p) {
+    const xBytes = sjcl.codec.bytes.fromBits(p.x.toBits());
+    const sign = p.y.limbs[0] & 1 ? 0x03 : 0x02;
+    const taggedBytes = [sign].concat(xBytes);
+    return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
 }
 
 // Attempts to decompress the bytes into a curve point following SEC1 and
@@ -199,7 +195,7 @@ function hashAndIncToCurve(seed) {
 // main three NIST curves).
 // input: bits of an x coordinate, the even/odd tag
 // output: point
-function decompressPoint(xbits, tag) {
+function decompressPoint(xbits, curve, tag) {
     const x = curve.field.fromBits(xbits).normalize();
     const sign = tag & 1;
 
@@ -223,17 +219,7 @@ function decompressPoint(xbits, tag) {
         return null;
     }
     return point;
-}
-
-// Compresses a point according to SEC1.
-// input: point
-// output: base64-encoded bytes
-function compressPoint(p) {
-    const xBytes = sjcl.codec.bytes.fromBits(p.x.toBits());
-    const sign = p.y.limbs[0] & 1 ? 0x03 : 0x02;
-    const taggedBytes = [sign].concat(xBytes);
-    return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
-}
+  }
 
 // This has to match Go's elliptic.Marshal, which follows SEC1 2.3.3 for
 // uncompressed points.  SJCL's native point encoding is a concatenation of the

@@ -168,10 +168,35 @@ signature verification error.
 String error code that the server returns if an internal connection error occurs
 server-side.
 
-#### config["hash-to-curve"]
+#### config["h2c-params"]
 
-A string that determines how we hash bytes to the elliptic curve that we are
-using. If it is set to "increment" then we use the hash-and-increment method
+A JSON struct of parameters for the curve setting that the client uses. These
+settings are sent to the server with all redemption requests.
+
+#### config["h2c-params"]["curve"]
+
+A string that defines the elliptic curve that is being used for mapping tokens
+to. Currently we only support the NIST curve P256, this is represented by the
+string "p256".
+
+#### config["h2c-params"]["hash"]
+
+The actual hash function that is used for hashing bytes to the base field of the
+curve. Currently we only support the usage of the SHA256 hash function, using
+the string "sha256".
+
+#### config["h2c-params"]["method"]
+
+The hash-to-curve method that is used for moving field elements to curve points.
+If it is set to "increment" then we use the hash-and-increment method
 that will be deprecated moving forward. If it is set to "swu", then we use the
 affine version of the SWU algorithm implemented in h2c.js (see
-[HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a description of the algorithm in full). 
+[HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a description of the algorithm in
+full).
+
+#### config["send-h2c-params"]
+
+A boolean that determines whether the contents of config["h2c-params"] should
+actually be sent to the server. This currently defaults to off for cfConfig
+because the data format for issue requests is sub-optimal, and sending these
+parameters incurs a larger overhead than required.
