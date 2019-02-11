@@ -197,6 +197,4 @@ full).
 #### config["send-h2c-params"]
 
 A boolean that determines whether the contents of config["h2c-params"] should
-actually be sent to the server. This currently defaults to off for cfConfig
-because the data format for issue requests is sub-optimal, and sending these
-parameters incurs a larger overhead than required.
+actually be sent to the server.

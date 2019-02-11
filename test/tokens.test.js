@@ -98,26 +98,25 @@ describe("building of redemption headers", () => {
         const chkBinding = reconstructRequestBinding(token.data, token.blind, token.point, host, path);
         expect(type === "Redeem").toBeTruthy();
         // check token data is correct
-        expect(sjcl.bn.fromBits(contents[0]).equals(sjcl.bn.fromBits(token.data))).toBeTruthy();
+        expect(contents[0] == sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data))).toBeTruthy();
         // check request binding (hex is easiest way)
-        expect(sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits(contents[1])) 
-            === sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits(chkBinding))).toBeTruthy();
+        expect(contents[1] === chkBinding).toBeTruthy();
         
         return contents;
     }
 
     test("header value is built correctly (SEND_H2C_PARAMS = false)", () => {
+        workflow.__set__("SEND_H2C_PARAMS", false);
         const contents = testBuildHeader();
         // Test additional H2C parameters are omitted
         expect(contents.length === 2).toBeTruthy();
     });
 
     test("header value is built correctly (SEND_H2C_PARAMS = true)", () => {
-        workflow.__set__("SEND_H2C_PARAMS", true);
         const contents = testBuildHeader();
         // Test additional H2C parameters are constructed correctly
         expect(contents.length === 3).toBeTruthy();
-        let h2cParams = JSON.parse(sjcl.codec.utf8String.fromBits(sjcl.codec.bytes.toBits(contents[2])));
+        let h2cParams = JSON.parse(atob(contents[2]));
         expect(h2cParams.curve === "p256").toBeTruthy();
         expect(h2cParams.hash === "sha256").toBeTruthy();
         expect(h2cParams.method === "increment").toBeTruthy();
