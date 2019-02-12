@@ -20,8 +20,6 @@ function BuildRedeemHeader(token, host, path) {
     const sharedPoint = unblindPoint(token.blind, token.point);
     const derivedKey = deriveKey(sharedPoint, token.data);
 
-    // TODO: this could be more efficient, but it's easier to check correctness
-    // when everything is bytes
     const hostBits = sjcl.codec.utf8String.toBits(host);
     const hostBytes = sjcl.codec.bytes.fromBits(hostBits);
 
