@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/privacypass/challenge-bypass-extension.svg?style=svg)](https://circleci.com/gh/privacypass/challenge-bypass-extension)
 
 The Privacy Pass extension implements the Privacy Pass protocol for providing a
-private a private authentication mechanism during web browsing. Privacy Pass is
+private authentication mechanism during web browsing. Privacy Pass is
 currently supported by Cloudflare to allow users to redeem validly signed tokens
 instead of completing CAPTCHA solutions. The extension is compatible with
 [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
@@ -70,7 +70,7 @@ $ yarn test:all
 Documentation for the protocol, workflow and extension components.
 
 - [Protocol](docs/PROTOCOL.md)
-- [Extension implementation](docs/EXT_PROTOCOL_IMPL)
+- [Extension implementation](docs/EXT_PROTOCOL_IMPL.md)
 - [Configuration options](docs/CONFIG.md)
 - [Supported "hash to curve" algorithms](docs/HASH_TO_CURVE.md)
 

@@ -281,11 +281,13 @@ redemption request enables the client to bypass the challenge.
     rb <- HMAC([]byte("hash_request_binding"), (DerivedKey || HostBytes || PathBytes))
     ```
 
-9. Constructs a RedemptionRequest object of the form:
+9. Constructs a `RedemptionRequest` object of the form:
 
     ```
     RedemptionRequest{Type:"Redeem", Contents: [c.Token,rb]}
     ```
+    optionally appending `H2CParams` if `ACTIVE_CONFIG["send-h2c-params"] =
+    true`. 
 
 10. Sends the HTTP request with the header:
 
