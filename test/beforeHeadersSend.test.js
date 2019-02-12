@@ -16,6 +16,7 @@ var URL = window.URL;
 * Functions/variables
 */
 const EXAMPLE_HREF = "https://www.example.com";
+const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const beforeSendHeaders = workflow.__get__('beforeSendHeaders');
 const setConfig = workflow.__get__('setConfig');
 const b64EncodedTokenNoH2CParams = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOltbMjQsNjIsNTYsMTAyLDc2LDEyNywyMDEsMTExLDE2MSwyMTgsMjQ5LDEwOSwzNCwxMjIsMTYwLDIxOSw5MywxODYsMjQ2LDEyLDE3OCwyNDksMjQxLDEwOCw2OSwxODEsNzcsMTQwLDE1OCwxMywyMTYsMTg0XSxbMjI3LDExLDk1LDIxNSwxNSwyMTUsMTM1LDI0LDEzNywxNzQsMjMzLDgsODYsMTQ4LDEzMCwxOTEsNDYsMTgzLDkyLDEwOCwxNjAsMjQ5LDE1OCwyMzEsMTU5LDIxOCwyNTQsODAsMTQ4LDQ0LDI5LDI1NF1dfQ==";
@@ -25,6 +26,7 @@ let details;
 let url;
 let getMock;
 let setMock;
+let clearCachedCommitmentsMock;
 let getSpendFlag;
 let setSpendFlag;
 beforeEach(() => {
@@ -186,6 +188,9 @@ function setMockFunctions() {
     setMock = function(key, value) {
         localStorage[key] = value; 
     }
+    clearCachedCommitmentsMock = function() {
+        localStorage[CACHED_COMMITMENTS_STRING] = null;
+    }
     getSpendFlag = function(key) {
         return getMock(key);
     }
@@ -198,6 +203,7 @@ function setMockFunctions() {
     workflow.__set__("updateIcon", updateIconMock);
     workflow.__set__("get", getMock);
     workflow.__set__("set", setMock);
+    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("atob", atob);
     workflow.__set__("btoa", btoa);
     setXHR(mockXHRCommitments);

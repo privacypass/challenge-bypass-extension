@@ -96,23 +96,21 @@ Same as above, except the extension should be loaded at `chrome://extensions` in
 
 The following script files are used for the workflow of Privacy Pass and are found in `addon/scripts`. They are compiled into a single file (`compiled/bg_compiled.js`) that is then loaded into the browser.
 
-- listeners.js: Initialises the listener functions that are used for the webRequest and webNavigation frameworks.
+- src/ext/
+	- listeners.js: Initialises the listener functions that are used for the webRequest and webNavigation frameworks.
+	- background.js: Determines the bulk of the browser-based workflow for Privacy Pass. Decides whether to initiate the token issuance and redemption phases of the protocols.
+	- browserUtils.js: General utility functions that are used by background.js. We separate them so that we separate the specific browser API calls from the actual workflow.
+	- config.js: Config file that decides the workflow for Privacy Pass
+	- content.js: (currently unused) Content script for reading page html
+	- token.js: Token generation and storage procedures
+    - issuance.js: Specific functions for handling token issuance requests from
+      the extension and corresponding server responses
+	- redemption.js: Specific functions for construction redemption requests
 
-- background.js: Determines the bulk of the browser-based workflow for Privacy Pass. Decides whether to initiate the token issuance and redemption phases of the protocols.
-
-- browserUtils.js: General utility functions that are used by background.js. We separate them so that we separate the specific browser API calls from the actual workflow.
-
-- config.js: Config file that decides the workflow for Privacy Pass
-
-- content.js: (currently unused) Content script for reading page html
-
-- token.js: Constructs issuance and redemption requests (i.e. privacy passes) from stored blinded tokens
-
-- crypto.js: Wrapper for performing various cryptographic operations required for manipulating tokens
-
-- sjcl.js: Local copy of SJCL library
-
-- keccak.js: Local implementation of the Keccak hash function (taken from <https://github.com/cryptocoinjs/keccak>).
+- src/crypto/
+	- local.js: Wrapper for extension-specific cryptographic operations
+	- sjcl.js: Local copy of SJCL library
+	- keccak.js: Local implementation of the Keccak hash function (taken from <https://github.com/cryptocoinjs/keccak>).
 
 Files that are used for testing are found in `test/`. These test files use their own compiled test file in `compiled/test_compiled.js`.
 

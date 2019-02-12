@@ -20,11 +20,11 @@
 /* exported CHL_CLEARANCE_COOKIE */
 /* exported REDEEM_METHOD */
 /* exported RELOAD_ON_SIGN */
-/* exported spentTab, spendId, timeSinceLastResp, futureReload */
+/* exported spentTab, timeSinceLastResp, futureReload, sentTokens */
 /* exported DEV */
 /* exported COMMITMENTS_KEY */
 /* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
-/* exported SEND_H2C_PARAMS */
+/* exported SEND_H2C_PARAMS, MAX_TOKENS, SIGN_RESPONSE_FMT, TOKENS_PER_REQUEST */
 "use strict";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
@@ -278,137 +278,6 @@ function beforeRequest(details, url) {
     return {xhr: xhr};
 }
 
-// Sending tokens to be signed for Cloudflare
-function signReqCF(url) {
-    let reqUrl = url.href;
-    const manualChallenge = reqUrl.includes("manual_challenge");
-    const captchaResp = reqUrl.includes("g-recaptcha-response");
-    const alreadyProcessed = reqUrl.includes("&captcha-bypass=true");
-
-    // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if ((captchaResp && alreadyProcessed) || (!manualChallenge && !captchaResp) || sentTokens[reqUrl]) {
-        return null;
-    }
-    sentTokens[reqUrl] = true;
-
-    // Generate tokens and create a JSON request for signing
-    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
-    const request = BuildIssueRequest(tokens);
-
-    // Tag the URL of the new request to prevent an infinite loop (see above)
-    let newUrl = markSignUrl(reqUrl);
-    // Construct info for xhr signing request
-    let xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens};
-
-    return xhrInfo;
-}
-
-/**
- * Sends an XHR request containing a BlindTokenRequest for signing a set of tokens
- * @param details HTTP request details
- * @param url URL object of the HTTP request
- * @param tokens generated tokens that will be signed
- * @param signReq JSON signing request for tokens
- */
-function sendXhrSignReq(xhrInfo, url, tabId) {
-    let newUrl = xhrInfo["newUrl"];
-    let requestBody = xhrInfo["requestBody"];
-    let tokens = xhrInfo["tokens"];
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        // When we receive a response...
-        if (xhr.status < 300 && xhr.readyState == 4 && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
-            const resp_data = xhr.responseText;
-            // Validates the response and stores the signed points for redemptions
-            validateResponse(url, tabId, resp_data, tokens);
-        } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
-            throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
-        }
-    };
-    xhr.open("POST", newUrl, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, "1");
-    // We seem to get back some odd mime types that cause problems...
-    xhr.overrideMimeType("text/plain");
-    xhr.send(requestBody);
-    return xhr;
-}
-
-/**
- * Validates the server response and stores the new signed points for future
- * redemptions
- * @param data An issue response takes the form "signatures=[b64 blob]"
- *             where the blob is an array of b64-encoded curve points
- * @param tokens client-generated tokens that correspond to the signed points
- */
-function validateResponse(url, tabId, data, tokens) {
-    let signaturesJSON;
-    switch (SIGN_RESPONSE_FMT) {
-        case "string":
-            signaturesJSON = parseSigString(data);
-            break;
-        case "json":
-            signaturesJSON = parseSigJson(data);
-            break;
-        default:
-            throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT);
-    }
-
-    if (signaturesJSON == null) {
-        throw new Error("[privacy-pass]: signature response invalid or in unexpected format, got response: " + data);
-    }
-    // parses into JSON
-    const issueResp = JSON.parse(signaturesJSON);
-    let out = parsePointsAndProof(issueResp);
-    if (!out.signatures) {
-        throw new Error("[privacy-pass]: No signed tokens provided");
-    }
-    else if (!out.proof) {
-        throw new Error("[privacy-pass]: No batch proof provided");
-    }
-
-    // Validate the received information and store the tokens
-    validateAndStoreTokens(url, tabId, tokens, out.signatures, out.proof, out.version);
-}
-
-// Parses signatures that are sent back in JSON format
-function parseSigJson(data) {
-    let json = JSON.parse(data);
-    // Data should always be b64 encoded
-    return atob(json["signatures"]);
-}
-
-// Parses signatures that are sent back in the CF string format
-function parseSigString(data) {
-    let split = data.split("signatures=", 2);
-    if (split.length != 2) {
-        return null;
-    }
-    // Data should always be b64 encoded
-    return atob(split[1]);
-}
-
-/**
- * Retrieves the batchProof and signatures, depending on the type of object received
- * @param {JSON/array} issueResp object containing signed points, DLEQ proof and potentially commitment version
- * @return {literal} Formatted object for inputs
- */
-function parsePointsAndProof(issueResp) {
-    let signatures;
-    let batchProof;
-    let version;
-    // If this is not an array then the object is probably JSON.
-    if (!issueResp[0]) {
-        signatures = issueResp.sigs;
-        batchProof = issueResp.proof;
-        version = issueResp.version;
-    } else {
-        batchProof = issueResp[issueResp.length - 1];
-        signatures = issueResp.slice(0, issueResp.length - 1);
-    }
-    return {signatures: signatures, proof: batchProof, version: version};
-}
-
 // Set the target URL for the spend and update the tab if necessary
 /**
  * When navigation is committed we may want to reload.
@@ -498,11 +367,6 @@ function badTransition(href, type, transitionType) {
     return BAD_TRANSITION.includes(type);
 }
 
-// Mark the url so that a sign doesn't occur again.
-function markSignUrl(url) {
-    return url + "&captcha-bypass=true";
-}
-
 // Checks if the tab is deemed to be new or not
 function isNewTab(url) {
     for (let i=0; i<NEW_TABS.length; i++) {
@@ -529,10 +393,17 @@ function resetSpendVars() {
     spentUrl = new Map();
 }
 
-// Checks whether the correct header for initiating the workflow is received
+/**
+ * Checks whether a header should activate the extension. The value dictates
+ * whether to swap to a new configuration
+* @param {header} header
+ */
 function isBypassHeader(header) {
-    if (header.name.toLowerCase() == CHL_BYPASS_SUPPORT && header.value != "0") {
-        setConfig(parseInt(header.value));
+    let newConfigVal = parseInt(header.value);
+    if (header.name.toLowerCase() == CHL_BYPASS_SUPPORT && newConfigVal !== 0) {
+        if (newConfigVal != CONFIG_ID) {
+            setConfig(newConfigVal);
+        }
         return true
     }
     return false;
@@ -577,5 +448,6 @@ function setConfig(val) {
     H2C_PARAMS = ACTIVE_CONFIG["h2c-params"];
     SEND_H2C_PARAMS = ACTIVE_CONFIG["send-h2c-params"];
     initECSettings(H2C_PARAMS);
+    clearCachedCommitments();
     countStoredTokens();
 }

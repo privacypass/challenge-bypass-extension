@@ -9,6 +9,7 @@
  */
 
 /* exported CHECK_COOKIES */
+/* exported clearCachedCommitments */
 /* exported attemptRedeem */
 /* exported reloadTabForCookie */
 /* exported setSpendFlag */
@@ -182,6 +183,11 @@ function isErrorPage(url) {
 //  Favicons have caused us problems...
 function isFaviconUrl(url) {
     return url.includes("favicon");
+}
+
+// We have to remove the item using the direct call
+function clearCachedCommitments() {
+    localStorage.removeItem(CACHED_COMMITMENTS_STRING);
 }
 
 // localStorage API function for getting values
