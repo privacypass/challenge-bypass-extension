@@ -99,7 +99,7 @@ const cfConfig = {
 		"hash": "sha256",
 		"method": "increment",
 	},
-	"send-h2c-params": false
+	"send-h2c-params": true
 };
 
 // Ordering of configs should correspond to value of cf-chl-bypass header

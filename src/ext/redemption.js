@@ -20,24 +20,24 @@ function BuildRedeemHeader(token, host, path) {
     const sharedPoint = unblindPoint(token.blind, token.point);
     const derivedKey = deriveKey(sharedPoint, token.data);
 
-    // TODO: this could be more efficient, but it's easier to check correctness when everything is bytes
     const hostBits = sjcl.codec.utf8String.toBits(host);
     const hostBytes = sjcl.codec.bytes.fromBits(hostBits);
 
     const pathBits = sjcl.codec.utf8String.toBits(path);
     const pathBytes = sjcl.codec.bytes.fromBits(pathBits);
 
-    const binding = createRequestBinding(derivedKey, [hostBytes, pathBytes]);
+    const b64Binding = createRequestBinding(derivedKey, [hostBytes, pathBytes]);
 
+    // Fortunately Go interprets base64-encoded strings as []bytes when
+    // unmarshaling JSON.
     let contents = [];
-    contents.push(token.data);
-    contents.push(binding);
-
+    contents.push(sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data)));
+    contents.push(b64Binding);
     if (SEND_H2C_PARAMS) {
         const h2cString = JSON.stringify(H2C_PARAMS);
         const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
-        const h2cBytes = sjcl.codec.bytes.fromBits(h2cBits);
-        contents.push(h2cBytes);
+        const h2cB64 = sjcl.codec.base64.fromBits(h2cBits);
+        contents.push(h2cB64);
     }
 
     return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
@@ -65,8 +65,7 @@ function createRequestBinding(key, data) {
         h.update(dataBits);
     }
 
-    const digestBytes = sjcl.codec.bytes.fromBits(h.digest());
-    return digestBytes;
+    return sjcl.codec.base64.fromBits(h.digest());
 }
 
 /**
