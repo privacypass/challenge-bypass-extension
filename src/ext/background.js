@@ -98,7 +98,7 @@ let readySign = false;
  * Functions used by event listeners (listeners.js)
  */
 
- /**
+/**
   * Runs when a request is completed
   * @param details HTTP request details
   */
@@ -260,11 +260,11 @@ function beforeRequest(details, url) {
     // Different signing methods based on configs
     let xhrInfo;
     switch (CONFIG_ID) {
-        case 1:
-            xhrInfo = signReqCF(url);
-            break;
-        default:
-            throw new Error("Incorrect config ID specified");
+    case 1:
+        xhrInfo = signReqCF(url);
+        break;
+    default:
+        throw new Error("Incorrect config ID specified");
     }
 
     // If this is null then signing is not appropriate

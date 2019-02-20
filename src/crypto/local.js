@@ -42,18 +42,18 @@ function initECSettings(h2cParams) {
     let hashStr = h2cParams.hash;
     let methodStr = h2cParams.method;
     switch (curveStr) {
-        case "p256":
-            if (methodStr != "swu" && methodStr != "increment") {
-                throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
-            } else if (hashStr != "sha256") {
-                throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
-            }
-            CURVE = sjcl.ecc.curves.c256;
-            CURVE_H2C_HASH = sjcl.hash.sha256;
-            CURVE_H2C_METHOD = methodStr;
-            break;
-        default:
-            throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
+    case "p256":
+        if (methodStr != "swu" && methodStr != "increment") {
+            throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
+        } else if (hashStr != "sha256") {
+            throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
+        }
+        CURVE = sjcl.ecc.curves.c256;
+        CURVE_H2C_HASH = sjcl.hash.sha256;
+        CURVE_H2C_METHOD = methodStr;
+        break;
+    default:
+        throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
     }
 }
 
@@ -151,7 +151,7 @@ function decompressPoint(xbits, curve, tag) {
         return null;
     }
     return point;
-  }
+}
 
 // This has to match Go's elliptic.Marshal, which follows SEC1 2.3.3 for
 // uncompressed points.  SJCL's native point encoding is a concatenation of the

@@ -3,7 +3,7 @@
 Privacy Pass uses cryptographic tokens to bypass internet challenges from
 certain providers. In this doc, we discuss the configuration file that Privacy
 Pass uses for interpreting when tokens should be sent for signing/redemption.
-See `src/ext/config.js` for an example configuration (`exampleConfig`)
+See `src/ext/config.js` for an example configuration `exampleConfig`
 describing the correct format of the JSON struct.
 
 ## config.js
