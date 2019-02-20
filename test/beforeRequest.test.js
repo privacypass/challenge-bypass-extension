@@ -72,7 +72,7 @@ function getMock(key) {
 function setMock(key, value) {
     localStorage[key] = value;
 }
-function clearCachedCommitmentsMock(key) {
+function clearCachedCommitmentsMock() {
     localStorage[CACHED_COMMITMENTS_STRING] = null;
 }
 function getSpendFlag(key) {
@@ -146,9 +146,6 @@ beforeEach(() => {
     setMockFunctions();
     setTimeSinceLastResp(Date.now());
     setConfig(1); // set the CF config
-    // Mock the active commitments because XHR is not available
-    workflow.__set__("activeG", testG);
-    workflow.__set__("activeH", testH);
     workflow.__set__("readySign", true);
     workflow.__set__("TOKENS_PER_REQUEST", 3); // limit the # of tokens for tests
 });
@@ -202,6 +199,11 @@ describe("commitments parsing and caching", () => {
         expect(cached11).toBeFalsy();
         setConfig(0);
         expect(getCachedCommitments("1.0")).toBeFalsy();
+    });
+
+    test("error-free empty cache", () => {
+        clearCachedCommitmentsMock();
+        expect(getCachedCommitments).not.toThrowError();
     });
 });
 
