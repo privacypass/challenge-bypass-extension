@@ -83,14 +83,14 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
 function validateResponse(url, tabId, data, tokens) {
     let signaturesJSON;
     switch (SIGN_RESPONSE_FMT) {
-        case "string":
-            signaturesJSON = parseSigString(data);
-            break;
-        case "json":
-            signaturesJSON = parseSigJson(data);
-            break;
-        default:
-            throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT);
+    case "string":
+        signaturesJSON = parseSigString(data);
+        break;
+    case "json":
+        signaturesJSON = parseSigJson(data);
+        break;
+    default:
+        throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT);
     }
 
     if (signaturesJSON == null) {

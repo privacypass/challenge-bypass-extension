@@ -99,6 +99,7 @@
             "error", {
                 "allow": ["error", "warn"]
             }
-        ]
+        ],
+        "indent": ["error", 4]
     }
 }

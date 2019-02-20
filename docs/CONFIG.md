@@ -3,8 +3,8 @@
 Privacy Pass uses cryptographic tokens to bypass internet challenges from
 certain providers. In this doc, we discuss the configuration file that Privacy
 Pass uses for interpreting when tokens should be sent for signing/redemption.
-See config.js for an example configuration (exampleConfig) describing the
-correct format of the JSON struct.
+See `src/ext/config.js` for an example configuration `exampleConfig`
+describing the correct format of the JSON struct.
 
 ## config.js
 
@@ -21,7 +21,7 @@ A unique identifier highlighting which config is used. Currently cfConfig.id =
 
 ### config["sign"]
 
-A bool dictating whether Privacy Pass should send tokens for signing. 
+A bool dictating whether Privacy Pass should send tokens for signing.
 
 ### config["redeem"]
 
