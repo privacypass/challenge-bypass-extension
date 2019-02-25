@@ -23,7 +23,8 @@ let getMock = jest.fn();
 let updateIconMock = jest.fn();
 let clearCachedCommitmentsMock = jest.fn();
 let consoleMock = {
-    warn: jest.fn()
+    warn: jest.fn(),
+    error: jest.fn()
 };
 workflow.__set__("get", getMock);
 workflow.__set__("updateIcon", updateIconMock);
