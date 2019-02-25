@@ -19,7 +19,6 @@
 /* exported getBigNumFromBytes */
 "use strict";
 
-const curve = sjcl.ecc.curves.c256;
 const BATCH_PROOF_PREFIX = "batch-proof=";
 const UNCOMPRESSED_POINT_PREFIX = "04";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
@@ -77,7 +76,7 @@ function _scalarMult(k, P) {
 // blindPoint generates a random scalar blinding factor, multiplies the
 // supplied point by it, and returns both values.
 function blindPoint(P) {
-    const bF = sjcl.bn.random(curve.r, 10);
+    const bF = sjcl.bn.random(CURVE.r, 10);
     const bP = _scalarMult(bF, P);
     return { point: bP, blind: bF };
 }
@@ -91,7 +90,7 @@ function blindPoint(P) {
 // returns:
 //  sjcl point
 function unblindPoint(b, Q) {
-    const binv = b.inverseMod(curve.r);
+    const binv = b.inverseMod(CURVE.r);
     return _scalarMult(binv, Q);
 }
 
@@ -127,34 +126,35 @@ function compressPoint(p) {
 // main three NIST curves).
 // input: bits of an x coordinate, the even/odd tag
 // output: point
-function decompressPoint(bytes, curve) {
+function decompressPoint(bytes) {
     const yTag = bytes[0];
     const xBytes = bytes.slice(1);
 
-    const x = curve.field.fromBits(sjcl.codec.bytes.toBits(xBytes)).normalize();
+    const x = CURVE.field.fromBits(sjcl.codec.bytes.toBits(xBytes)).normalize();
     const sign = yTag & 1;
 
     // y^2 = x^3 - 3x + b (mod p)
     let rh = x.power(3);
-    let threeTimesX = x.mul(curve.a);
-    rh = rh.add(threeTimesX).add(curve.b).mod(curve.field.modulus); // mod() normalizes
+    let threeTimesX = x.mul(CURVE.a);
+    rh = rh.add(threeTimesX).add(CURVE.b).mod(CURVE.field.modulus); // mod() normalizes
 
     // modsqrt(z) for p = 3 mod 4 is z^(p+1/4)
-    const sqrt = curve.field.modulus.add(1).normalize().halveM().halveM();
-    let y = new curve.field(rh.powermod(sqrt, curve.field.modulus));
+    const sqrt = CURVE.field.modulus.add(1).normalize().halveM().halveM();
+    let y = new CURVE.field(rh.powermod(sqrt, CURVE.field.modulus));
 
     let parity = y.limbs[0] & 1;
     if (parity != sign) {
-        y = curve.field.modulus.sub(y).normalize();
+        y = CURVE.field.modulus.sub(y).normalize();
     }
 
-    let point = new sjcl.ecc.point(curve, x, y);
+    let point = new sjcl.ecc.point(CURVE, x, y);
     if (!point.isValid()) {
         console.error("point is invalid, x: " + x + ", y: " + y);
         return null;
     }
     return point;
-  }
+}
+
 // This has to match Go's elliptic.Marshal, which follows SEC1 2.3.3 for
 // uncompressed points.  SJCL's native point encoding is a concatenation of the
 // x and y coordinates, so it's *almost* SEC1 but lacks the tag for
@@ -185,7 +185,7 @@ function sec1DecodePointFromBytes(sec1Bytes) {
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
-    return curve.fromBits(pointBits);
+    return CURVE.fromBits(pointBits);
 }
 
 // Marshals a point in an SJCL-internal format that can be used with
@@ -204,7 +204,7 @@ function encodeStorablePoint(p) {
 // ouput: point
 function decodeStorablePoint(s) {
     const bits = sjcl.codec.base64.toBits(s);
-    return curve.fromBits(bits);
+    return CURVE.fromBits(bits);
 }
 
 /**
@@ -300,7 +300,7 @@ function recomputeComposites(chkM, chkZ, pointG, pointH) {
 
 // Squeeze a seeded shake for output
 function getShakeScalar(shake) {
-    const curveOrder = curve.r;
+    const curveOrder = CURVE.r;
     const bitLen = sjcl.bitArray.bitLength(curveOrder.toBits());
     const mask = MASK[bitLen % 8];
     let rnd;
