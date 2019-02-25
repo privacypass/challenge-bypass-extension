@@ -127,32 +127,34 @@ function compressPoint(p) {
 // main three NIST curves).
 // input: bits of an x coordinate, the even/odd tag
 // output: point
-function decompressPoint(xbits, curve, tag) {
-    const x = curve.field.fromBits(xbits).normalize();
-    const sign = tag & 1;
+function decompressPoint(bytes, curve) {
+    const yTag = bytes[0];
+    const xBytes = bytes.slice(1);
+
+    const x = curve.field.fromBits(sjcl.codec.bytes.toBits(xBytes)).normalize();
+    const sign = yTag & 1;
 
     // y^2 = x^3 - 3x + b (mod p)
     let rh = x.power(3);
-    let threeTimesX = x.mul(3);
-    rh = rh.sub(threeTimesX).add(curve.b).mod(curve.field.modulus); // mod() normalizes
+    let threeTimesX = x.mul(curve.a);
+    rh = rh.add(threeTimesX).add(curve.b).mod(curve.field.modulus); // mod() normalizes
 
     // modsqrt(z) for p = 3 mod 4 is z^(p+1/4)
     const sqrt = curve.field.modulus.add(1).normalize().halveM().halveM();
-    let y = rh.powermod(sqrt, curve.field.modulus);
+    let y = new curve.field(rh.powermod(sqrt, curve.field.modulus));
 
     let parity = y.limbs[0] & 1;
-
     if (parity != sign) {
         y = curve.field.modulus.sub(y).normalize();
     }
 
     let point = new sjcl.ecc.point(curve, x, y);
     if (!point.isValid()) {
+        console.error("point is invalid, x: " + x + ", y: " + y);
         return null;
     }
     return point;
-}
-
+  }
 // This has to match Go's elliptic.Marshal, which follows SEC1 2.3.3 for
 // uncompressed points.  SJCL's native point encoding is a concatenation of the
 // x and y coordinates, so it's *almost* SEC1 but lacks the tag for
