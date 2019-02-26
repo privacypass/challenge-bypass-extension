@@ -29,7 +29,8 @@ let clearCachedCommitmentsMock = jest.fn();
 workflow.__set__("get", getMock);
 workflow.__set__("updateIcon", updateIconMock);
 workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
-workflow.__set__("console", { error: jest.fn() });
+let consoleMock = { error: jest.fn() };
+workflow.__set__("console", consoleMock);
 
 /**
  * Configuration
@@ -132,12 +133,12 @@ describe('hashing to p256', () => {
     }
   });
 
-  test('hash-and-increment', () => {
+  test('hash-and-increment no errors', () => {
     for (let i=0; i<10; i++) {
       const random = sjcl.random.randomWords(wordLength, 10);
       const rndBits = sjcl.codec.bytes.toBits(random);
       const runH2C = function run() {
-        hashAndInc(rndBits, curve, hash);
+        hashAndInc(rndBits, hash);
       };
       expect(runH2C).not.toThrowError();
     }
@@ -164,7 +165,7 @@ describe('hashing to p256', () => {
       };
       expect(runH2C).not.toThrowError();
     }
-  }); 
+  });
 
   describe('point at infinity', () => {
     test('t=0', () => {
@@ -188,11 +189,22 @@ describe('hashing to p256', () => {
 });
 
 describe('point compression/decompression', () => {
+  test('check bad tag fails', () => {
+    function run() {
+      let P = newRandomPoint().point;
+      let b64 = compressPoint(P);
+      let bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
+      bytes[0] = 4;
+      return decompressPoint(bytes);
+    }
+    expect(run).toThrowError();
+  });
+
   test('random point', () => {
     let P = newRandomPoint().point;
     let b64 = compressPoint(P);
     let bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
-    let newP = decompressPoint(bytes, curve);
+    let newP = decompressPoint(bytes);
     expect(P.x.equals(newP.x)).toBeTruthy();
     expect(P.y.equals(newP.y)).toBeTruthy();
   });
