@@ -42,7 +42,7 @@ function h2Curve(alpha, ecSettings) {
         point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_POINT_REPRESENTATION);
         break;
     case "increment":
-        point = hashAndInc(alpha, ecSettings.curve, ecSettings.hash);
+        point = hashAndInc(alpha, ecSettings.hash);
         break;
     default:
         throw new Error("[privacy-pass]: Incompatible curve chosen for hashing, SJCL chosen curve: " + sjcl.ecc.curveName(ecSettings.curve));
@@ -206,10 +206,9 @@ function getCurveParams(curve) {
  * to hash the bytes multiple times and recover a curve point. Has non-negligble
  * probailistic failure conditions.
  * @param {sjcl.codec.bitArray} seed
- * @param {sjcl.ecc.curve} curve elliptic curve
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
  */
-function hashAndInc(seed, curve, hash) {
+function hashAndInc(seed, hash) {
     const h = new hash();
 
     // Need to match the Go curve hash, so we decode the exact bytes of the
@@ -233,13 +232,16 @@ function hashAndInc(seed, curve, hash) {
         h.update(ctrBits);
 
         const digestBits = h.finalize();
+        const bytes = sjcl.codec.bytes.fromBits(digestBits);
 
-        let point = decompressPoint(digestBits, curve, 0x02);
+        // attempt to decompress a point along with valid tags
+        // curve choice is implicit based on active curve parameters
+        let point = decompressPoint([2].concat(bytes));
         if (point !== null) {
             return point;
         }
 
-        point = decompressPoint(digestBits, curve, 0x03);
+        point = decompressPoint([3].concat(bytes));
         if (point !== null) {
             return point;
         }
@@ -248,5 +250,5 @@ function hashAndInc(seed, curve, hash) {
         h.reset();
     }
 
-    return null;
+    throw new Error("Unable to construct point using hash and increment");
 }

@@ -19,7 +19,6 @@
 /* exported getBigNumFromBytes */
 "use strict";
 
-const curve = sjcl.ecc.curves.c256;
 const BATCH_PROOF_PREFIX = "batch-proof=";
 const UNCOMPRESSED_POINT_PREFIX = "04";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
@@ -57,46 +56,53 @@ function initECSettings(h2cParams) {
     }
 }
 
-// Returns the active configuration for the elliptic curve setting
+/**
+ * Returns the active configuration for the elliptic curve setting
+ */
 function getActiveECSettings() {
     return { curve: CURVE, hash: CURVE_H2C_HASH, method: CURVE_H2C_METHOD };
 }
 
-// Performs the scalar multiplication k*P
-//
-// Inputs:
-//  k: bigInt scalar (not field element or bits!)
-//  P: sjcl Point
-// Returns:
-//  sjcl Point
+/**
+ * Multiplies the point P with the scalar k and outputs kP
+ * @param {sjcl.bn} k scalar
+ * @param {sjcl.ecc.point} P curve point
+ * @returns {sjcl.ecc.point}
+ */
 function _scalarMult(k, P) {
     const Q = P.mult(k);
     return Q;
 }
 
-// blindPoint generates a random scalar blinding factor, multiplies the
-// supplied point by it, and returns both values.
+/**
+ * Samples a random scalar and uses it to blind the point P
+ * @param {sjcl.ecc.point} P curve point
+ * @returns {sjcl.ecc.point}
+ */
 function blindPoint(P) {
-    const bF = sjcl.bn.random(curve.r, 10);
+    const bF = sjcl.bn.random(CURVE.r, 10);
     const bP = _scalarMult(bF, P);
     return { point: bP, blind: bF };
 }
 
-// unblindPoint takes an assumed-to-be blinded point Q and an accompanying
-// blinding scalar b, then returns the point (1/b)*Q.
-//
-// inputs:
-//  b: bigint scalar (not field element or bits!)
-//  q: sjcl point
-// returns:
-//  sjcl point
+
+/**
+ * unblindPoint takes an assumed-to-be blinded point Q and an accompanying
+ * blinding scalar b, then returns the point (1/b)*Q.
+ * @param {sjcl.bn} b scalar blinding factor
+ * @param {sjcl.ecc.point} Q curve point
+ * @returns {sjcl.ecc.point}
+ */
 function unblindPoint(b, Q) {
-    const binv = b.inverseMod(curve.r);
+    const binv = b.inverseMod(CURVE.r);
     return _scalarMult(binv, Q);
 }
 
-// Creates a new random point on the curve by sampling random bytes and then
-// hashing to the chosen curve.
+/**
+ * Creates a new random point on the curve by sampling random bytes and then
+ * hashing to the chosen curve.
+ * @returns {sjcl.ecc.point}
+ */
 function newRandomPoint() {
     const byteLength = 32;
     const wordLength = byteLength / 4; // SJCL 4 bytes to a word
@@ -112,102 +118,118 @@ function newRandomPoint() {
     return t;
 }
 
-// Compresses a point according to SEC1.
-// input: point
-// output: base64-encoded bytes
-function compressPoint(p) {
-    const xBytes = sjcl.codec.bytes.fromBits(p.x.toBits());
-    const sign = p.y.limbs[0] & 1 ? 0x03 : 0x02;
+/**
+ * Compresses a curve point into a base64-encoded string via Section 2.3.4 of
+ * SEC1
+ * @param {sjcl.ecc.point} P
+ * @returns {sjcl.codec.bytes}
+ */
+function compressPoint(P) {
+    const xBytes = sjcl.codec.bytes.fromBits(P.x.toBits());
+    const sign = P.y.limbs[0] & 1 ? 0x03 : 0x02;
     const taggedBytes = [sign].concat(xBytes);
     return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
 }
 
-// Attempts to decompress the bytes into a curve point following SEC1 and
-// assuming it's a Weierstrass curve with a = -3 and p = 3 mod 4 (true for the
-// main three NIST curves).
-// input: bits of an x coordinate, the even/odd tag
-// output: point
-function decompressPoint(xbits, curve, tag) {
-    const x = curve.field.fromBits(xbits).normalize();
-    const sign = tag & 1;
+/**
+ * Attempts to decompress a curve point in SEC1 encoded format. Returns null if
+ * the point is invalid
+ * @param {sjcl.codec.bytes} bytes bytes of a compressed curve point (SEC1)
+ * @returns {sjcl.ecc.point} may be null if compressed bytes are not valid
+ */
+function decompressPoint(bytes) {
+    const yTag = bytes[0];
+    if (yTag != 2 && yTag != 3) {
+        throw new Error("[privacy-pass]: compressed point is invalid, bytes[0] = " + yTag);
+    }
+    const xBytes = bytes.slice(1);
+    const x = CURVE.field.fromBits(sjcl.codec.bytes.toBits(xBytes)).normalize();
+    const sign = yTag & 1;
 
     // y^2 = x^3 - 3x + b (mod p)
     let rh = x.power(3);
-    let threeTimesX = x.mul(3);
-    rh = rh.sub(threeTimesX).add(curve.b).mod(curve.field.modulus); // mod() normalizes
+    let threeTimesX = x.mul(CURVE.a);
+    rh = rh.add(threeTimesX).add(CURVE.b).mod(CURVE.field.modulus); // mod() normalizes
 
     // modsqrt(z) for p = 3 mod 4 is z^(p+1/4)
-    const sqrt = curve.field.modulus.add(1).normalize().halveM().halveM();
-    let y = rh.powermod(sqrt, curve.field.modulus);
+    const sqrt = CURVE.field.modulus.add(1).normalize().halveM().halveM();
+    let y = new CURVE.field(rh.powermod(sqrt, CURVE.field.modulus));
 
     let parity = y.limbs[0] & 1;
-
     if (parity != sign) {
-        y = curve.field.modulus.sub(y).normalize();
+        y = CURVE.field.modulus.sub(y).normalize();
     }
 
-    let point = new sjcl.ecc.point(curve, x, y);
+    let point = new sjcl.ecc.point(CURVE, x, y);
     if (!point.isValid()) {
+        // we return null here rather than an error as we iterate over this
+        // method during hash-and-inc
         return null;
     }
     return point;
 }
 
-// This has to match Go's elliptic.Marshal, which follows SEC1 2.3.3 for
-// uncompressed points.  SJCL's native point encoding is a concatenation of the
-// x and y coordinates, so it's *almost* SEC1 but lacks the tag for
-// uncompressed point encoding.
-//
-// Inputs:
-//  P: sjcl Point
-// Returns:
-//  bytes
+/**
+ * Encodes a curve point as bytes in SEC1 uncompressed format
+ * @param {sjcl.ecc.point} P
+ * @returns {sjcl.codec.bytes}
+ */
 function sec1EncodePoint(P) {
     const pointBits = P.toBits();
     const xyBytes = sjcl.codec.bytes.fromBits(pointBits);
     return [0x04].concat(xyBytes);
 }
 
-// input: base64-encoded bytes
-// output: point
+/**
+ * Decodes a base64-encoded string into a curve point
+ * @param {string} p a base64-encoded, uncompressed curve point
+ * @returns {sjcl.ecc.point}
+ */
 function sec1DecodePoint(p) {
     const sec1Bits = sjcl.codec.base64.toBits(p);
     const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
     return sec1DecodePointFromBytes(sec1Bytes);
 }
 
-// Decode point when it is in byte format rather than base64
+/**
+ * Decodes (SEC1) uncompressed curve point bytes into a valid curve point
+ * @param {sjcl.codec.bytes} sec1Bytes bytes of an uncompressed curve point
+ * @returns {sjcl.ecc.point}
+ */
 function sec1DecodePointFromBytes(sec1Bytes) {
     if (sec1Bytes[0] != 0x04) {
         throw new Error("[privacy-pass]: attempted sec1 point decoding with incorrect tag: " + sec1Bytes);
     }
     const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
     const pointBits = sjcl.codec.bytes.toBits(coordinates);
-    return curve.fromBits(pointBits);
+    return CURVE.fromBits(pointBits);
 }
 
-// Marshals a point in an SJCL-internal format that can be used with
-// JSON.stringify for localStorage.
-//
-// input: point
-// output: base64 string
-function encodeStorablePoint(p) {
-    const bits = p.toBits();
+/**
+ * Marshals a point in an SJCL-internal format that can be used with
+ * JSON.stringify for localStorage.
+ * @param {sjcl.ecc.point} P curve point
+ * @returns {string}
+ */
+function encodeStorablePoint(P) {
+    const bits = P.toBits();
     return sjcl.codec.base64.fromBits(bits);
 }
 
-// Renders a point from SJCL-internal base64.
-//
-// input: base64 string
-// ouput: point
+/**
+ * Renders a point from SJCL-internal base64.
+ * @param {string} s base64-encoded string
+ * @returns {sjcl.ecc.point}
+ */
 function decodeStorablePoint(s) {
     const bits = sjcl.codec.base64.toBits(s);
-    return curve.fromBits(bits);
+    return CURVE.fromBits(bits);
 }
 
 /**
  * Decodes the received curve points
  * @param signatures encoded signed points
+ * @returns {sjcl.ecc.point[]} array of curve points
  */
 function getCurvePoints(signatures) {
     let usablePoints = [];
@@ -225,10 +247,15 @@ function getCurvePoints(signatures) {
  * DLEQ proof verification logic
  */
 
-// Verifies the DLEQ proof that is returned when tokens are signed
-//
-// input: marshaled JSON DLEQ proof
-// output: bool
+/**
+ * Verify the DLEQ proof object using the information provided
+ * @param {string} proofObj base64-encoded batched DLEQ proof object
+ * @param {token literal} tokens array of token objects containing blinded curve
+ * points
+ * @param {sjcl.ecc.point[]} signatures array of signed point
+ * @param {JSON} commitments JSON object containing encoded curve points
+ * @returns {bool}
+ */
 function verifyProof(proofObj, tokens, signatures, commitments) {
     let bp = getMarshaledBatchProof(proofObj);
     const dleq = retrieveProof(bp);
@@ -273,7 +300,15 @@ function verifyProof(proofObj, tokens, signatures, commitments) {
     return true;
 }
 
-// Recompute the composite M and Z values for verifying DLEQ
+/**
+ * Recompute the composite M and Z values for verifying DLEQ
+ * @param {token literal} chkM array of token objects containing blinded curve
+ * points
+ * @param {sjcl.ecc.point[]} chkZ array of signed curve points
+ * @param {sjcl.ecc.point} pointG curve point
+ * @param {sjcl.ecc.point} pointH curve point
+ * @returns {sjcl.ecc.point{M, Z}}
+ */
 function recomputeComposites(chkM, chkZ, pointG, pointH) {
     let seed = getSeedPRNG(chkM, chkZ, pointG, pointH);
     let shake = createShake256();
@@ -296,9 +331,13 @@ function recomputeComposites(chkM, chkZ, pointG, pointH) {
     return {M: cM, Z: cZ};
 }
 
-// Squeeze a seeded shake for output
+/**
+ * Computes an output of seeded SHAKE function
+ * @param {SHAKE PRNG} shake seeded shake PRNG object
+ * @returns {sjcl.bn}
+ */
 function getShakeScalar(shake) {
-    const curveOrder = curve.r;
+    const curveOrder = CURVE.r;
     const bitLen = sjcl.bitArray.bitLength(curveOrder.toBits());
     const mask = MASK[bitLen % 8];
     let rnd;
@@ -320,6 +359,15 @@ function getShakeScalar(shake) {
     return rnd
 }
 
+/**
+ * Computes a seed for the PRNG for verifying batch DLEQ proofs
+ * @param {token literal} chkM array of token objects containing blinded curve
+ * points
+ * @param {sjcl.ecc.point[]} chkZ array of signed curve points
+ * @param {sjcl.ecc.point} pointG curve point
+ * @param {sjcl.ecc.point} pointH curve point
+ * @returns {sjcl.codec.hex}
+ */
 function getSeedPRNG(chkM, chkZ, pointG, pointH) {
     let sha256 = new sjcl.hash.sha256();
     sha256.update(encodePointForPRNG(pointG));
@@ -331,7 +379,11 @@ function getSeedPRNG(chkM, chkZ, pointG, pointH) {
     return sjcl.codec.hex.fromBits(sha256.finalize());
 }
 
-// Returns a decoded batch proof as a map
+/**
+ * Returns a decoded batch proof as a map
+ * @param {JSON} bp batch proof as encoded JSON
+ * @return {DLEQ proof}
+ */
 function retrieveProof(bp) {
     let dleqProof;
     try {
@@ -343,7 +395,11 @@ function retrieveProof(bp) {
     return dleqProof;
 }
 
-// Decode proof string and remove prefix
+/**
+ * Decode proof string and remove prefix
+ * @param {string} proof base64-encoded batched DLEQ proof
+ * @returns {JSON}
+ */
 function getMarshaledBatchProof(proof) {
     let proofStr = atob(proof);
     if (proofStr.indexOf(BATCH_PROOF_PREFIX) === 0) {
@@ -352,10 +408,11 @@ function getMarshaledBatchProof(proof) {
     return JSON.parse(proofStr);
 }
 
-// Decode the proof that is sent into a map
-//
-// input: Marshaled proof string
-// output: DLEQ proof
+/**
+ * Decode the proof that is sent into a map
+ * @param {string} proofStr proof JSON as string
+ * @returns {DLEQ proof}
+ */
 function parseDleqProof(proofStr) {
     const dleqProofM = JSON.parse(proofStr);
     let dleqProof = new Map();
@@ -364,24 +421,40 @@ function parseDleqProof(proofStr) {
     return dleqProof;
 }
 
-// Return a bignum from a base-64 encoded string
+/**
+ * Return a bignum from a base64-encoded string
+ * @param {string} b64Str
+ * @returns {sjcl.bn}
+ */
 function getBigNumFromB64(b64Str) {
     let bits = sjcl.codec.base64.toBits(b64Str);
     return sjcl.bn.fromBits(bits);
 }
 
-// Return a big number from an array of bytes
+/**
+ * Return a big number from an array of bytes
+ * @param {sjcl.codec.bytes} bytes
+ * @returns {sjcl.bn}
+ */
 function getBigNumFromBytes(bytes) {
     let bits = sjcl.codec.bytes.toBits(bytes);
     return sjcl.bn.fromBits(bits);
 }
 
-// Return a bignum from a hex string
+/**
+ * Return a big number from hex-encoded bytes
+ * @param {sjcl.codec.hex} hex
+ * @returns {sjcl.bn}
+ */
 function getBigNumFromHex(hex) {
     return sjcl.bn.fromBits(sjcl.codec.hex.toBits(hex));
 }
 
-// PRNG encode point
+/**
+ * Encodes a point into hex bits for a PRNG input
+ * @param {sjcl.ecc.point} point curve point
+ * @returns {sjcl.codec.hex}
+ */
 function encodePointForPRNG(point) {
     let hex = sjcl.codec.hex.fromBits(point.toBits());
     let newHex = UNCOMPRESSED_POINT_PREFIX + hex;

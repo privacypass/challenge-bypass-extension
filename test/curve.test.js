@@ -16,6 +16,9 @@ const setConfig = workflow.__get__('setConfig');
 const getActiveECSettings = workflow.__get__('getActiveECSettings');
 const initECSettings = workflow.__get__('initECSettings');
 const getCurveParams = workflow.__get__('getCurveParams');
+const newRandomPoint = workflow.__get__('newRandomPoint');
+const compressPoint = workflow.__get__('compressPoint');
+const decompressPoint = workflow.__get__('decompressPoint');
 
 /**
  * Mocking
@@ -25,7 +28,9 @@ let updateIconMock = jest.fn();
 let clearCachedCommitmentsMock = jest.fn();
 workflow.__set__("get", getMock);
 workflow.__set__("updateIcon", updateIconMock);
-workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock)
+workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
+let consoleMock = { error: jest.fn() };
+workflow.__set__("console", consoleMock);
 
 /**
  * Configuration
@@ -128,15 +133,15 @@ describe('hashing to p256', () => {
     }
   });
 
-  test('hash-and-increment', () => {
+  test('hash-and-increment no errors', () => {
     for (let i=0; i<10; i++) {
       const random = sjcl.random.randomWords(wordLength, 10);
       const rndBits = sjcl.codec.bytes.toBits(random);
       const runH2C = function run() {
-        hashAndInc(rndBits, curve, hash);
+        hashAndInc(rndBits, hash);
       };
       expect(runH2C).not.toThrowError();
-    }    
+    }
   });
 
   test('h2c with increment settings', () => {
@@ -147,7 +152,7 @@ describe('hashing to p256', () => {
         h2Curve(rndBits, getActiveECSettings());
       };
       expect(runH2C).not.toThrowError();
-    }   
+    }
   });
 
   test('h2c with swu settings', () => {
@@ -159,7 +164,7 @@ describe('hashing to p256', () => {
         h2Curve(rndBits, getActiveECSettings());
       };
       expect(runH2C).not.toThrowError();
-    }   
+    }
   });
 
   describe('point at infinity', () => {
@@ -180,6 +185,28 @@ describe('hashing to p256', () => {
       const pJac = jacobianSWUP256(curve, params.baseField, params.A, params.B, params.t);
       expect(pJac.z.equals(new params.baseField(0))).toBeTruthy();
     });
+  });
+});
+
+describe('point compression/decompression', () => {
+  test('check bad tag fails', () => {
+    function run() {
+      let P = newRandomPoint().point;
+      let b64 = compressPoint(P);
+      let bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
+      bytes[0] = 4;
+      return decompressPoint(bytes);
+    }
+    expect(run).toThrowError();
+  });
+
+  test('random point', () => {
+    let P = newRandomPoint().point;
+    let b64 = compressPoint(P);
+    let bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
+    let newP = decompressPoint(bytes);
+    expect(P.x.equals(newP.x)).toBeTruthy();
+    expect(P.y.equals(newP.y)).toBeTruthy();
   });
 });
 

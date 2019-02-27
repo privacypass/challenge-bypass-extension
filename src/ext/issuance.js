@@ -43,10 +43,11 @@ function signReqCF(url) {
 
 /**
  * Sends an XHR request containing a BlindTokenRequest for signing a set of tokens
- * @param details HTTP request details
- * @param url URL object of the HTTP request
- * @param tokens generated tokens that will be signed
- * @param signReq JSON signing request for tokens
+ * @param {object} xhrInfo Object containing information for the XHR that will
+ * be returned.
+ * @param {URL} url URL object
+ * @param {int} tabId Tab ID for the current request
+ * @returns {XMLHttpRequest}
  */
 function sendXhrSignReq(xhrInfo, url, tabId) {
     let newUrl = xhrInfo["newUrl"];
@@ -76,6 +77,8 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
 /**
  * Validates the server response and stores the new signed points for future
  * redemptions
+ * @param {URL} url URL object
+ * @param {int} tabId Tab ID for the current request
  * @param data An issue response takes the form "signatures=[b64 blob]"
  *             where the blob is an array of b64-encoded curve points
  * @param tokens client-generated tokens that correspond to the signed points
@@ -110,14 +113,20 @@ function validateResponse(url, tabId, data, tokens) {
     validateAndStoreTokens(url, tabId, tokens, out.signatures, out.proof, out.version);
 }
 
-// Parses signatures that are sent back in JSON format
+/**
+ * Parses the server (JSON) response for the issuance data
+ * @param {string} data stringified server response
+ */
 function parseSigJson(data) {
     let json = JSON.parse(data);
     // Data should always be b64 encoded
     return atob(json["signatures"]);
 }
 
-// Parses signatures that are sent back in the CF string format
+/**
+ * Parses the server (string) response for the issuance data
+ * @param {string} data stringified server response
+ */
 function parseSigString(data) {
     let split = data.split("signatures=", 2);
     if (split.length != 2) {
@@ -130,7 +139,7 @@ function parseSigString(data) {
 /**
  * Retrieves the batchProof and signatures, depending on the type of object received
  * @param {JSON/array} issueResp object containing signed points, DLEQ proof and potentially commitment version
- * @return {literal} Formatted object for inputs
+ * @return {object} Formatted object for inputs
  */
 function parsePointsAndProof(issueResp) {
     let signatures;
