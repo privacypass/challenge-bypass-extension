@@ -234,14 +234,10 @@ function hashAndInc(seed, hash) {
         const digestBits = h.finalize();
         const bytes = sjcl.codec.bytes.fromBits(digestBits);
 
-        // attempt to decompress a point along with valid tags
+        // attempt to decompress a point with a valid tag (don't need to try
+        // 0x03 because this is just the negative version)
         // curve choice is implicit based on active curve parameters
         let point = decompressPoint([2].concat(bytes));
-        if (point !== null) {
-            return point;
-        }
-
-        point = decompressPoint([3].concat(bytes));
         if (point !== null) {
             return point;
         }
