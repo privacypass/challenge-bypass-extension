@@ -105,4 +105,5 @@ const cfConfig = {
 // Ordering of configs should correspond to value of cf-chl-bypass header
 // i.e. the first config should have "id": 1, the second "id":2, etc.
 const PPConfigs = [exampleConfig,cfConfig];
-let ACTIVE_CONFIG = PPConfigs[0];
+// set CF to be active config by default
+let ACTIVE_CONFIG = PPConfigs[1];

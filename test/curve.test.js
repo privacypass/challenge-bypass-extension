@@ -43,7 +43,7 @@ beforeEach(() => {
   let settings = getActiveECSettings();
   curve = settings.curve;
   hash = settings.hash;
-  activeCurveParams = ACTIVE_CONFIG["h2c-params"];
+  activeCurveParams = {curve: "p256", hash: "sha256", method: "increment"};
 });
 
 describe('check curve initialisation', () => {

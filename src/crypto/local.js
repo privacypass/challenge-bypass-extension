@@ -313,22 +313,17 @@ function recomputeComposites(chkM, chkZ, pointG, pointH) {
     let seed = getSeedPRNG(chkM, chkZ, pointG, pointH);
     let shake = createShake256();
     shake.update(seed, "hex");
-    let cM;
-    let cZ;
+    let cM = new sjcl.ecc.pointJac(CURVE); // can only add points in jacobian representation
+    let cZ = new sjcl.ecc.pointJac(CURVE);
     for (let i=0; i<chkM.length; i++) {
         let ci = getShakeScalar(shake);
         let cMi = _scalarMult(ci, chkM[i].point);
         let cZi = _scalarMult(ci, chkZ[i]);
-        if (cM === undefined || cZ === undefined) {
-            cM = cMi;
-            cZ = cZi;
-        } else {
-            cM = cM.toJac().add(cMi).toAffine();
-            cZ = cZ.toJac().add(cZi).toAffine();
-        }
+        cM = cM.add(cMi);
+        cZ = cZ.add(cZi);
     }
 
-    return {M: cM, Z: cZ};
+    return {M: cM.toAffine(), Z: cZ.toAffine()};
 }
 
 /**
