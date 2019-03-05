@@ -305,7 +305,11 @@ function cacheCommitments(version, G, H) {
  * Recovers all commitments pairs from the cache
  */
 function getAllCached() {
-    return JSON.parse(get(CACHED_COMMITMENTS_STRING));
+    let cache = get(CACHED_COMMITMENTS_STRING);
+    if (!cache) {
+        return;
+    }
+    return JSON.parse(cache);
 }
 
 /**
