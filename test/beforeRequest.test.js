@@ -1,6 +1,6 @@
 /**
 * Integrations tests for when headers are sent by the browser
-* 
+*
 * @author: Alex Davidson
 */
 import btoa from "btoa";
@@ -70,9 +70,9 @@ function getMock(key) {
     return localStorage[key];
 }
 function setMock(key, value) {
-    localStorage[key] = value; 
+    localStorage[key] = value;
 }
-function clearCachedCommitmentsMock(key) {
+function clearCachedCommitmentsMock() {
     localStorage[CACHED_COMMITMENTS_STRING] = null;
 }
 function getSpendFlag(key) {
@@ -146,9 +146,6 @@ beforeEach(() => {
     setMockFunctions();
     setTimeSinceLastResp(Date.now());
     setConfig(1); // set the CF config
-    // Mock the active commitments because XHR is not available
-    workflow.__set__("activeG", testG);
-    workflow.__set__("activeH", testH);
     workflow.__set__("readySign", true);
     workflow.__set__("TOKENS_PER_REQUEST", 3); // limit the # of tokens for tests
 });
@@ -203,6 +200,11 @@ describe("commitments parsing and caching", () => {
         setConfig(0);
         expect(getCachedCommitments("1.0")).toBeFalsy();
     });
+
+    test("error-free empty cache", () => {
+        clearCachedCommitmentsMock();
+        expect(getCachedCommitments).not.toThrowError();
+    });
 });
 
 describe("signing request is cancelled", () => {
@@ -243,7 +245,7 @@ describe("signing request is cancelled", () => {
 describe("test sending sign requests", () => {
     let validateRespMock = jest.fn();
     workflow.__set__("validateResponse", validateRespMock);
-    
+
     test("incorrect config id", () => {
         function tryRun() {
             workflow.__set__("CONFIG_ID", 3);
@@ -291,8 +293,8 @@ describe("test sending sign requests", () => {
     test("too many tokens does not sign", () => {
         _xhr = mockXHRGood;
         setXHR(_xhr);
-        function run() { 
-            let b = beforeRequest(details, newUrl); 
+        function run() {
+            let b = beforeRequest(details, newUrl);
             let xhr = b.xhr;
             xhr.onreadystatechange();
         };
@@ -308,10 +310,10 @@ describe("test sending sign requests", () => {
     test("correct XHR response triggers validation", () => {
         _xhr = mockXHRGood;
         setXHR(_xhr);
-        function run() { 
+        function run() {
             const request = "";
             const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
-            let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId); 
+            let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId);
             xhr.responseText = "";
             xhr.onreadystatechange();
         };
@@ -382,12 +384,12 @@ describe("test validating response", () => {
             let before;
             let after;
             let version;
-            function run() { 
+            function run() {
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
                     tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
-                const out = parseRespString(respGoodProof); 
+                const out = parseRespString(respGoodProof);
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
                 expect(xhr.send).toBeCalledTimes(1);
@@ -416,12 +418,12 @@ describe("test validating response", () => {
             cacheCommitments("1.0", testG, testH);
             expect(getCachedCommitments("1.0").G === testG).toBeTruthy();
             expect(getCachedCommitments("1.0").H === testH).toBeTruthy();
-            function run() { 
+            function run() {
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
                     tokens[i] = { token: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
-                const out = parseRespString(respGoodProof); 
+                const out = parseRespString(respGoodProof);
                 before = getMock(TOKEN_COUNT_STR);
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
@@ -447,12 +449,12 @@ describe("test validating response", () => {
             let version;
             // construct corrupted commitments
             localStorage[CACHED_COMMITMENTS_STRING] = JSON.stringify({ "1.0": {L: testG, H: testH} });
-            function run() { 
+            function run() {
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
                     tokens[i] = { token: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
-                const out = parseRespString(respGoodProof); 
+                const out = parseRespString(respGoodProof);
                 before = getMock(TOKEN_COUNT_STR);
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
@@ -484,12 +486,12 @@ describe("test validating response", () => {
             let before;
             let after;
             let version;
-            function run() { 
+            function run() {
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
                     tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
-                const out = parseRespString(respGoodProof); 
+                const out = parseRespString(respGoodProof);
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 before = getMock(TOKEN_COUNT_STR);
                 xhr.onreadystatechange();
@@ -512,12 +514,12 @@ describe("test validating response", () => {
         test("reloading off after sign", () => {
             let before;
             let after;
-            function run() { 
+            function run() {
                 let tokens = [];
                 for (let i=0; i<testTokens.length; i++) {
                     tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                 }
-                const out = parseRespString(respGoodProof); 
+                const out = parseRespString(respGoodProof);
                 let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 before = getMock(TOKEN_COUNT_STR);
                 xhr.onreadystatechange();
@@ -536,12 +538,12 @@ describe("test validating response", () => {
 
         describe("test parsing errors", () => {
             test("cannot decode point", () => {
-                function run() { 
+                function run() {
                     let tokens = [];
                     for (let i=0; i<testTokens.length; i++) {
                         tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                     }
-                    const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ=="); 
+                    const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
                     let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                     xhr.onreadystatechange();
                 };
@@ -555,12 +557,12 @@ describe("test validating response", () => {
 
             describe("DLEQ formatting errors", () => {
                 test("proof is not JSON", () => {
-                    function run() { 
+                    function run() {
                         let tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
                             tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                         }
-                        const out = parseRespString(respBadJson); 
+                        const out = parseRespString(respBadJson);
                         let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                         xhr.onreadystatechange();
                     };
@@ -573,12 +575,12 @@ describe("test validating response", () => {
                 });
 
                 test("proof has bad points", () => {
-                    function run() { 
+                    function run() {
                         let tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
                             tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                         }
-                        const out = parseRespString(respBadPoints); 
+                        const out = parseRespString(respBadPoints);
                         let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                         xhr.onreadystatechange();
                     };
@@ -591,12 +593,12 @@ describe("test validating response", () => {
                 });
 
                 test("proof should not verify (bad lengths)", () => {
-                    function run() { 
+                    function run() {
                         let tokens = [];
                         for (let i=0; i<testTokensBadLength.length; i++) {
                             tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                         }
-                        const out = parseRespString(respBadProof); 
+                        const out = parseRespString(respBadProof);
                         let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                         xhr.onreadystatechange();
                     };
@@ -614,12 +616,12 @@ describe("test validating response", () => {
                 });
 
                 test("proof should not verify", () => {
-                    function run() { 
+                    function run() {
                         let tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
                             tokens[i] = { data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind) };
                         }
-                        const out = parseRespString(respBadProof); 
+                        const out = parseRespString(respBadProof);
                         let xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                         xhr.onreadystatechange();
                     };
