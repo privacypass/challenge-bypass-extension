@@ -64,10 +64,10 @@ function attemptRedeem(url, respTabId, target) {
 
 // Actually activate the redemption request
 function fireRedeem(url, respTabId, target) {
-    if (REDEEM_METHOD == "reload") {
+    if (REDEEM_METHOD === "reload") {
         setSpendFlag(url.host, true);
         let targetUrl = target[respTabId];
-        if (url.href == targetUrl) {
+        if (url.href === targetUrl) {
             chrome.tabs.update(respTabId, { url: targetUrl });
         } else {
             // set a reload in the future when the target has been inited, also
@@ -75,7 +75,10 @@ function fireRedeem(url, respTabId, target) {
             futureReload[respTabId] = url.href;
             timeSinceLastResp = Date.now();
         }
-    } else {
+    } else if (REDEEM_METHOD === "no-reload") {
+    //    pass
+    }
+    else {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
 }
@@ -111,7 +114,7 @@ function isCookieForTab(hrefs, cookieDomain) {
         return true;
     }
     // remove preceding dot and try again
-    if (cookieDomain[0] == ".") {
+    if (cookieDomain[0] === ".") {
         let noDot = cookieDomain.substring(1);
         if (hrefs.includes(noDot)) {
             return true;
@@ -147,7 +150,7 @@ function getSpendFlag(key) {
 // Update the icon and badge colour if tokens have changed
 function updateIcon(count) {
     let warn = (count.toString().includes("!"))
-    if (count != 0 && !warn) {
+    if (count !== 0 && !warn) {
         chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
         chrome.browserAction.setBadgeText({text: count.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});

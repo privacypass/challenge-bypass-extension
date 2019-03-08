@@ -78,7 +78,11 @@
         "getBigNumFromBytes": true,
         "signReqCF": true,
         "sendXhrSignReq": true,
-        "sec1EncodePoint": true
+        "sec1EncodePoint": true,
+        "CONFIG_ID": true,
+        "signReqHC": true,
+        "patternToRegExp": true
+
     },
     "rules": {
         "no-trailing-spaces": "error",

@@ -9,7 +9,7 @@
 /* exported ACTIVE_CONFIG */
 /* exported PPConfigs */
 
-const CHL_BYPASS_SUPPORT  = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
+const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 
 const exampleConfig = {
@@ -26,18 +26,23 @@ const exampleConfig = {
     "var-reset-ms": 100, // variable reset time limit
     "commitments": "example", // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
     "spending-restrictions": {
-        "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
+        "status-code": [200,], // array of status codes that should trigger token redemption (e.g. 403 for CF)
         "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
-        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank"], // urls that should not trigger page reloads/redemptions (these should probably be standard)
-        "bad-navigation": ["auto_subframe"], // navigation types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
-        "bad-transition": ["server_redirect"], // transition types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
-        "valid-redirects": ["https://","https://www.","http://www."], // valid redirects that should trigger token redemptions
-        "valid-transitions": ["link", "typed", "auto_bookmark", "reload"], // transition types that fine for triggering redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",], // urls that should not trigger page reloads/redemptions (these should probably be standard)
+        "bad-navigation": ["auto_subframe",], // navigation types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+        "bad-transition": ["server_redirect",], // transition types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+        "valid-redirects": ["https://", "https://www.", "http://www.",], // valid redirects that should trigger token redemptions
+        "valid-transitions": ["link", "typed", "auto_bookmark", "reload",], // transition types that fine for triggering redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
     }, // These spending restrictions are examples that apply in the CF case
     "spend-action": {
-        "urls": "<all_urls>", // urls that listeners act on
+        "urls": ["<all_urls>"], // urls that listeners act on
         "redeem-method": "", // what method to use to perform redemption, currently we support "reload" for CF.
         "header-name": "challenge-bypass-token", // name of header for sending redemption token
+        "header-host-name": "challenge-bypass-host", // needed for no-reload method
+        "header-path-name": "challenge-bypass-path", // needed for no-reload method
+    },
+    "issue-action": {
+        "urls": ["<all_urls>"],
     },
     "cookies": {
         "check-cookies": true, // whether cookies should be checked before spending
@@ -53,8 +58,8 @@ const exampleConfig = {
         "hash": "sha256", // hash function for mapping bytes to base-field of elliptic curve
         "method": "increment", // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)
     },
-    "send-h2c-params": false // specifies whether to send the additional h2c-params with issue requests
-}
+    "send-h2c-params": false, // specifies whether to send the additional h2c-params with issue requests
+};
 
 // The configuration used by Cloudflare
 const cfConfig = {
@@ -72,22 +77,25 @@ const cfConfig = {
     "var-reset-ms": 2000,
     "commitments": "CF",
     "spending-restrictions": {
-        "status-code": [403],
+        "status-code": [403,],
         "max-redirects": "3",
-        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank"],
-        "bad-navigation": ["auto_subframe"],
-        "bad-transition": ["server_redirect"],
-        "valid-redirects": ["https://","https://www.","http://www."],
-        "valid-transitions": ["link", "typed", "auto_bookmark", "reload"],
+        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",],
+        "bad-navigation": ["auto_subframe",],
+        "bad-transition": ["server_redirect",],
+        "valid-redirects": ["https://", "https://www.", "http://www.",],
+        "valid-transitions": ["link", "typed", "auto_bookmark", "reload",],
     },
     "spend-action": {
-        "urls": "<all_urls>",
+        "urls": ["<all_urls>"],
         "redeem-method": "reload",
         "header-name": "challenge-bypass-token",
     },
+    "issue-action": {
+        "urls": ["<all_urls>"],
+    },
     "cookies": {
         "check-cookies": true,
-        "clearance-cookie": "cf_clearance"
+        "clearance-cookie": "cf_clearance",
     },
     "captcha-domain": "captcha.website",
     "error-codes": {
@@ -99,10 +107,61 @@ const cfConfig = {
         "hash": "sha256",
         "method": "increment",
     },
-    "send-h2c-params": true
+    "send-h2c-params": true,
+};
+
+// The configuration used by hcaptcha
+const hcConfig = {
+    "id": 2,
+    "dev": false,
+    "sign": true,
+    "redeem": true,
+    "sign-reload": false,
+    "sign-resp-format": "json",
+    "max-redirects": 3,
+    "max-spends": 3,
+    "max-tokens": 300,
+    "tokens-per-request": 30,
+    "var-reset": true,
+    "var-reset-ms": 2000,
+    "commitments": "HC",
+    "spending-restrictions": {
+        "status-code": [200],
+        "max-redirects": "3",
+        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",],
+        "bad-navigation": ["auto_subframe",],
+        "bad-transition": ["server_redirect",],
+        "valid-redirects": ["https://", "https://www.", "http://www.",],
+        "valid-transitions": ["link", "typed", "auto_bookmark", "reload",],
+    },
+    "spend-action": {
+        "urls": ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"],
+        "redeem-method": "no-reload",
+        "header-name": "challenge-bypass-token",
+        "header-host-name": "challenge-bypass-host",
+        "header-path-name": "challenge-bypass-path"
+    },
+    "issue-action": {
+        "urls": ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*",]
+    },
+    "cookies": {
+        "check-cookies": true,
+        "clearance-cookie": "hc_clearance",
+    },
+    "captcha-domain": "hcaptcha.com",
+    "error-codes": {
+        "verify-error": "5",
+        "connection-error": "6",
+    },
+    "h2c-params": {
+        "curve": "p256",
+        "hash": "sha256",
+        "method": "increment",
+    },
+    "send-h2c-params": true,
 };
 
 // Ordering of configs should correspond to value of cf-chl-bypass header
 // i.e. the first config should have "id": 1, the second "id":2, etc.
-const PPConfigs = [exampleConfig,cfConfig];
+const PPConfigs = [exampleConfig, cfConfig, hcConfig,];
 let ACTIVE_CONFIG = PPConfigs[0];
