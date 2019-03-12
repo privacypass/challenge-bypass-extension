@@ -9,6 +9,11 @@
 /* exported ACTIVE_CONFIG */
 /* exported PPConfigs */
 
+/* global require */
+
+const lodash = require("lodash");
+
+
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 
@@ -17,11 +22,8 @@ const exampleConfig = {
     "dev": true, // sets whether the configuration should only be used in development
     "sign": true, // sets whether tokens should be sent for signing
     "redeem": true, // sets whether tokens should be sent for redemption
-    "sign-reload": true, // whether pages should be reloaded after signing tokens (e.g. to immediately redeem a token)
-    "sign-resp-format": "string", // formatting of response to sign request (string or json)
     "max-spends": 3, // for each host header, sets the max number of tokens that will be spent
     "max-tokens": 10, // max number of tokens held by the extension
-    "tokens-per-request": 5, // number of tokens sent for each signing request (e.g. 30 for CF)
     "var-reset": true, // whether variables should be reset after time limit expires
     "var-reset-ms": 100, // variable reset time limit
     "commitments": "example", // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
@@ -43,6 +45,9 @@ const exampleConfig = {
     },
     "issue-action": {
         "urls": ["<all_urls>"],
+        "sign-reload": true, // whether pages should be reloaded after signing tokens (e.g. to immediately redeem a token)
+        "sign-resp-format": "string", // formatting of response to sign request (string or json)
+        "tokens-per-request": 5, // number of tokens sent for each signing request (e.g. 30 for CF)
     },
     "cookies": {
         "check-cookies": true, // whether cookies should be checked before spending
@@ -62,104 +67,31 @@ const exampleConfig = {
 };
 
 // The configuration used by Cloudflare
-const cfConfig = {
-    "id": 1,
-    "dev": false,
-    "sign": true,
-    "redeem": true,
-    "sign-reload": true,
-    "sign-resp-format": "string",
-    "max-redirects": 3,
-    "max-spends": 3,
-    "max-tokens": 300,
-    "tokens-per-request": 30,
-    "var-reset": true,
-    "var-reset-ms": 2000,
-    "commitments": "CF",
-    "spending-restrictions": {
-        "status-code": [403,],
-        "max-redirects": "3",
-        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",],
-        "bad-navigation": ["auto_subframe",],
-        "bad-transition": ["server_redirect",],
-        "valid-redirects": ["https://", "https://www.", "http://www.",],
-        "valid-transitions": ["link", "typed", "auto_bookmark", "reload",],
-    },
-    "spend-action": {
-        "urls": ["<all_urls>"],
-        "redeem-method": "reload",
-        "header-name": "challenge-bypass-token",
-    },
-    "issue-action": {
-        "urls": ["<all_urls>"],
-    },
-    "cookies": {
-        "check-cookies": true,
-        "clearance-cookie": "cf_clearance",
-    },
-    "captcha-domain": "captcha.website",
-    "error-codes": {
-        "verify-error": "5",
-        "connection-error": "6",
-    },
-    "h2c-params": {
-        "curve": "p256",
-        "hash": "sha256",
-        "method": "increment",
-    },
-    "send-h2c-params": true,
-};
+let cfConfig = lodash.cloneDeep(exampleConfig);
+cfConfig.id = 1;
+cfConfig.dev = false;
+cfConfig["max-tokens"] = 300;
+cfConfig["var-reset-ms"] = 2000;
+cfConfig.commitments = "CF"
+cfConfig["spending-restrictions"]["status-code"] = [403,];
+cfConfig["spend-action"]["redeem-method"] = "reload";
+cfConfig["issue-action"]["tokens-per-request"] = 30;
+cfConfig.cookies["clearance-cookie"] = "cf_clearance";
+cfConfig["captcha-domain"] = "captcha.website";
+cfConfig["send-h2c-params"] = true
 
 // The configuration used by hcaptcha
-const hcConfig = {
-    "id": 2,
-    "dev": false,
-    "sign": true,
-    "redeem": true,
-    "sign-reload": false,
-    "sign-resp-format": "json",
-    "max-redirects": 3,
-    "max-spends": 3,
-    "max-tokens": 300,
-    "tokens-per-request": 30,
-    "var-reset": true,
-    "var-reset-ms": 2000,
-    "commitments": "HC",
-    "spending-restrictions": {
-        "status-code": [200],
-        "max-redirects": "3",
-        "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",],
-        "bad-navigation": ["auto_subframe",],
-        "bad-transition": ["server_redirect",],
-        "valid-redirects": ["https://", "https://www.", "http://www.",],
-        "valid-transitions": ["link", "typed", "auto_bookmark", "reload",],
-    },
-    "spend-action": {
-        "urls": ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"],
-        "redeem-method": "no-reload",
-        "header-name": "challenge-bypass-token",
-        "header-host-name": "challenge-bypass-host",
-        "header-path-name": "challenge-bypass-path"
-    },
-    "issue-action": {
-        "urls": ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*",]
-    },
-    "cookies": {
-        "check-cookies": true,
-        "clearance-cookie": "hc_clearance",
-    },
-    "captcha-domain": "hcaptcha.com",
-    "error-codes": {
-        "verify-error": "5",
-        "connection-error": "6",
-    },
-    "h2c-params": {
-        "curve": "p256",
-        "hash": "sha256",
-        "method": "increment",
-    },
-    "send-h2c-params": true,
-};
+let hcConfig = lodash.cloneDeep(cfConfig);
+hcConfig.id = 2;
+hcConfig.commitments = "HC"
+hcConfig["spending-restrictions"]["status-code"] = [200,];
+hcConfig["spend-action"]["redeem-method"] = "no-reload";
+hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];
+hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*",];
+hcConfig["issue-action"]["sign-reload"] = false;
+hcConfig["issue-action"]["sign-response-format"] = "json";
+hcConfig.cookies["clearance-cookie"] = "hc_clearance";
+hcConfig["captcha-domain"] = "hcaptcha.com";
 
 // Ordering of configs should correspond to value of cf-chl-bypass header
 // i.e. the first config should have "id": 1, the second "id":2, etc.

@@ -52,7 +52,6 @@
         "set": true,
         "UpdateCallback": true,
         "CHECK_COOKIES": true,
-        "LISTENER_URLS": true,
         "REDEEM_METHOD": true,
         "RELOAD_ON_SIGN": true,
         "PPConfigs": true,
@@ -81,7 +80,8 @@
         "sec1EncodePoint": true,
         "CONFIG_ID": true,
         "signReqHC": true,
-        "patternToRegExp": true
+        "patternToRegExp": true,
+        "ISSUE_ACTION_URLS": true
 
     },
     "rules": {

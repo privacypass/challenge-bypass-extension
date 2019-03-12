@@ -9,12 +9,16 @@
 /* exported sendXhrSignReq */
 /* export CACHED_COMMITMENTS_STRING */
 
+// readystate == 4 implies that the response has completed successfully
 function xhrDone(readystate) {
     return readystate === 4;
-} // readystate == 4 implies that the response has completed successfully
+}
+
+// we used to check < 300 but we should be more specific
 function xhrGoodStatus(status) {
     return status === 200;
-} // we used to check < 300 but we should be more specific
+}
+
 const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
@@ -48,7 +52,7 @@ function signReqCF(url) {
 
 function signReqHC(url) {
     let reqUrl = url.href;
-    const isIssuerUrl = ACTIVE_CONFIG["issue-action"]["urls"]
+    const isIssuerUrl = ISSUE_ACTION_URLS
         .map(issuerUrl => patternToRegExp(issuerUrl))
         .filter(re => reqUrl.match(re)).length > 0;
 

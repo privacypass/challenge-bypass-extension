@@ -6,7 +6,7 @@
 /* exported LISTENER_URLS */
 "use strict";
 
-let LISTENER_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
+// Always listen on <all_urls> as ISSUE and SPEND urls do not need to be the same
 
 /* Event listeners manage control flow
     - web request listeners act to send signable/redemption tokens when needed
@@ -17,7 +17,7 @@ let LISTENER_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
 
 chrome.webRequest.onCompleted.addListener(
     function(details) { handleCompletion(details); },
-    { urls: LISTENER_URLS },
+    { urls: ["<all_urls>"] },
 );
 
 chrome.webRequest.onBeforeRedirect.addListener(
@@ -26,7 +26,7 @@ chrome.webRequest.onBeforeRedirect.addListener(
         let newUrl = new URL(details.redirectUrl);
         processRedirect(details, oldUrl, newUrl);
     },
-    { urls: LISTENER_URLS },
+    { urls: ["<all_urls>"] },
 );
 
 // Watches headers for CF-Chl-Bypass and CF-Chl-Bypass-Resp headers.
@@ -35,7 +35,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         let url = new URL(details.url);
         processHeaders(details, url);
     },                 // callback
-    { urls: LISTENER_URLS },       // targeted pages
+    { urls: ["<all_urls>"] },       // targeted pages
     ["responseHeaders", "blocking"] // desired traits
 );
 
@@ -45,7 +45,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         let url = new URL(details.url);
         return beforeSendHeaders(details, url);
     },        // callback
-    { urls: LISTENER_URLS }, // targeted pages
+    { urls: ["<all_urls>"] }, // targeted pages
     ["requestHeaders", "blocking"]
 );
 
@@ -59,7 +59,7 @@ chrome.webRequest.onBeforeRequest.addListener(
         }
         return {redirectUrl: "javascript:void(0)"};
     },            // callback
-    { urls: LISTENER_URLS }, // targeted pages
+    { urls: ["<all_urls>"] }, // targeted pages
     ["blocking"]              // desired traits
 );
 
