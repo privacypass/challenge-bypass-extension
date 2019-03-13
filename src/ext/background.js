@@ -217,7 +217,7 @@ function beforeSendHeaders(request, url) {
     // Cancel if we don't have a token to spend
 
     let reqUrl = url.href;
-    let host = url.host
+    let host = url.host;
 
     if (DO_REDEEM && !isErrorPage(reqUrl) && !isFaviconUrl(reqUrl)) {
         // No reload method branch
