@@ -8,7 +8,7 @@
  * @param URL pattern, formatted like those pased to listeners
  */
 function patternToRegExp(pattern) {
-    if (pattern === "<all_urls>") return /^(?:http|https|file|ftp):\/\/.*/;
+    if (pattern === LISTENER_URLS) return /^(?:http|https|file|ftp):\/\/.*/;
 
     let split = /^(\*|http|https|file|ftp):\/\/(.*)$/.exec(pattern);
     if (!split) throw Error("Invalid schema in " + pattern);

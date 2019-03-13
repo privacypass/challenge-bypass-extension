@@ -81,7 +81,8 @@
         "CONFIG_ID": true,
         "signReqHC": true,
         "patternToRegExp": true,
-        "ISSUE_ACTION_URLS": true
+        "ISSUE_ACTION_URLS": true,
+        "LISTENER_URLS": true
 
     },
     "rules": {

@@ -28,6 +28,7 @@
 /* exported CONFIG_ID */
 /* exported ISSUE_ACTION_URLS */
 "use strict";
+
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
 let DEV = ACTIVE_CONFIG["dev"];
@@ -225,7 +226,7 @@ function beforeSendHeaders(request, url) {
             // check that we're at an URL that can handle redeems
             const isRedeemUrl = SPEND_ACTION_URLS
                 .map(redeemUrl => patternToRegExp(redeemUrl))
-                .filter(re => reqUrl.match(re)).length > 0;
+                .some(re => reqUrl.match(re));
 
             if (countStoredTokens() > 0 && isRedeemUrl) {
 

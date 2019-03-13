@@ -9,13 +9,12 @@
 /* exported ACTIVE_CONFIG */
 /* exported PPConfigs */
 
-/* global require */
-
-const lodash = require("lodash");
-
-
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
+
+function cloneConfig(config) {
+    return JSON.parse(JSON.stringify(config));
+}
 
 const exampleConfig = {
     "id": 0, // unique integer identifying each individual config
@@ -67,21 +66,22 @@ const exampleConfig = {
 };
 
 // The configuration used by Cloudflare
-let cfConfig = lodash.cloneDeep(exampleConfig);
+let cfConfig = cloneConfig(exampleConfig);
 cfConfig.id = 1;
 cfConfig.dev = false;
 cfConfig["max-tokens"] = 300;
 cfConfig["var-reset-ms"] = 2000;
-cfConfig.commitments = "CF"
+cfConfig.commitments = "CF";
 cfConfig["spending-restrictions"]["status-code"] = [403,];
 cfConfig["spend-action"]["redeem-method"] = "reload";
 cfConfig["issue-action"]["tokens-per-request"] = 30;
 cfConfig.cookies["clearance-cookie"] = "cf_clearance";
 cfConfig["captcha-domain"] = "captcha.website";
-cfConfig["send-h2c-params"] = true
+cfConfig["send-h2c-params"] = true;
 
 // The configuration used by hcaptcha
-let hcConfig = lodash.cloneDeep(cfConfig);
+// let hcConfig = lodash.cloneDeep(cfConfig);
+let hcConfig = cloneConfig(cfConfig);
 hcConfig.id = 2;
 hcConfig.commitments = "HC"
 hcConfig["spending-restrictions"]["status-code"] = [200,];

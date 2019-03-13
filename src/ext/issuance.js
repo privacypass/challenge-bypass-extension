@@ -54,7 +54,7 @@ function signReqHC(url) {
     let reqUrl = url.href;
     const isIssuerUrl = ISSUE_ACTION_URLS
         .map(issuerUrl => patternToRegExp(issuerUrl))
-        .filter(re => reqUrl.match(re)).length > 0;
+        .some(re => reqUrl.match(re));
 
     if (!isIssuerUrl) {
         return null;
