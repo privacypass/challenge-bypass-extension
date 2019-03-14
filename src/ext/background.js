@@ -253,7 +253,6 @@ function beforeSendHeaders(request, url) {
     }
 
     return {cancel: false}
-
 }
 
 // returns the new headers for the request
