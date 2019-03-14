@@ -80,9 +80,11 @@ cfConfig["captcha-domain"] = "captcha.website";
 cfConfig["send-h2c-params"] = true;
 
 // The configuration used by hcaptcha
-// let hcConfig = lodash.cloneDeep(cfConfig);
-let hcConfig = cloneConfig(cfConfig);
+let hcConfig = cloneConfig(exampleConfig);
 hcConfig.id = 2;
+hcConfig.dev = false;
+hcConfig["max-tokens"] = 300;
+hcConfig["var-reset-ms"] = 2000;
 hcConfig.commitments = "HC"
 hcConfig["spending-restrictions"]["status-code"] = [200,];
 hcConfig["spend-action"]["redeem-method"] = "no-reload";
@@ -92,6 +94,7 @@ hcConfig["issue-action"]["sign-reload"] = false;
 hcConfig["issue-action"]["sign-response-format"] = "json";
 hcConfig.cookies["clearance-cookie"] = "hc_clearance";
 hcConfig["captcha-domain"] = "hcaptcha.com";
+hcConfig["send-h2c-params"] = true;
 
 // Ordering of configs should correspond to value of cf-chl-bypass header
 // i.e. the first config should have "id": 1, the second "id":2, etc.
