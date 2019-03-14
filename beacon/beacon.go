@@ -1,9 +1,20 @@
+/*
+beacon.go hold the core of the beacon code.
+Every t seconds, it picks a point on the curve P-256 and adds it to a
+JSON storing all its commitements by using bjson.go.
+For now the compatibilty with the existing file commitments-p256.json
+is not implemented yet.
+**This code is a draft of automatization of the process of generating
+the commitements.**
+*/
+
 package beacon
 
 import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"sync"
 	"time"
@@ -28,20 +39,27 @@ type Point struct {
 
 // Beacon holds info related to a specific beacon
 type Beacon struct {
-	id     int32
 	ticker *time.Ticker
 	round  uint64
 	close  chan bool
 	sync.Mutex
 	// should add here the public/private key pair
+	commitsFile string
 }
 
 // NewBeacon creates a Beacon
-func NewBeacon(address string, id int32) *Beacon {
+func NewBeacon(address string) *Beacon {
+	commitsFile := "beacon/commits.json"
+	skeleton := `{"CF":{}, "HC":{}}`
+	err := ioutil.WriteFile(commitsFile, []byte(skeleton), 0777)
+	if err != nil {
+		print("could not create file")
+	}
+
 	return &Beacon{
-		id:    id,
-		close: make(chan bool),
-		round: 0,
+		close:       make(chan bool),
+		round:       0,
+		commitsFile: commitsFile,
 	}
 }
 
@@ -121,6 +139,10 @@ func (b *Beacon) run(round uint64, doneCh chan uint64, closingCh chan bool) {
 		fmt.Printf("G: (%v, %v)\n", G.x, G.y)
 		fmt.Printf("H: (%v, %v)\n", H.x, H.y)
 		fmt.Printf("k: %v\n", k)
+		if err := b.AddCommit(k, H); err != nil {
+			print(err)
+		}
+		//TODO: Sign the file after adding new commits
 		doneCh <- round
 	}
 }
