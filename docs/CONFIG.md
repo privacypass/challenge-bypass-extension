@@ -224,7 +224,7 @@ affine version of the SWU algorithm implemented in h2c.js (see
 [HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a description of the algorithm in
 full).
 
-#### config["send-h2c-params"]
+### config["send-h2c-params"]
 
 A boolean that determines whether the contents of config["h2c-params"] should
 actually be sent to the server.
