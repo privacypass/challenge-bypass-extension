@@ -62,7 +62,7 @@ func (b *Beacon) AddCommit(k *big.Int, H *Point) error {
 // JSONFileToString corrects the version and return a string
 func (b *Beacon) JSONFileToString(d JSONFile) string {
 	version := strconv.Itoa(int(b.round))
-	res2, _ := json.Marshal(d)
+	res2, _ := json.MarshalIndent(d, "", "    ")
 	//for now we have only one commit at a time, this should change
 	//when we modify the code to concatenate more TODO
 	return strings.Replace(string(res2), "Version", version, 2)
