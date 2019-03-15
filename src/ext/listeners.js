@@ -3,10 +3,7 @@
  *
  * @author: Alex Davidson
  */
-/* exported LISTENER_URLS */
 "use strict";
-
-const LISTENER_URLS = "<all_urls>";
 
 // Always listen on <all_urls> as ISSUE and SPEND urls do not need to be the same
 

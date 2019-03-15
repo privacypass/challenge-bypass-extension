@@ -27,8 +27,10 @@
 /* exported SEND_H2C_PARAMS, MAX_TOKENS, SIGN_RESPONSE_FMT, TOKENS_PER_REQUEST */
 /* exported CONFIG_ID */
 /* exported ISSUE_ACTION_URLS */
+/* exported LISTENER_URLS */
 "use strict";
 
+const LISTENER_URLS = "<all_urls>";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
 let DEV = ACTIVE_CONFIG["dev"];
@@ -220,13 +222,15 @@ function beforeSendHeaders(request, url) {
     let reqUrl = url.href;
     let host = url.host;
 
-    if (DO_REDEEM && !isErrorPage(reqUrl) && !isFaviconUrl(reqUrl)) {
+    if (DO_REDEEM && !isErrorPage(reqUrl) && !isFaviconUrl(reqUrl) && !checkMaxSpend(host) && getSpendFlag(host)) {
         // No reload method branch
         if (REDEEM_METHOD === "no-reload") {
             // check that we're at an URL that can handle redeems
             const isRedeemUrl = SPEND_ACTION_URLS
                 .map(redeemUrl => patternToRegExp(redeemUrl))
                 .some(re => reqUrl.match(re));
+
+            setSpendFlag(url.host, null);
 
             if (countStoredTokens() > 0 && isRedeemUrl) {
 
@@ -247,7 +251,7 @@ function beforeSendHeaders(request, url) {
                 spentUrl[reqUrl] = true;
                 return {requestHeaders: headers};
             }
-        } else if (REDEEM_METHOD === "reload" && getSpendFlag(host) && !checkMaxSpend(host) && !spentUrl[reqUrl]) {
+        } else if (REDEEM_METHOD === "reload" && !spentUrl[reqUrl]) {
             return getReloadHeaders(request, url);
         }
     }
@@ -302,14 +306,14 @@ function beforeRequest(details, url) {
     // Different signing methods based on configs
     let xhrInfo;
     switch (CONFIG_ID) {
-    case 1:
-        xhrInfo = signReqCF(url);
-        break;
-    case 2:
-        xhrInfo = signReqHC(url);
-        break;
-    default:
-        throw new Error("Incorrect config ID specified");
+        case 1:
+            xhrInfo = signReqCF(url);
+            break;
+        case 2:
+            xhrInfo = signReqHC(url);
+            break;
+        default:
+            throw new Error("Incorrect config ID specified");
     }
 
     // If this is null then signing is not appropriate
@@ -365,7 +369,7 @@ function incrementSpentHost(host) {
 }
 
 function checkMaxSpend(host) {
-    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX) {
+    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX || SPEND_MAX === 0) {
         return false;
     }
     return true

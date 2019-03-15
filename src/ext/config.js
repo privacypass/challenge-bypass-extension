@@ -21,7 +21,7 @@ const exampleConfig = {
     "dev": true, // sets whether the configuration should only be used in development
     "sign": true, // sets whether tokens should be sent for signing
     "redeem": true, // sets whether tokens should be sent for redemption
-    "max-spends": 3, // for each host header, sets the max number of tokens that will be spent
+    "max-spends": 3, // for each host header, sets the max number of tokens that will be spent, 0 for unlimited
     "max-tokens": 10, // max number of tokens held by the extension
     "var-reset": true, // whether variables should be reset after time limit expires
     "var-reset-ms": 100, // variable reset time limit
@@ -83,6 +83,7 @@ cfConfig["send-h2c-params"] = true;
 let hcConfig = cloneConfig(exampleConfig);
 hcConfig.id = 2;
 hcConfig.dev = false;
+hcConfig["max-spends"] = 0;
 hcConfig["max-tokens"] = 300;
 hcConfig["var-reset-ms"] = 2000;
 hcConfig.commitments = "HC"
