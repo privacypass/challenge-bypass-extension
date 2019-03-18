@@ -117,10 +117,10 @@ let readySign = false;
 function handleCompletion(details) {
     timeSinceLastResp = Date.now();
     // If we had a spend and we're using "reload" method then reload the page
-    if (spendId[details.requestId] && REDEEM_METHOD() === "reload") {
+    if (getSpendId(details.requestId) && REDEEM_METHOD() === "reload") {
         reloadBrowserTab(details.tabId);
     }
-    spendId[details.requestId] = false;
+    setSpendId(details.requestId, false)
 }
 
 /**
@@ -135,9 +135,9 @@ function processRedirect(details, oldUrl, newUrl) {
     if (redirectCount[details.requestId] === undefined) {
         redirectCount[details.requestId] = 0;
     }
-    if (spendId[details.requestId] && redirectCount[details.requestId] < MAX_REDIRECT()) {
+    if (getSpendId(details.requestId) && redirectCount[details.requestId] < MAX_REDIRECT()) {
         setSpendFlag(newUrl.host, true);
-        spendId[details.requestId] = false;
+        setSpendId(details.requestId, false);
         redirectCount[details.requestId] = redirectCount[details.requestId] + 1;
     }
 }
@@ -161,6 +161,19 @@ function validRedirect(oldUrl, redirectUrl) {
     }
     return false;
 }
+
+const getSpentUrl = (key) => spentUrl[key];
+const setSpentUrl = (key, value) => spentUrl[key] = value;
+
+const getSpendId = (key) => spendId[key];
+const setSpendId = (key, value) => spendId[key] = value;
+
+const getSpentTab = (key) => spentTab[key];
+const setSpentTab = (key, value) => spentTab[key] = value;
+
+const getSpentHosts = (key) => spentHosts[key];
+const setSpentHosts = (key, value) => spentHosts[key] = value;
+
 
 /**
  * Headers are received before document render. The blocking attributes allows
@@ -199,7 +212,7 @@ function processHeaders(details, url) {
 
     // If we have tokens to spend, cancel the request and pass execution over to the token handler.
     let attempted = false;
-    if (activated && !spentUrl[url.href]) {
+    if (activated && !getSpentUrl(url.href)) {
         let count = countStoredTokens();
         if (DO_REDEEM()) {
             if (count > 0 && !url.host.includes(CHL_CAPTCHA_DOMAIN)) {
@@ -256,15 +269,11 @@ function beforeSendHeaders(request, url) {
                 headers.push({name: HEADER_NAME(), value: redemptionString});
                 headers.push({name: HEADER_HOST_NAME(), value: url.hostname});
                 headers.push({name: HEADER_PATH_NAME(), value: http_path});
-                spendId[request.requestId] = true;
-                spentUrl[reqUrl] = true;
-                if (!spentTab[request.tabId]) {
-                    spentTab[request.tabId] = [];
-                }
-                spentTab[request.tabId].push(url.href);
+                setSpendId(request.requestId, true);
+                setSpentUrl(reqUrl, true);
                 return {requestHeaders: headers};
             }
-        } else if (REDEEM_METHOD() === "reload" && !spentUrl[reqUrl]) {
+        } else if (REDEEM_METHOD() === "reload" && !getSpentUrl(reqUrl)) {
             return getReloadHeaders(request, url);
         }
     }
@@ -295,12 +304,14 @@ function getReloadHeaders(request, url) {
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
     const newHeader = {name: HEADER_NAME(), value: redemptionString};
     headers.push(newHeader);
-    spendId[request.requestId] = true;
-    spentUrl[url.href] = true;
-    if (!spentTab[request.tabId]) {
-        spentTab[request.tabId] = [];
+    setSpendId(request.requestId, true);
+    setSpentUrl(url.href, true);
+    if (!getSpentTab(request.tabId)) {
+        setSpentTab(request.tabId, []);
     }
-    spentTab[request.tabId].push(url.href);
+    let spentTabs = getSpentTab(request.tabId);
+    spentTabs.push(url.href)
+    setSpentTab(request.tabId, spentTabs);
     return {requestHeaders: headers};
 }
 
@@ -392,10 +403,10 @@ function handleMessage(request, sender, sendResponse) {
  * @param {string} host String corresponding to host
  */
 function incrementSpentHost(host) {
-    if (spentHosts[host] === undefined) {
-        spentHosts[host] = 0;
+    if (getSpentHosts(host) === undefined) {
+        setSpentHosts(host, 0);
     }
-    spentHosts[host] = spentHosts[host] + 1;
+    setSpentHosts(host, getSpentHosts(host) + 1)
 }
 
 /**
@@ -404,7 +415,7 @@ function incrementSpentHost(host) {
  * @return {boolean}
  */
 function checkMaxSpend(host) {
-    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX() || SPEND_MAX() === 0) {
+    if (getSpentHosts(host) === undefined || getSpentHosts(host) < SPEND_MAX() || SPEND_MAX() === 0) {
         return false;
     }
     return true;

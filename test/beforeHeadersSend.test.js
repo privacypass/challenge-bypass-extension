@@ -11,44 +11,12 @@ import each from "jest-each";
 
 let workflow = rewire("../addon/compiled/test_compiled.js");
 
-const localStorageMock = {
-    getItem: key => JSON.parse(localStorageItems[key]),
-    setItem: (key, value) => localStorageItems[key] = JSON.stringify(value),
-    clear: () => localStorageItems = {},
-    removeItem: (key) => localStorageItems[key] = undefined,
-};
-
-let localStorageItems = {};
-
-const updateIconMock = jest.fn();
-
-workflow.__set__("localStorage", localStorageMock);
-workflow.__set__("localStorageItems", localStorageItems);
-workflow.__set__("updateIcon", updateIconMock);
-workflow.__set__("atob", atob);
-workflow.__set__("btoa", btoa);
-setXHR(mockXHRCommitments);
-
-const setSpendFlag = (key, value) => set(key, value);
-const getSpendFlag = (key) => get(key)
-
-workflow.__set__("setSpendFlag", setSpendFlag);
-workflow.__set__("getSpendFlag", getSpendFlag);
-
-const get = (key) => JSON.parse(localStorage.getItem(key));
-const set = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-
-workflow.__set__("get", get);
-workflow.__set__("set", set);
-
-
-const resetVars = workflow.__get__("resetVars");
-const resetSpendVars = workflow.__get__("resetSpendVars");
-let URL = window.URL;
-
+workflowSet(workflow);
 /**
  * Functions/variables
  */
+const resetVars = workflow.__get__("resetVars");
+const resetSpendVars = workflow.__get__("resetSpendVars");
 const PPConfigs = workflow.__get__("PPConfigs");
 const setConfig = workflow.__get__("setConfig");
 const LISTENER_URLS = workflow.__get__("LISTENER_URLS");
@@ -59,12 +27,6 @@ const b64EncodedTokenNoH2CParams = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0
 const b64EncodedToken = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==";
 let details;
 let url;
-
-
-// let config = {"id": 1}
-
-const bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
-const bypassTokensCount = (config_id) => `bypass-tokens-count-${config_id}`;
 
 each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
     .describe("CONFIG_ID: %i", (config_id) => {
@@ -84,6 +46,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 tabId: "101",
             };
             url = new URL(EXAMPLE_HREF);
+            clearSpentTab()
             resetVars();
             resetSpendVars();
             workflow.__set__("CONFIG_ID", config_id);
@@ -191,13 +154,13 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                     let reqHeaders = redeemHdrs.requestHeaders;
                     expect(getSpendFlag(url.host)).toBeNull();
                     expect(getSpendId([details.requestId])).toBeTruthy();
-                    expect(getSpentUrl([url.href])).toBeTruthy();
+                    expect(getSpentUrl(url.href)).toBeTruthy();
                     switch (config_id) {
                         case 1:
-                            expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
+                            expect(getSpentTab([details.tabId]).includes(url.href)).toBeTruthy();
                             break
                         case 2:
-                            expect(getSpentTab([details.tabId]) == url.href).toBeFalsy();
+                            expect(getSpentTab([details.tabId])).toBeUndefined();
                             break
                         default:
                             throw Error(`Unhandled config.id value => ${config_id}`)
@@ -219,10 +182,10 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                     expect(getSpentUrl([url.href])).toBeTruthy();
                     switch (config_id) {
                         case 1:
-                            expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
+                            expect(getSpentTab([details.tabId]).includes(url.href)).toBeTruthy();
                             break
                         case 2:
-                            expect(getSpentTab([details.tabId]) == url.href).toBeFalsy();
+                            expect(getSpentTab([details.tabId])).toBeUndefined();
                             break
                         default:
                             throw Error(`Unhandled config.id value => ${config_id}`)
@@ -234,61 +197,4 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 });
             });
         });
-    });
-
-/* mock XHR implementations */
-function mockXHR(_xhr) {
-    _xhr.open = function(method, url) {
-        _xhr.method = method;
-        _xhr.url = url;
-    };
-    _xhr.requestHeaders = new Map();
-    _xhr.getRequestHeader = function(name) {
-        return _xhr.requestHeaders[name];
-    };
-    _xhr.setRequestHeader = function(name, value) {
-        _xhr.requestHeaders[name] = value;
-    };
-    _xhr.overrideMimeType = jest.fn();
-    _xhr.body;
-    _xhr.send = function(str) {
-        _xhr.body = str;
-    };
-    _xhr.onreadystatechange = function() {
-    };
-}
-
-function mockXHRCommitments() {
-    mockXHR(this);
-}
-
-function getSpentUrl(key) {
-    const spentUrl = workflow.__get__("spentUrl");
-    return spentUrl[key];
-}
-
-function getSpendId(key) {
-    const spendId = workflow.__get__("spendId");
-    return spendId[key];
-}
-
-function getSpentTab(key) {
-    const spentTab = workflow.__get__("spentTab");
-    return spentTab[key];
-}
-
-function setSpentUrl(key, value) {
-    const spentUrl = new Map();
-    spentUrl[key] = value;
-    workflow.__set__("spentUrl", spentUrl);
-}
-
-function setSpentHosts(key, value) {
-    const spentHosts = new Map();
-    spentHosts[key] = value;
-    workflow.__set__("spentHosts", spentHosts);
-}
-
-function setXHR(xhr) {
-    workflow.__set__("XMLHttpRequest", xhr);
-}
+    })
