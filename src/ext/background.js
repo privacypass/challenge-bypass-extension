@@ -249,6 +249,10 @@ function beforeSendHeaders(request, url) {
                 headers.push({name: HEADER_PATH_NAME, value: http_path});
                 spendId[request.requestId] = true;
                 spentUrl[reqUrl] = true;
+                if (!spentTab[request.tabId]) {
+                    spentTab[request.tabId] = [];
+                }
+                spentTab[request.tabId].push(url.href);
                 return {requestHeaders: headers};
             }
         } else if (REDEEM_METHOD === "reload" && !spentUrl[reqUrl]) {
@@ -306,14 +310,14 @@ function beforeRequest(details, url) {
     // Different signing methods based on configs
     let xhrInfo;
     switch (CONFIG_ID) {
-        case 1:
-            xhrInfo = signReqCF(url);
-            break;
-        case 2:
-            xhrInfo = signReqHC(url);
-            break;
-        default:
-            throw new Error("Incorrect config ID specified");
+    case 1:
+        xhrInfo = signReqCF(url);
+        break;
+    case 2:
+        xhrInfo = signReqHC(url);
+        break;
+    default:
+        throw new Error("Incorrect config ID specified");
     }
 
     // If this is null then signing is not appropriate
@@ -369,7 +373,7 @@ function incrementSpentHost(host) {
 }
 
 function checkMaxSpend(host) {
-    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX || SPEND_MAX === 0) {
+    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX || !SPEND_MAX) {
         return false;
     }
     return true

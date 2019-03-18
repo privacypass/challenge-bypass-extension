@@ -49,7 +49,7 @@ PPConfigs
             };
             url = new URL(EXAMPLE_HREF);
             setMockFunctions();
-            setConfig(config.id); // set the CF config
+            setConfig(config.id);
             resetVars();
             resetSpendVars();
             config["spend-action"]["urls"] = [LISTENER_URLS];
@@ -89,14 +89,14 @@ PPConfigs
                 setSpendFlag(url.host, true);
                 setSpentHosts(url.host, 31);
                 switch (config.id) {
-                case 1:
-                    workflow.__set__("SPEND_MAX", 3);
-                    break
-                case 2:
-                    workflow.__set__("SPEND_MAX", 0);
-                    break
-                default:
-                    throw Error(`Unhandled config.id, ${config.id}`)
+                    case 1:
+                        workflow.__set__("SPEND_MAX", 3);
+                        break
+                    case 2:
+                        workflow.__set__("SPEND_MAX", undefined);
+                        break
+                    default:
+                        throw Error(`Unhandled config.id, ${config.id}`)
                 }
                 let redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
@@ -142,10 +142,9 @@ PPConfigs
                 expect(redeemHdrs.requestHeaders).toBeFalsy();
             });
             test(`no token to spend, config.id = ${config.id}`, () => {
-                localStorage = {
-                    "cf-bypass-tokens": `{}`,
-                    "cf-token-count": 0
-                };
+                localStorage = {}
+                localStorage[`bypass-tokens-${config.id}`] = "{}"
+                localStorage[`bypass-tokens-count-${config.id}`] = 0
                 setSpentUrl(url.href, false);
                 setSpendFlag(url.host, true);
                 let redeemHdrs = beforeSendHeaders(details, url);
@@ -170,16 +169,7 @@ PPConfigs
                 expect(getSpendFlag(url.host)).toBeFalsy();
                 expect(getSpendId([details.requestId])).toBeTruthy();
                 expect(getSpentUrl([url.href])).toBeTruthy();
-                switch (config.id) {
-                    case 1:
-                        expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
-                        break
-                    case 2:
-                        expect(getSpentTab([details.tabId]) == url.href).toBeFalsy();
-                        break
-                    default:
-                        throw Error(`Unhandled config.id value => ${config.id}`)
-                }
+                expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
                 expect(reqHeaders).toBeTruthy();
                 let headerName = workflow.__get__("HEADER_NAME");
                 expect(reqHeaders[0].name === headerName).toBeTruthy();
@@ -195,16 +185,7 @@ PPConfigs
                 expect(getSpendFlag(url.host)).toBeFalsy();
                 expect(getSpendId([details.requestId])).toBeTruthy();
                 expect(getSpentUrl([url.href])).toBeTruthy();
-                switch (config.id) {
-                    case 1:
-                        expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
-                        break
-                    case 2:
-                        expect(getSpentTab([details.tabId]) == url.href).toBeFalsy();
-                        break
-                    default:
-                        throw Error(`Unhandled config.id value => ${config.id}`)
-                }
+                expect(getSpentTab([details.tabId]) == url.href).toBeTruthy();
                 expect(reqHeaders).toBeTruthy();
                 let headerName = workflow.__get__("HEADER_NAME");
                 expect(reqHeaders[0].name === headerName).toBeTruthy();
