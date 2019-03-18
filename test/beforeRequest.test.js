@@ -1,18 +1,20 @@
 /**
-* Integrations tests for when headers are sent by the browser
-*
-* @author: Alex Davidson
-*/
+ * Integrations tests for when headers are sent by the browser
+ *
+ * @author: Alex Davidson
+ */
+import btoa from "btoa";
+import atob from "atob";
 import createShake256 from "../src/crypto/keccak/keccak.js"
 
 import rewire from "rewire";
-let workflow = rewire("../addon/compiled/test_compiled.js");
 
-workflowSet(workflow);
+var workflow = rewire("../addon/compiled/test_compiled.js");
+var URL = window.URL;
 
 /**
-* Functions/variables
-*/
+ * Functions/variables
+ */
 const TOKEN_COUNT_STR = "bypass-tokens-count-1";
 const EXAMPLE_HREF = "https://example.com";
 const CAPTCHA_HREF = "https://captcha.website";
@@ -85,6 +87,81 @@ let respBadJson = `signatures=WyJCTGZQdW9FdGxueHNic0p5dE5uUHg3Yk45N2l0KzQvd0dRVV
 let respBadPoints = `signatures=WyJCTGZQdW9FdGxueHNic0p5dE5uUHg3Yk45N2l0KzQvd0dRVVVDWG1OM1lUcC9OOUpmMk9tWjk0TkM0WDBCbFJSTUltRUNLdUMrUlVXMm1wZlc4b1JxZG89IiwiQk5rSnBybVpVK3N1QngrWDY2Q3BEZyt4QkJlK0MzT1Z2K0U4VWhuelg0dG9ZOWgxYUo1ZUhvSmQvNHE1MjRTRUwrMHlPUjk1b2xaKzNWUVJ3ZUxqcjNzPSIsIkJOdHBFeEY4OHJTb0lwNjMvam9oMGJ0UWgyMFgwYk1TQnZMR1pCVFdKS3VzbDBZSHBzZ3FJbkNwcEpEUTJYb2xqQXV5Z250ZUh6MnR3S0lER3A2UExnND0iLCJleUpRSWpvZ0ltVjVTbE5KYW05blNXeHNkRkp0ZEZsTlZYQnRXa2N4UjJNeVVsaFdWREJwVEVOQmFWRjVTVFpKUTBwYVlsVmFjbGRFUWs5YWJWSjBVbTVPYTFZeFZUbEpiakE5SW4wPSJd`;
 let testTokens = JSON.parse(`[{"token":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,178,119,34,84,93,23,7,255,30,232,166,5,142,110,153,178,32,198,114,30,102,86,121,195,92,214,144,84,155,61,235,94,227,235,75,30,198,92,206,234,196,86,106,0,79,14,9,225,63,249,58,139,100,21,117,195,204,225,53,217,141,220,224,35],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"token":[254,122,184,29,171,157,229,38,101,187,66,154,255,160,164,128,17,142,250,241,176,89,123,12,53,24,236,91,58,3,212,217],"point":[4,237,62,141,228,215,60,240,129,29,36,33,222,205,76,22,88,238,41,234,39,29,92,3,210,140,190,200,19,7,124,159,211,84,135,68,248,26,255,98,27,27,64,190,169,189,78,27,215,84,16,210,253,206,22,194,168,165,138,228,13,211,203,173,131],"blind":[44,0,207,19,25,28,76,114,193,226,49,111,160,152,161,102,207,170,195,9,31,220,120,202,182,50,135,83,7,2,134,21]},{"token":[223,42,23,79,237,61,125,106,86,135,234,109,171,67,86,202,166,142,77,238,69,175,78,67,214,214,246,171,20,178,166,251],"point":[4,1,217,22,212,2,213,172,249,228,15,57,187,210,224,69,225,254,67,195,37,79,189,197,43,1,57,213,66,100,118,118,239,41,145,71,177,212,83,25,55,198,198,40,110,29,155,189,82,17,11,156,4,99,60,168,157,182,156,187,166,71,251,176,191],"blind":[74,150,233,91,28,35,116,26,6,87,77,9,8,200,166,69,152,61,192,210,236,207,68,138,250,104,16,195,92,232,43,132]}]`);
 let testTokensBadLength = JSON.parse(`[{"token":[254,122,184,29,171,157,229,38,101,187,66,154,255,160,164,128,17,142,250,241,176,89,123,12,53,24,236,91,58,3,212,217],"point":[4,237,62,141,228,215,60,240,129,29,36,33,222,205,76,22,88,238,41,234,39,29,92,3,210,140,190,200,19,7,124,159,211,84,135,68,248,26,255,98,27,27,64,190,169,189,78,27,215,84,16,210,253,206,22,194,168,165,138,228,13,211,203,173,131],"blind":[44,0,207,19,25,28,76,114,193,226,49,111,160,152,161,102,207,170,195,9,31,220,120,202,182,50,135,83,7,2,134,21]},{"token":[223,42,23,79,237,61,125,106,86,135,234,109,171,67,86,202,166,142,77,238,69,175,78,67,214,214,246,171,20,178,166,251],"point":[4,1,217,22,212,2,213,172,249,228,15,57,187,210,224,69,225,254,67,195,37,79,189,197,43,1,57,213,66,100,118,118,239,41,145,71,177,212,83,25,55,198,198,40,110,29,155,189,82,17,11,156,4,99,60,168,157,182,156,187,166,71,251,176,191],"blind":[74,150,233,91,28,35,116,26,6,87,77,9,8,200,166,69,152,61,192,210,236,207,68,138,250,104,16,195,92,232,43,132]}]`);
+let testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
+let testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
+let testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
+let testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
+
+/* mock impls */
+function getMock(key) {
+    return localStorage[key];
+}
+
+function setMock(key, value) {
+    localStorage[key] = value;
+}
+
+function clearCachedCommitmentsMock() {
+    localStorage[CACHED_COMMITMENTS_STRING] = null;
+}
+
+function getSpendFlag(key) {
+    return getMock(key);
+}
+
+function setSpendFlag(key, value) {
+    setMock(key, value);
+}
+
+const updateIconMock = jest.fn();
+const updateBrowserTabMock = jest.fn();
+
+/* mock XHR implementations */
+function mockXHR(_xhr) {
+    _xhr.open = function (method, url) {
+        _xhr.method = method;
+        _xhr.url = url;
+    };
+    _xhr.requestHeaders = new Map();
+    _xhr.getRequestHeader = function (name) {
+        return _xhr.requestHeaders[name];
+    }
+    _xhr.setRequestHeader = function (name, value) {
+        _xhr.requestHeaders[name] = value;
+    }
+    _xhr.overrideMimeType = jest.fn();
+    _xhr.body;
+    _xhr.send = jest.fn();
+    _xhr.onreadystatechange = function () {
+    };
+}
+
+function mockXHRGood() {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 4;
+}
+
+function mockXHRBadStatus() {
+    mockXHR(this);
+    this.status = 403;
+    this.readyState = 4;
+}
+
+function mockXHRBadReadyState() {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 5;
+}
+
+function mockXHRCommitments() {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 4;
+    this.responseText = `{"CF":{"dev":{"G": "` + testDevG + `","H": "` + testDevH + `"},"1.0":{"G":"` + testG + `","H":"` + testH + `"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"}}}`;
+}
+
+let _xhr;
 
 beforeEach(() => {
     const storedTokens = `[ { "data":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"token":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
@@ -99,15 +176,16 @@ beforeEach(() => {
         tabId: "101",
     };
     url = new URL(EXAMPLE_HREF);
+    setMockFunctions();
     setTimeSinceLastResp(Date.now());
     setConfig(1); // set the CF config
     workflow.__set__("readySign", true);
-    workflow.__set__("TOKENS_PER_REQUEST", 3); // limit the # of tokens for tests
+    workflow.__set__("TOKENS_PER_REQUEST", () => 3); // limit the # of tokens for tests
 });
 
 /**
-* Tests
-*/
+ * Tests
+ */
 describe("commitments parsing and caching", () => {
     beforeEach(() => {
         workflow.__set__("XMLHttpRequest", mockXHRCommitments);
@@ -138,11 +216,12 @@ describe("commitments parsing and caching", () => {
     });
 
     test("parse correctly (dev)", () => {
-        workflow.__set__("DEV", true);
-        const xhr = createVerificationXHR(); // this usually takes params
-        const commitments = retrieveCommitments(xhr, "1.1");
-        expect(testDevG == commitments.G).toBeTruthy();
-        expect(testDevH == commitments.H).toBeTruthy();
+        workflow.__with__({DEV: () => true})(() => {
+            const xhr = createVerificationXHR(); // this usually takes params
+            const commitments = retrieveCommitments(xhr, "1.1");
+            expect(testDevG == commitments.G).toBeTruthy();
+            expect(testDevH == commitments.H).toBeTruthy();
+        });
     });
 
     test("parse correctly (hkdf)", () => {
@@ -180,9 +259,10 @@ describe("commitments parsing and caching", () => {
 
 describe("signing request is cancelled", () => {
     test("signing off", () => {
-        workflow.__set__("DO_SIGN", false);
-        const b = beforeRequest(details, url);
-        expect(b).toBeFalsy();
+        workflow.__with__({DO_SIGN: () => false})(() => {
+            const b = beforeRequest(details, url);
+            expect(b).toBeFalsy();
+        });
     });
     test("signing not activated", () => {
         workflow.__set__("readySign", false);
@@ -219,11 +299,13 @@ describe("test sending sign requests", () => {
 
     test("incorrect config id", () => {
         function tryRun() {
-            workflow.__set__("CONFIG_ID", 3);
-            beforeRequest(details, newUrl);
+            workflow.__with__({CONFIG_ID: () => 3})(() => {
+                beforeRequest(details, newUrl);
+            });
+
         }
         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-        expect(tryRun).toThrowError("Incorrect config ID");
+        expect(tryRun).toThrowError("Cannot read property 'var-reset'");
     });
 
     test("test that true is returned", () => {
@@ -264,6 +346,7 @@ describe("test sending sign requests", () => {
     test("too many tokens does not sign", () => {
         _xhr = mockXHRGood;
         setXHR(_xhr);
+
         function run() {
             const b = beforeRequest(details, newUrl);
             const xhr = b.xhr;
@@ -281,6 +364,7 @@ describe("test sending sign requests", () => {
     test("correct XHR response triggers validation", () => {
         _xhr = mockXHRGood;
         setXHR(_xhr);
+
         function run() {
             const request = "";
             const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
@@ -302,10 +386,12 @@ describe("test validating response", () => {
         test("invalid signature response format does not sign", () => {
             function run() {
                 setTimeSinceLastResp(0); // reset the variables
-                workflow.__set__("SIGN_RESPONSE_FMT", "bad_fmt");
-                const tabId = details.tabId;
-                validateResponse(url, tabId, "", "");
+                workflow.__with__({SIGN_RESPONSE_FMT: () => "bad_fmt"})(() => {
+                    const tabId = details.tabId;
+                    validateResponse(url, tabId, "", "");
+                });
             }
+
             expect(run).toThrowError("invalid signature response format");
             expect(updateIconMock).toBeCalledTimes(1);
             expect(updateBrowserTabMock).not.toBeCalled();
@@ -317,6 +403,7 @@ describe("test validating response", () => {
                 const tabId = details.tabId;
                 validateResponse(url, tabId, "bad-set-of-data", "");
             }
+
             expect(run).toThrowError("signature response invalid");
             expect(updateIconMock).toBeCalledTimes(1);
             expect(updateBrowserTabMock).not.toBeCalled();
@@ -556,8 +643,12 @@ describe("test validating response", () => {
             test("cannot decode point", () => {
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokens.length; i++) {
-                        tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                    for (let i = 0; i < testTokens.length; i++) {
+                        tokens[i] = {
+                            data: testTokens[i].data,
+                            point: sec1DecodePointFromBytes(testTokens[i].point),
+                            blind: getBigNumFromBytes(testTokens[i].blind)
+                        };
                     }
                     const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -575,8 +666,12 @@ describe("test validating response", () => {
                 test("proof is not JSON", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                        for (let i = 0; i < testTokens.length; i++) {
+                            tokens[i] = {
+                                data: testTokens[i].data,
+                                point: sec1DecodePointFromBytes(testTokens[i].point),
+                                blind: getBigNumFromBytes(testTokens[i].blind)
+                            };
                         }
                         const out = parseRespString(respBadJson);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -593,8 +688,12 @@ describe("test validating response", () => {
                 test("proof has bad points", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                        for (let i = 0; i < testTokens.length; i++) {
+                            tokens[i] = {
+                                data: testTokens[i].data,
+                                point: sec1DecodePointFromBytes(testTokens[i].point),
+                                blind: getBigNumFromBytes(testTokens[i].blind)
+                            };
                         }
                         const out = parseRespString(respBadPoints);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -611,8 +710,12 @@ describe("test validating response", () => {
                 test("proof should not verify (bad lengths)", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokensBadLength.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                        for (let i = 0; i < testTokensBadLength.length; i++) {
+                            tokens[i] = {
+                                data: testTokens[i].data,
+                                point: sec1DecodePointFromBytes(testTokens[i].point),
+                                blind: getBigNumFromBytes(testTokens[i].blind)
+                            };
                         }
                         const out = parseRespString(respBadProof);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -634,8 +737,12 @@ describe("test validating response", () => {
                 test("proof should not verify", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                        for (let i = 0; i < testTokens.length; i++) {
+                            tokens[i] = {
+                                data: testTokens[i].data,
+                                point: sec1DecodePointFromBytes(testTokens[i].point),
+                                blind: getBigNumFromBytes(testTokens[i].blind)
+                            };
                         }
                         const out = parseRespString(respBadProof);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -662,6 +769,34 @@ function parseRespString(respText) {
     return parseIssueResp(JSON.parse(parseSigString(respText)));
 }
 
+function getSpentHosts(key) {
+    let spentHosts = workflow.__get__("spentHosts", spentHosts);
+    return spentHosts[key];
+}
+
+function setSpentHosts(key, value) {
+    let spentHosts = new Map();
+    spentHosts[key] = value;
+    workflow.__set__("spentHosts", spentHosts);
+}
+
 function setTimeSinceLastResp(value) {
     workflow.__set__("timeSinceLastResp", value);
+}
+
+function setMockFunctions() {
+    workflow.__set__("atob", atob);
+    workflow.__set__("btoa", btoa);
+    workflow.__set__("get", getMock);
+    workflow.__set__("set", setMock);
+    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
+    workflow.__set__("updateIcon", updateIconMock);
+    workflow.__set__("updateBrowserTab", updateBrowserTabMock);
+    workflow.__set__("setSpendFlag", setSpendFlag);
+    workflow.__set__("createShake256", createShake256);
+    workflow.__set__("TOKENS_PER_REQUEST", () => 3);
+}
+
+function setXHR(xhr) {
+    workflow.__set__("XMLHttpRequest", xhr);
 }
