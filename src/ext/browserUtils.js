@@ -24,9 +24,8 @@
 /* exported get */
 /* exported set */
 /* exported UpdateCallback */
-"use strict";
-
-let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
+"use strict"
+const CHECK_COOKIES = () => ACTIVE_CONFIG()["cookies"]["check-cookies"];
 
 /**
  * Attempts to redeem a token if the series of checks passes
@@ -36,8 +35,8 @@ let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
  */
 function attemptRedeem(url, respTabId, target) {
     // Check all cookie stores to see if a clearance cookie is held
-    if (CHECK_COOKIES) {
-        chrome.cookies.getAllCookieStores(function(stores) {
+    if (CHECK_COOKIES()) {
+        chrome.cookies.getAllCookieStores(function (stores) {
             let clearanceHeld = false;
             stores.forEach(function(store, index) {
                 let tabIds = store.tabIds;
@@ -79,10 +78,10 @@ function attemptRedeem(url, respTabId, target) {
  * @param {Array<string>} target Array of possible targets for redemption
  */
 function fireRedeem(url, respTabId, target) {
-    if (!isValidRedeemMethod(REDEEM_METHOD)) {
+    if (!isValidRedeemMethod(REDEEM_METHOD())) {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
-    if (REDEEM_METHOD === "reload") {
+    if (REDEEM_METHOD() === "reload") {
         setSpendFlag(url.host, true);
         const targetUrl = target[respTabId];
         if (url.href === targetUrl) {
@@ -246,10 +245,10 @@ function isFaviconUrl(url) {
  * @return {boolean}
  */
 function isValidRedeemMethod(method) {
-    return PPConfigs
-        .filter((config) => config.id > 0)
-        .map((config) => config["spend-action"]["redeem-method"])
-        .some((configMethod) => configMethod === method);
+    return PPConfigs()
+        .filter(config => config.id > 0)
+        .map(config => config["spend-action"]["redeem-method"])
+        .some(config_method => config_method === method)
 }
 
 /**
@@ -259,14 +258,10 @@ function clearCachedCommitments() {
     localStorage.removeItem(CACHED_COMMITMENTS_STRING);
 }
 
-/**
- * localStorage API function for getting values for keys
- * @param {string} key
- * @return {string}
- */
-function get(key) {
-    return localStorage.getItem(key);
-}
+// localStorage API function for getting values
+// function get(key) {
+//     return localStorage.getItem(key);
+// }
 
 /**
  * localStorage API function for setting string values for the key provided

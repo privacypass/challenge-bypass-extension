@@ -73,8 +73,8 @@ function storeNewTokens(tokens, signedPoints) {
         }
     }
     const json = JSON.stringify(storableTokens);
-    set(STORAGE_KEY_TOKENS, json);
-    set(STORAGE_KEY_COUNT, storableTokens.length);
+    set(STORAGE_KEY_TOKENS(), json);
+    set(STORAGE_KEY_COUNT(), storableTokens.length);
 
     // Update the count on the actual icon
     updateIcon(storableTokens.length);
@@ -91,8 +91,8 @@ function storeTokens(tokens) {
         storableTokens[i] = getTokenEncoding(t, t.point);
     }
     const json = JSON.stringify(storableTokens);
-    set(STORAGE_KEY_TOKENS, json);
-    set(STORAGE_KEY_COUNT, tokens.length);
+    set(STORAGE_KEY_TOKENS(), json);
+    set(STORAGE_KEY_COUNT(), tokens.length);
 
     // Update the count on the actual icon
     updateIcon(tokens.length);
@@ -115,7 +115,7 @@ function getTokenEncoding(t, curvePoint) {
  * @return {Array<Object>} returns null if no tokens stored
  */
 function loadTokens() {
-    const storedJSON = get(STORAGE_KEY_TOKENS);
+    const storedJSON = get(STORAGE_KEY_TOKENS());
     if (storedJSON == null) {
         return null;
     }
@@ -136,7 +136,7 @@ function loadTokens() {
  * @return {Number}
  */
 function countStoredTokens() {
-    const count = get(STORAGE_KEY_COUNT);
+    const count = get(STORAGE_KEY_COUNT());
     if (count == null) {
         return 0;
     }
