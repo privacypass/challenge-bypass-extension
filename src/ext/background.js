@@ -25,7 +25,12 @@
 /* exported COMMITMENTS_KEY */
 /* exported STORAGE_KEY_TOKENS, STORAGE_KEY_COUNT */
 /* exported SEND_H2C_PARAMS, MAX_TOKENS, SIGN_RESPONSE_FMT, TOKENS_PER_REQUEST */
+/* exported CONFIG_ID */
+/* exported ISSUE_ACTION_URLS */
+/* exported LISTENER_URLS */
 "use strict";
+
+const LISTENER_URLS = "<all_urls>";
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 let CONFIG_ID = ACTIVE_CONFIG["id"];
 let DEV = ACTIVE_CONFIG["dev"];
@@ -38,11 +43,11 @@ let SPEND_MAX = ACTIVE_CONFIG["max-spends"];
 let MAX_TOKENS = ACTIVE_CONFIG["max-tokens"];
 let DO_SIGN = ACTIVE_CONFIG["sign"];
 let DO_REDEEM = ACTIVE_CONFIG["redeem"];
-let RELOAD_ON_SIGN = ACTIVE_CONFIG["sign-reload"];
-let SIGN_RESPONSE_FMT = ACTIVE_CONFIG["sign-resp-format"];
 let REDEEM_METHOD = ACTIVE_CONFIG["spend-action"]["redeem-method"];
 let HEADER_NAME = ACTIVE_CONFIG["spend-action"]["header-name"];
-let TOKENS_PER_REQUEST = ACTIVE_CONFIG["tokens-per-request"];
+let HEADER_HOST_NAME = ACTIVE_CONFIG["spend-action"]["header-host-name"];
+let HEADER_PATH_NAME = ACTIVE_CONFIG["spend-action"]["header-path-name"];
+let SPEND_ACTION_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
 let SPEND_STATUS_CODE = ACTIVE_CONFIG["spending-restrictions"]["status-code"];
 let MAX_REDIRECT = ACTIVE_CONFIG["spending-restrictions"]["max-redirects"];
 let NEW_TABS = ACTIVE_CONFIG["spending-restrictions"]["new-tabs"];
@@ -58,6 +63,11 @@ let STORAGE_KEY_TOKENS = STORAGE_STR + ACTIVE_CONFIG["id"];
 let STORAGE_KEY_COUNT = COUNT_STR + ACTIVE_CONFIG["id"];
 let H2C_PARAMS = ACTIVE_CONFIG["h2c-params"];
 let SEND_H2C_PARAMS = ACTIVE_CONFIG["send-h2c-params"];
+let ISSUE_ACTION_URLS = ACTIVE_CONFIG["issue-action"]["urls"]
+let RELOAD_ON_SIGN = ACTIVE_CONFIG["issue-action"]["sign-reload"];
+let SIGN_RESPONSE_FMT = ACTIVE_CONFIG["issue-action"]["sign-resp-format"];
+let TOKENS_PER_REQUEST = ACTIVE_CONFIG["issue-action"]["tokens-per-request"];
+
 initECSettings(H2C_PARAMS);
 
 // Used for resetting variables below
@@ -99,13 +109,13 @@ let readySign = false;
  */
 
 /**
-  * Runs when a request is completed
-  * @param details HTTP request details
-  */
+ * Runs when a request is completed
+ * @param details HTTP request details
+ */
 function handleCompletion(details) {
     timeSinceLastResp = Date.now();
-    // If we had a spend then reload the page
-    if (spendId[details.requestId]) {
+    // If we had a spend and we're using "reload" method then reload the page
+    if (spendId[details.requestId] && REDEEM_METHOD === "reload") {
         reloadBrowserTab(details.tabId);
     }
     spendId[details.requestId] = false;
@@ -126,16 +136,17 @@ function processRedirect(details, oldUrl, newUrl) {
     if (spendId[details.requestId] && redirectCount[details.requestId] < MAX_REDIRECT) {
         setSpendFlag(newUrl.host, true);
         spendId[details.requestId] = false;
-        redirectCount[details.requestId] = redirectCount[details.requestId]+1;
+        redirectCount[details.requestId] = redirectCount[details.requestId] + 1;
     }
 }
+
 function validRedirect(oldUrl, redirectUrl) {
     if (oldUrl.includes("http://")) {
         let urlStr = oldUrl.substring(7);
         let valids = VALID_REDIRECTS;
-        for (let i=0; i<valids.length; i++) {
+        for (let i = 0; i < valids.length; i++) {
             let newUrl = valids[i] + urlStr;
-            if (newUrl == redirectUrl) {
+            if (newUrl === redirectUrl) {
                 return true;
             }
         }
@@ -158,13 +169,13 @@ function processHeaders(details, url) {
     let activated = false;
     for (var i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
-        if (header.name.toLowerCase() == CHL_BYPASS_RESPONSE) {
-            if (header.value == CHL_VERIFICATION_ERROR
-                || header.value == CHL_CONNECTION_ERROR) {
+        if (header.name.toLowerCase() === CHL_BYPASS_RESPONSE) {
+            if (header.value === CHL_VERIFICATION_ERROR
+                || header.value === CHL_CONNECTION_ERROR) {
                 // If these errors occur then something bad is happening.
                 // Either tokens are bad or some resource is calling the server
                 // in a bad way
-                if (header.value == CHL_VERIFICATION_ERROR) {
+                if (header.value === CHL_VERIFICATION_ERROR) {
                     clearStorage();
                 }
                 throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
@@ -185,7 +196,7 @@ function processHeaders(details, url) {
             if (count > 0 && !url.host.includes(CHL_CAPTCHA_DOMAIN)) {
                 attemptRedeem(url, details.tabId, target);
                 attempted = true;
-            } else if (count == 0) {
+            } else if (count === 0) {
                 // Update icon to show user that token may be spent here
                 updateIcon("!");
             }
@@ -207,10 +218,49 @@ function processHeaders(details, url) {
  */
 function beforeSendHeaders(request, url) {
     // Cancel if we don't have a token to spend
-    if (!DO_REDEEM || !getSpendFlag(url.host) || checkMaxSpend(url.host) || spentUrl[url.href] || isErrorPage(url.href) || isFaviconUrl(url.href) || REDEEM_METHOD != "reload") {
-        return {cancel: false};
+
+    let reqUrl = url.href;
+    let host = url.host;
+
+    if (DO_REDEEM && !isErrorPage(reqUrl) && !isFaviconUrl(reqUrl) && !checkMaxSpend(host) && getSpendFlag(host)) {
+        // No reload method branch
+        if (REDEEM_METHOD === "no-reload") {
+            // check that we're at an URL that can handle redeems
+            const isRedeemUrl = SPEND_ACTION_URLS
+                .map(redeemUrl => patternToRegExp(redeemUrl))
+                .some(re => reqUrl.match(re));
+
+            setSpendFlag(url.host, null);
+
+            if (countStoredTokens() > 0 && isRedeemUrl) {
+
+                const tokenToSpend = GetTokenForSpend();
+                if (tokenToSpend == null) {
+                    return {cancel: false};
+                }
+                setSpendFlag(host, null);
+                incrementSpentHost(host);
+
+                const http_path = request.method + " " + url.pathname;
+                const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
+                let headers = request.requestHeaders
+                headers.push({name: HEADER_NAME, value: redemptionString});
+                headers.push({name: HEADER_HOST_NAME, value: url.hostname});
+                headers.push({name: HEADER_PATH_NAME, value: http_path});
+                spendId[request.requestId] = true;
+                spentUrl[reqUrl] = true;
+                if (!spentTab[request.tabId]) {
+                    spentTab[request.tabId] = [];
+                }
+                spentTab[request.tabId].push(url.href);
+                return {requestHeaders: headers};
+            }
+        } else if (REDEEM_METHOD === "reload" && !spentUrl[reqUrl]) {
+            return getReloadHeaders(request, url);
+        }
     }
-    return getReloadHeaders(request, url);
+
+    return {cancel: false}
 }
 
 // returns the new headers for the request
@@ -223,13 +273,13 @@ function getReloadHeaders(request, url) {
     // Create a pass and reload to send it to the edge
     const tokenToSpend = GetTokenForSpend();
     if (tokenToSpend == null) {
-        return { cancel: false };
+        return {cancel: false};
     }
 
     const method = request.method;
     const http_path = method + " " + url.pathname;
     const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
-    const newHeader = { name: HEADER_NAME, value: redemptionString };
+    const newHeader = {name: HEADER_NAME, value: redemptionString};
     headers.push(newHeader);
     spendId[request.requestId] = true;
     spentUrl[url.href] = true;
@@ -237,7 +287,7 @@ function getReloadHeaders(request, url) {
         spentTab[request.tabId] = [];
     }
     spentTab[request.tabId].push(url.href);
-    return { requestHeaders: headers };
+    return {requestHeaders: headers};
 }
 
 /**
@@ -263,12 +313,15 @@ function beforeRequest(details, url) {
     case 1:
         xhrInfo = signReqCF(url);
         break;
+    case 2:
+        xhrInfo = signReqHC(url);
+        break;
     default:
         throw new Error("Incorrect config ID specified");
     }
 
     // If this is null then signing is not appropriate
-    if (xhrInfo == null) {
+    if (xhrInfo === null) {
         return false;
     }
     readySign = false;
@@ -293,7 +346,7 @@ function committedNavigation(details, url) {
         let id = getTabId(tabId);
         target[id] = url.href;
         // If a reload was attempted but target hadn't been inited then reload now
-        if (futureReload[id] == target[id]) {
+        if (futureReload[id] === target[id]) {
             futureReload[id] = false;
             updateBrowserTab(id, target[id]);
         }
@@ -316,11 +369,11 @@ function incrementSpentHost(host) {
     if (spentHosts[host] === undefined) {
         spentHosts[host] = 0;
     }
-    spentHosts[host] = spentHosts[host]+1;
+    spentHosts[host] = spentHosts[host] + 1;
 }
 
 function checkMaxSpend(host) {
-    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX) {
+    if (spentHosts[host] === undefined || spentHosts[host] < SPEND_MAX || !SPEND_MAX) {
         return false;
     }
     return true
@@ -338,7 +391,6 @@ function GetTokenForSpend() {
     storeTokens(tokens);
     return tokenToSpend;
 }
-
 
 
 // Clears the stored tokens and other variables
@@ -369,7 +421,7 @@ function badTransition(href, type, transitionType) {
 
 // Checks if the tab is deemed to be new or not
 function isNewTab(url) {
-    for (let i=0; i<NEW_TABS.length; i++) {
+    for (let i = 0; i < NEW_TABS.length; i++) {
         if (url.includes(NEW_TABS[i])) {
             return true;
         }
@@ -396,12 +448,12 @@ function resetSpendVars() {
 /**
  * Checks whether a header should activate the extension. The value dictates
  * whether to swap to a new configuration
-* @param {header} header
+ * @param {header} header
  */
 function isBypassHeader(header) {
     let newConfigVal = parseInt(header.value);
-    if (header.name.toLowerCase() == CHL_BYPASS_SUPPORT && newConfigVal !== 0) {
-        if (newConfigVal != CONFIG_ID) {
+    if (header.name.toLowerCase() === CHL_BYPASS_SUPPORT && newConfigVal !== 0) {
+        if (newConfigVal !== CONFIG_ID) {
             setConfig(newConfigVal);
         }
         return true
@@ -427,14 +479,13 @@ function setConfig(val) {
     MAX_TOKENS = ACTIVE_CONFIG["max-tokens"];
     DO_SIGN = ACTIVE_CONFIG["sign"];
     DO_REDEEM = ACTIVE_CONFIG["redeem"];
-    RELOAD_ON_SIGN = ACTIVE_CONFIG["sign-reload"];
-    SIGN_RESPONSE_FMT = ACTIVE_CONFIG["sign-resp-format"];
     STORAGE_KEY_TOKENS = STORAGE_STR + ACTIVE_CONFIG["id"];
     STORAGE_KEY_COUNT = COUNT_STR + ACTIVE_CONFIG["id"];
     REDEEM_METHOD = ACTIVE_CONFIG["spend-action"]["redeem-method"];
-    LISTENER_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
+    HEADER_HOST_NAME = ACTIVE_CONFIG["spend-action"]["header-host-name"];
+    HEADER_PATH_NAME = ACTIVE_CONFIG["spend-action"]["header-path-name"];
+    SPEND_ACTION_URLS = ACTIVE_CONFIG["spend-action"]["urls"];
     HEADER_NAME = ACTIVE_CONFIG["spend-action"]["header-name"];
-    TOKENS_PER_REQUEST = ACTIVE_CONFIG["tokens-per-request"];
     SPEND_STATUS_CODE = ACTIVE_CONFIG["spending-restrictions"]["status-code"];
     CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
     MAX_REDIRECT = ACTIVE_CONFIG["spending-restrictions"]["max-redirects"];
@@ -447,6 +498,11 @@ function setConfig(val) {
     VAR_RESET_MS = ACTIVE_CONFIG["var-reset-ms"];
     H2C_PARAMS = ACTIVE_CONFIG["h2c-params"];
     SEND_H2C_PARAMS = ACTIVE_CONFIG["send-h2c-params"];
+    ISSUE_ACTION_URLS = ACTIVE_CONFIG["issue-action"]["urls"]
+    RELOAD_ON_SIGN = ACTIVE_CONFIG["issue-action"]["sign-reload"];
+    SIGN_RESPONSE_FMT = ACTIVE_CONFIG["issue-action"]["sign-resp-format"];
+    TOKENS_PER_REQUEST = ACTIVE_CONFIG["issue-action"]["tokens-per-request"];
+
     initECSettings(H2C_PARAMS);
     clearCachedCommitments();
     countStoredTokens();

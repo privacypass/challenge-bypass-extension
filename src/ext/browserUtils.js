@@ -32,9 +32,9 @@ let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
 function attemptRedeem(url, respTabId, target) {
     // Check all cookie stores to see if a clearance cookie is held
     if (CHECK_COOKIES) {
-        chrome.cookies.getAllCookieStores(function(stores) {
+        chrome.cookies.getAllCookieStores(function (stores) {
             let clearanceHeld = false;
-            stores.forEach( function(store, index) {
+            stores.forEach(function (store, index) {
                 var tabIds = store.tabIds;
                 if (tabIds.length > 0 && tabIds[0].id !== undefined) {
                     // some browser use the id key to store the id instead
@@ -42,7 +42,11 @@ function attemptRedeem(url, respTabId, target) {
                 }
 
                 if (tabIds.includes(respTabId)) {
-                    chrome.cookies.get({"url": url.href, "name": CHL_CLEARANCE_COOKIE, "storeId": store.id}, function(cookie) {
+                    chrome.cookies.get({
+                        "url": url.href,
+                        "name": CHL_CLEARANCE_COOKIE,
+                        "storeId": store.id
+                    }, function (cookie) {
                         // Require an existing, non-expired cookie.
                         if (cookie) {
                             clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
@@ -62,32 +66,34 @@ function attemptRedeem(url, respTabId, target) {
     }
 }
 
+
 // Actually activate the redemption request
 function fireRedeem(url, respTabId, target) {
-    if (REDEEM_METHOD == "reload") {
+    if (!isValidRedeemMethod(REDEEM_METHOD)) {
+        throw new Error("[privacy-pass]: Incompatible redeem method selected.");
+    }
+    if (REDEEM_METHOD === "reload") {
         setSpendFlag(url.host, true);
         let targetUrl = target[respTabId];
-        if (url.href == targetUrl) {
-            chrome.tabs.update(respTabId, { url: targetUrl });
+        if (url.href === targetUrl) {
+            chrome.tabs.update(respTabId, {url: targetUrl});
         } else {
             // set a reload in the future when the target has been inited, also
             // reset timer for resetting vars
             futureReload[respTabId] = url.href;
             timeSinceLastResp = Date.now();
         }
-    } else {
-        throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
 }
 
 // Reload the chosen tab
 function reloadTabForCookie(cookieDomain) {
     let found = false;
-    chrome.windows.getAll(function(windows) {
-        windows.forEach( function(w) {
+    chrome.windows.getAll(function (windows) {
+        windows.forEach(function (w) {
             let wId = w.id;
-            chrome.tabs.query({windowId: wId}, function(tabs) {
-                tabs.forEach( function(tab, index) {
+            chrome.tabs.query({windowId: wId}, function (tabs) {
+                tabs.forEach(function (tab, index) {
                     if (!found) {
                         let id = getTabId(tab.id);
                         let hrefs = spentTab[id];
@@ -111,7 +117,7 @@ function isCookieForTab(hrefs, cookieDomain) {
         return true;
     }
     // remove preceding dot and try again
-    if (cookieDomain[0] == ".") {
+    if (cookieDomain[0] === ".") {
         let noDot = cookieDomain.substring(1);
         if (hrefs.includes(noDot)) {
             return true;
@@ -147,15 +153,15 @@ function getSpendFlag(key) {
 // Update the icon and badge colour if tokens have changed
 function updateIcon(count) {
     let warn = (count.toString().includes("!"))
-    if (count != 0 && !warn) {
-        chrome.browserAction.setIcon({ path: "icons/ticket-32.png", });
+    if (count !== 0 && !warn) {
+        chrome.browserAction.setIcon({path: "icons/ticket-32.png",});
         chrome.browserAction.setBadgeText({text: count.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color: "#408BC9"});
     } else if (warn) {
-        chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
+        chrome.browserAction.setIcon({path: "icons/ticket-empty-32.png",});
         chrome.browserAction.setBadgeText({text: "!!!"});
     } else {
-        chrome.browserAction.setIcon({ path: "icons/ticket-empty-32.png", });
+        chrome.browserAction.setIcon({path: "icons/ticket-empty-32.png",});
         chrome.browserAction.setBadgeText({text: ""});
     }
 }
@@ -174,7 +180,7 @@ function reloadBrowserTab(id) {
 function isErrorPage(url) {
     let found = false;
     const errorPagePaths = ["/cdn-cgi/styles/", "/cdn-cgi/scripts/", "/cdn-cgi/images/"];
-    errorPagePaths.forEach(function(str) {
+    errorPagePaths.forEach(function (str) {
         found = url.includes(str) || found;
     });
     return found;
@@ -183,6 +189,13 @@ function isErrorPage(url) {
 //  Favicons have caused us problems...
 function isFaviconUrl(url) {
     return url.includes("favicon");
+}
+
+function isValidRedeemMethod(method) {
+    return PPConfigs
+        .filter(config => config.id > 0)
+        .map(config => config["spend-action"]["redeem-method"])
+        .some(config_method => config_method === method)
 }
 
 // We have to remove the item using the direct call
@@ -201,7 +214,7 @@ function set(key, value) {
 
 // localStorage API function for clearing the browser storage
 function clear() {
-    localStorage.clear(function() {
+    localStorage.clear(function () {
         if (chrome.runtime.lastError) {
             console.error(chrome.runtime.lastError.message);
         }
@@ -210,4 +223,5 @@ function clear() {
 
 // We use this function for updating the popup when tokens are cleared
 // The function is passed from bc-plugin.js
-var UpdateCallback = function() { }
+var UpdateCallback = function () {
+}

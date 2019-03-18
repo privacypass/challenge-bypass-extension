@@ -9,15 +9,14 @@ describing the correct format of the JSON struct.
 ## config.js
 
 Holds the various configurations as JavaScript JSON structs for the providers
-that Privacy Pass interacts with. Currently, only the Cloudflare config is
-active. There is an example config, there is also an in progress config for the
-CAPTCHA provider FunCAPTCHA. In the following we will highlight how each config
+that Privacy Pass interacts with. Currently, only the Cloudflare and hCaptcha configs are
+active. There is an example config. In the following we will highlight how each config
 field is used.
 
 ### config["id"]
 
 A unique identifier highlighting which config is used. Currently cfConfig.id =
-1, all other configs must be added with unique "id" values.
+1 and hcConfig.id = 2, all other configs must be added with unique "id" values.
 
 ### config["sign"]
 
@@ -26,20 +25,6 @@ A bool dictating whether Privacy Pass should send tokens for signing.
 ### config["redeem"]
 
 A bool dictating whether Privacy Pass should send tokens for redemption.
-
-### config["sign-reload"]
-
-A bool dictating whether the page should be reloaded after tokens are
-successfully signed
-
-### config["sign-resp-format"]
-
-Format of the response (as a string) to a signing request. Currently, support
-"string" or "json". When "string" is used, expect the signed tokens to be
-included (base-64 encoded) in the HTTP response body in the form `signatures= ||
-<signed-tokens> || <Batch-DLEQ-Resp>`. When "json" is used, expect the signed
-tokens to be included (base-64 encoded) as a JSON struct with key: "signatures"
-and value `<signed-tokens> || <Batch-DLEQ-Resp>`.
 
 ### config["max-spends"]
 
@@ -51,13 +36,6 @@ same host (if some unknown issues occur, for example).
 
 The integer number of tokens that should be held by Privacy Pass at any one
 time.
-
-### config["tokens-per-request"]
-
-The integer number of tokens that should be sent with each signing request. For
-Cloudflare, there is also a server-side upper bound of 100 tokens for each
-signing request. We recommend that this is enforced to prevent unlimited numbers
-of tokens being signed.
 
 ### config["var-reset"]
 
@@ -75,7 +53,7 @@ The time intervals (ms) by which the variables from above are reset.
 Hex-encoded elliptic curve commitment values for verifying DLEQ proofs. These
 essentially amount to public keys issued by the provider. The values of "G" and
 "H" held in config["commitments"]["dev"] should be used for development
-purposes. Those held in config["commitments"]["prod"] should be used in the
+purposes. Those held in config["commitments"][<version>] should be used in the
 production environment.
 
 ### config["spending-restrictions"]
@@ -87,7 +65,8 @@ A JSON struct of restrictions for redeeming tokens
 An integer corresponding to the status code returned by the server. This HTTP
 status code is checked before a redemption is initiated, for Cloudflare this
 value is set to 403. That is, token redemptions can only occur after a HTTP
-response with status code 403 is received.
+response with status code 403 is received. For hCaptcha the code is 200, however
+only hCaptcha specific URLs are eligable for the spend.
 
 #### config["spending-restrictions"]["max-redirects"]
 
@@ -125,21 +104,68 @@ connections to HTTPS connections.
 An array of strings indicating the transition types that are definitely valid,
 when considering whether redemption requests should be sanctioned.
 
-#### config["spending-action"]["urls"]
+### config["spend-action"]
 
-URLs that activate WebRequest listeners, "`<all_urls>`" corresponds to matching
+A JSON struct of configuration related to redeeming tokens.
+
+#### config["spend-action"]["urls"]
+
+URLs that activate WebRequest listeners for redemption, "`<all_urls>`" corresponds to matching
 all possible URLs.
 
-#### config["spending-action"]["redeem-method"]
+#### config["spend-action"]["redeem-method"]
 
 A string that determines the method that token redemptions are handled.
-Currently the only methods that is supported is `"reload"`. This means that
-tokens are redeemed by reloading the page and appending tokens to the subsequent
-HTTP request.
+Currently the only supported methods are `"reload"` and `"no-reload"``. `"reload"` method
+redeemeds tokens by reloading the page and appending tokens to the subsequent
+HTTP request. `"no-reload"` method sends tokens with the initial HTTP request that is supposed
+to fetch the captcha itself.
 
-#### config["spending-action"]["header-name"]
+#### config["spend-action"]["header-name"]
 
 The name of the header that contains a token for redemption.
+
+#### config["spend-action"]["header-host-name"]
+
+The name of the header that contains a hostname that is sending the redemption request.
+
+#### config["spend-action"]["header-path-name"]
+
+The name of the header that contains a path thatis sending the redemption request.
+
+### config["issue-action"]
+
+A JSON struct of configuration related to issuing tokens.
+
+#### config["issue-action"]["urls"]
+
+URLs that activate WebRequest listeners for issuance, "`<all_urls>`" corresponds to matching
+all possible URLs.
+
+#### config["issue-action"]["sign-reload"]
+
+A bool dictating whether the page should be reloaded after tokens are
+successfully signed.
+
+#### config["issue-action"]["sign-resp-format"]
+
+Format of the response (as a string) to a signing request. Currently, support
+"string" or "json". When "string" is used, expect the signed tokens to be
+included (base-64 encoded) in the HTTP response body in the form `signatures= ||
+<signed-tokens> || <Batch-DLEQ-Resp>`. When "json" is used, expect the signed
+tokens to be included (base-64 encoded) as a JSON struct with key: "signatures"
+and value `<signed-tokens> || <Batch-DLEQ-Resp>`.
+
+#### config["issue-action"]["tokens-per-request"]
+
+The integer number of tokens that should be sent with each signing request. For
+Cloudflare, there is also a server-side upper bound of 100 tokens for each
+signing request. We recommend that this is enforced to prevent unlimited numbers
+of tokens being signed.
+
+### config["cookies"]
+
+A JSON struct of configuration related to cookie management.
 
 #### config["cookies"]["check-cookies"]
 
@@ -152,11 +178,15 @@ cookie for the URL that redemption occurring for.
 A string that specifies the specific name of the type of clearance cookie used
 by the provider. In the case of Cloudflare, this is `"cf_clearance"`.
 
-#### config["captcha-domain"]
+### config["captcha-domain"]
 
 A string specifying a domain where users can obtain signed tokens by solving a
 challenge/CAPTCHA. This is helpful to allow users to build up initial stockpiles
 of tokens before they browse.
+
+### config["error-codes"]
+
+A JSON struct of configuration related to error codes.
 
 #### config["error-codes"]["verify-error"]
 
@@ -168,7 +198,7 @@ signature verification error.
 String error code that the server returns if an internal connection error occurs
 server-side.
 
-#### config["h2c-params"]
+### config["h2c-params"]
 
 A JSON struct of parameters for the curve setting that the client uses. These
 settings are sent to the server with all redemption requests.
@@ -194,7 +224,7 @@ affine version of the SWU algorithm implemented in h2c.js (see
 [HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a description of the algorithm in
 full).
 
-#### config["send-h2c-params"]
+### config["send-h2c-params"]
 
 A boolean that determines whether the contents of config["h2c-params"] should
 actually be sent to the server.

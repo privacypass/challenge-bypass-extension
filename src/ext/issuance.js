@@ -5,11 +5,20 @@
  */
 
 /* exported signReqCF */
+/* exported signReqHC */
 /* exported sendXhrSignReq */
 /* export CACHED_COMMITMENTS_STRING */
 
-function xhrDone(readystate) { return readystate == 4; } // readystate == 4 implies that the response has completed successfully
-function xhrGoodStatus(status) {return status == 200; } // we used to check < 300 but we should be more specific
+// readystate == 4 implies that the response has completed successfully
+function xhrDone(readystate) {
+    return readystate === 4;
+}
+
+// we used to check < 300 but we should be more specific
+function xhrGoodStatus(status) {
+    return status === 200;
+}
+
 const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
@@ -41,6 +50,25 @@ function signReqCF(url) {
     return xhrInfo;
 }
 
+function signReqHC(url) {
+    let reqUrl = url.href;
+    const isIssuerUrl = ISSUE_ACTION_URLS
+        .map(issuerUrl => patternToRegExp(issuerUrl))
+        .some(re => reqUrl.match(re));
+
+    if (!isIssuerUrl) {
+        return null;
+    }
+
+    sentTokens[reqUrl] = true;
+    // Generate tokens and create a JSON request for signing
+    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
+    const request = BuildIssueRequest(tokens);
+    // Construct info for xhr signing request
+    let xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens};
+    return xhrInfo;
+}
+
 /**
  * Sends an XHR request containing a BlindTokenRequest for signing a set of tokens
  * @param {object} xhrInfo Object containing information for the XHR that will
@@ -54,7 +82,7 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     let requestBody = xhrInfo["requestBody"];
     let tokens = xhrInfo["tokens"];
     let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         // When we receive a response...
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
             && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
@@ -67,7 +95,7 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     };
     xhr.open("POST", newUrl, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, "1");
+    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, CONFIG_ID);
     // We seem to get back some odd mime types that cause problems...
     xhr.overrideMimeType("text/plain");
     xhr.send(requestBody);
@@ -104,8 +132,7 @@ function validateResponse(url, tabId, data, tokens) {
     let out = parsePointsAndProof(issueResp);
     if (!out.signatures) {
         throw new Error("[privacy-pass]: No signed tokens provided");
-    }
-    else if (!out.proof) {
+    } else if (!out.proof) {
         throw new Error("[privacy-pass]: No batch proof provided");
     }
 
@@ -129,7 +156,7 @@ function parseSigJson(data) {
  */
 function parseSigString(data) {
     let split = data.split("signatures=", 2);
-    if (split.length != 2) {
+    if (split.length !== 2) {
         return null;
     }
     // Data should always be b64 encoded
@@ -170,7 +197,7 @@ function BuildIssueRequest(tokens) {
         const encodedPoint = compressPoint(tokens[i].point);
         contents.push(encodedPoint);
     }
-    return btoa(JSON.stringify({ type: "Issue", contents: contents}));
+    return btoa(JSON.stringify({type: "Issue", contents: contents}));
 }
 
 /**
@@ -214,7 +241,7 @@ function createVerificationXHR(url, tabId, tokens, signatures, batchProof, versi
     let xhr = new XMLHttpRequest();
     xhr.open("GET", COMMITMENT_URL, true);
     xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
             const commitments = retrieveCommitments(xhr, version);
             if (!commitments.G || !commitments.H) {
@@ -252,7 +279,7 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
     if (RELOAD_ON_SIGN && !url.href.includes(CHL_CAPTCHA_DOMAIN)) {
         let captchaPath = url.pathname;
         let pathIndex = url.href.indexOf(captchaPath);
-        let reloadUrl = url.href.substring(0, pathIndex+1);
+        let reloadUrl = url.href.substring(0, pathIndex + 1);
         setSpendFlag(url.host, true);
         updateBrowserTab(tabId, reloadUrl);
     }
@@ -318,7 +345,7 @@ function getAllCached() {
  */
 function getCachedCommitments(version) {
     version = checkVersion(version);
-    let cached = getAllCached(CACHED_COMMITMENTS_STRING);
+    let cached = getAllCached();
     if (!cached) {
         return;
     }
