@@ -66,28 +66,6 @@ window.bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
 window.bypassTokensCount = (config_id) => `bypass-tokens-count-${config_id}`;
 
 /* mock XHR implementations */
-function mockXHR(_xhr) {
-    _xhr.open = function (method, url) {
-        _xhr.method = method;
-        _xhr.url = url;
-    };
-    _xhr.requestHeaders = new Map();
-    _xhr.getRequestHeader = function (name) {
-        return _xhr.requestHeaders[name];
-    }
-    _xhr.setRequestHeader = function (name, value) {
-        _xhr.requestHeaders[name] = value;
-    }
-    _xhr.overrideMimeType = jest.fn();
-    _xhr.body;
-    _xhr.send = function (str) {
-        _xhr.body = str;
-    }
-    _xhr.onreadystatechange = function () {
-    };
-}
-
-/* mock XHR implementations */
 window.mockXHR = (_xhr) => {
     _xhr.open = function (method, url) {
         _xhr.method = method;
@@ -109,24 +87,6 @@ window.mockXHR = (_xhr) => {
     };
 }
 
-window.mockXHRGood = () => {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-}
-
-window.mockXHRBadStatus = () => {
-    mockXHR(this);
-    this.status = 403;
-    this.readyState = 4;
-}
-
-window.mockXHRBadReadyState = () => {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 5;
-}
-
 const testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
 const testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 const testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
@@ -136,21 +96,6 @@ window.testG = testG;
 window.testH = testH;
 window.testDevG = testDevG;
 window.testDevH = testDevH;
-
-window.mockXHRCommitments = () => {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-    this.responseText = JSON.stringify({
-        CF:
-            {
-                dev: {G: testDevG, H: testDevH},
-                "1.0": {G: testG, H: testH},
-                "1.1": {G: "new_11_commitment_g", "H": "new_11_commitment_h"}
-            }
-    });
-}
-
 
 window.mockXHRCommitments = () => mockXHR(this);
 
@@ -168,23 +113,3 @@ window.getSpentHosts = (key) => spentHosts[key];
 window.setSpentHosts = (key, value) => spentHosts[key] = value;
 
 window.setXHR = (xhr, workflow) => workflow.__set__("XMLHttpRequest", xhr);
-
-// function getSpendId(key) {
-//     let spendId = workflow.__get__("spendId");
-//     return spendId[key];
-// }
-//
-// function getSpentTab(key) {
-//     let spentTab = workflow.__get__("spentTab");
-//     return spentTab[key];
-// }
-//
-// function setSpentHosts(key, value) {
-//     let spentHosts = new Map();
-//     spentHosts[key] = value;
-//     workflow.__set__("spentHosts", spentHosts);
-// }
-//
-
-//
-//
