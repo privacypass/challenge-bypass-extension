@@ -29,5 +29,8 @@
     "test:watch": "yarn test:all --watch",
     "lint": "eslint . && cd test && eslint --config .eslintrc.tests.json --ext .test.js .",
     "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
+  },
+  "devDependencies": {
+    "jest-each": "^24.5.0"
   }
 }
