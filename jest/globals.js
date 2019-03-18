@@ -54,6 +54,7 @@ window.localStorageMock = {
 };
 
 window.updateIconMock = jest.fn();
+window.updateBrowserTabMock = jest.fn();
 
 window.setSpendFlag = (key, value) => set(key, value);
 window.getSpendFlag = (key) => get(key)
@@ -107,6 +108,49 @@ window.mockXHR = (_xhr) => {
     _xhr.onreadystatechange = function () {
     };
 }
+
+window.mockXHRGood = () => {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 4;
+}
+
+window.mockXHRBadStatus = () => {
+    mockXHR(this);
+    this.status = 403;
+    this.readyState = 4;
+}
+
+window.mockXHRBadReadyState = () => {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 5;
+}
+
+const testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
+const testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
+const testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
+const testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
+
+window.testG = testG;
+window.testH = testH;
+window.testDevG = testDevG;
+window.testDevH = testDevH;
+
+window.mockXHRCommitments = () => {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 4;
+    this.responseText = JSON.stringify({
+        CF:
+            {
+                dev: {G: testDevG, H: testDevH},
+                "1.0": {G: testG, H: testH},
+                "1.1": {G: "new_11_commitment_g", "H": "new_11_commitment_h"}
+            }
+    });
+}
+
 
 window.mockXHRCommitments = () => mockXHR(this);
 
