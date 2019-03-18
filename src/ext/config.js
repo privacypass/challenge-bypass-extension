@@ -21,7 +21,7 @@ const exampleConfig = {
     "dev": true, // sets whether the configuration should only be used in development
     "sign": true, // sets whether tokens should be sent for signing
     "redeem": true, // sets whether tokens should be sent for redemption
-    "max-spends": 3, // for each host header, sets the max number of tokens that will be spent, 0 for unlimited
+    "max-spends": 3, // for each host header, sets the max number of tokens that will be spent,`undefined` for unlimited
     "max-tokens": 10, // max number of tokens held by the extension
     "var-reset": true, // whether variables should be reset after time limit expires
     "var-reset-ms": 100, // variable reset time limit
