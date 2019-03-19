@@ -8,6 +8,7 @@
     "babel-preset-env": "^1.7.0",
     "bestzip": "^2.1.2",
     "btoa": "^1.2.1",
+    "eslint-config-google": "^0.12.0",
     "google-closure-compiler": "^20181028.0.1",
     "jest": "^23.6.0",
     "json": "^9.0.6",
@@ -26,7 +27,7 @@
     "build:sjcl": "cd src/crypto/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex && make sjcl.js",
     "test:sjcl": "make test -C src/crypto/sjcl",
     "test:watch": "yarn test:all --watch",
-    "lint": "eslint .",
+    "lint": "eslint . && cd test && eslint --config .eslintrc.tests.json --ext .test.js .",
     "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
   }
 }

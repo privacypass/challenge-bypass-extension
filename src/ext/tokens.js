@@ -5,7 +5,7 @@
  * @author: Alex Davidson
  */
 
-/*global sjcl*/
+/* global sjcl*/
 /* exported GenerateNewTokens */
 /* exported storeNewTokens */
 /* exported storeTokens */
@@ -14,28 +14,30 @@
 "use strict";
 
 
-// Creates
-// Inputs:
-//  none
-// Returns:
-//  token bytes
-//  T sjcl point
-//  r blinding factor, sjcl bignum
+/**
+ * Creates a blinded token and returns the random data, curve point and blinding
+ * scalar
+ * @return {Object}
+ */
 function CreateBlindToken() {
-    let t = newRandomPoint();
+    const t = newRandomPoint();
     let tok;
     if (t) {
-        let bpt = blindPoint(t.point);
-        tok = { data: t.data, point: bpt.point, blind: bpt.blind };
+        const bpt = blindPoint(t.point);
+        tok = {data: t.data, point: bpt.point, blind: bpt.blind};
     }
     return tok;
 }
 
-// returns: array of blind tokens
+/**
+ * Generates n blind tokens
+ * @param {Number} n number of tokns to generate
+ * @return {Array<Object>} array of blinded tokens
+ */
 function GenerateNewTokens(n) {
     let tokens = [];
     for (let i=0; i<n; i++) {
-        let tok = CreateBlindToken();
+        const tok = CreateBlindToken();
         if (!tok) {
             console.warn("[privacy-pass]: Tried to generate a random point on the curve, but failed.");
             console.warn("[privacy-pass]: Will drop the null point.");
@@ -43,27 +45,31 @@ function GenerateNewTokens(n) {
         tokens[i] = tok;
     }
     // remove array entries that are null
-    tokens = tokens.filter(function(ele) { return !!ele; });
+    tokens = tokens.filter(function(ele) {
+        return !!ele;
+    });
     return tokens;
 }
 
 /**
- * This is for storing tokens that we've just received from a new issuance response.
- * @param tokens set of tokens to store
- * @param signedPoints signed tokens that have been received from server
+ * This is for storing tokens that we've just received from a new issuance
+ * response.
+ * @param {Array<Object>} tokens set of tokens to store
+ * @param {Array<sjcl.ecc.point>} signedPoints signed tokens that have been
+ * received from server
  */
 function storeNewTokens(tokens, signedPoints) {
-    let storableTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-        let t = tokens[i];
-        storableTokens[i] = getTokenEncoding(t,signedPoints[i]);
+    const storableTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        storableTokens[i] = getTokenEncoding(t, signedPoints[i]);
     }
     // Append old tokens to the newly received tokens
     if (countStoredTokens() > 0) {
-        let oldTokens = loadTokens();
+        const oldTokens = loadTokens();
         for (let i=0; i<oldTokens.length; i++) {
-            let oldT = oldTokens[i];
-            storableTokens.push(getTokenEncoding(oldT,oldT.point));
+            const oldT = oldTokens[i];
+            storableTokens.push(getTokenEncoding(oldT, oldT.point));
         }
     }
     const json = JSON.stringify(storableTokens);
@@ -75,14 +81,14 @@ function storeNewTokens(tokens, signedPoints) {
 }
 
 /**
- * This is for persisting valid tokens after some manipulation, like a spend.
- * @param tokens set of tokens to store
+ * Persists valid tokens after some manipulation, like a spend.
+ * @param {Array<Object>} tokens set of tokens to store
  */
 function storeTokens(tokens) {
-    let storableTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-        let t = tokens[i];
-        storableTokens[i] = getTokenEncoding(t,t.point);
+    const storableTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        storableTokens[i] = getTokenEncoding(t, t.point);
     }
     const json = JSON.stringify(storableTokens);
     set(STORAGE_KEY_TOKENS, json);
@@ -92,32 +98,43 @@ function storeTokens(tokens) {
     updateIcon(tokens.length);
 }
 
-// SJCL points are cyclic as objects, so we have to flatten them.
+/**
+ * Encodes the token object for storage (flattens sjcl.ecc.point object)
+ * @param {Object} t token object for curvePoint
+ * @param {sjcl.ecc.point} curvePoint
+ * @return {Object}
+ */
 function getTokenEncoding(t, curvePoint) {
-    let storablePoint = encodeStorablePoint(curvePoint);
-    let storableBlind = t.blind.toString();
-    return { data: t.data, point: storablePoint, blind: storableBlind };
+    const storablePoint = encodeStorablePoint(curvePoint);
+    const storableBlind = t.blind.toString();
+    return {data: t.data, point: storablePoint, blind: storableBlind};
 }
 
-// Load tokens from browser storage
+/**
+ * Load tokens from browser storage
+ * @return {Array<Object>} returns null if no tokens stored
+ */
 function loadTokens() {
     const storedJSON = get(STORAGE_KEY_TOKENS);
     if (storedJSON == null) {
         return null;
     }
 
-    let usableTokens = [];
+    const usableTokens = [];
     const storedTokens = JSON.parse(storedJSON);
-    for (var i = 0; i < storedTokens.length; i++) {
-        let t = storedTokens[i];
-        let usablePoint = decodeStorablePoint(t.point);
-        let usableBlind = new sjcl.bn(t.blind);
-        usableTokens[i] = { data: t.data, point: usablePoint, blind: usableBlind };
+    for (let i = 0; i < storedTokens.length; i++) {
+        const t = storedTokens[i];
+        const usablePoint = decodeStorablePoint(t.point);
+        const usableBlind = new sjcl.bn(t.blind);
+        usableTokens[i] = {data: t.data, point: usablePoint, blind: usableBlind};
     }
     return usableTokens;
 }
 
-// Counts the tokens that are stored for the background page
+/**
+ * Counts the tokens that are stored in localStorage
+ * @return {Number}
+ */
 function countStoredTokens() {
     const count = get(STORAGE_KEY_COUNT);
     if (count == null) {

@@ -1,11 +1,11 @@
 /**
 * Integrations tests for processing redirections
-* 
+*
 * @author: Alex Davidson
 */
 import rewire from "rewire";
-var workflow = rewire("../addon/compiled/test_compiled.js");
-var URL = window.URL;
+const workflow = rewire("../addon/compiled/test_compiled.js");
+const URL = window.URL;
 
 /**
 * Functions/variables
@@ -16,17 +16,17 @@ const HTTP_WWW = "http://www.";
 const HTTPS = "https://";
 const HTTPS_WWW = "https://www.";
 const ALTERN_HREF = "http://www.cloudflare.com";
-const processRedirect = workflow.__get__('processRedirect');
-const handleCompletion = workflow.__get__('handleCompletion');
-const committedNavigation = workflow.__get__('committedNavigation');
+const processRedirect = workflow.__get__("processRedirect");
+const handleCompletion = workflow.__get__("handleCompletion");
+const committedNavigation = workflow.__get__("committedNavigation");
 let localStorage;
 let details;
 /* mock impls */
 function getMock(key) {
-    return localStorage[key]; 
+    return localStorage[key];
 }
 function setMock(key, value) {
-    localStorage[key] = value; 
+    localStorage[key] = value;
 }
 function getSpendFlag(key) {
     return getMock(key);
@@ -45,36 +45,36 @@ beforeEach(() => {
         method: "GET",
         requestHeaders: [],
         requestId: "212",
-        tabId: "101"
+        tabId: "101",
     };
 });
 
 describe("https redirects", () => {
     test("non-https redirect", () => {
-        let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-        let newUrl = new URL(HTTP + ALTERN_HREF);
+        const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+        const newUrl = new URL(HTTP + ALTERN_HREF);
         processRedirect(details, oldUrl, newUrl);
         expect(getHttpsRedirect(newUrl.href)).toBeFalsy();
     });
 
     describe("valid redirects", () => {
         test("http www", () => {
-            let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-            let newUrl = new URL(HTTP_WWW + EXAMPLE_HREF);
+            const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+            const newUrl = new URL(HTTP_WWW + EXAMPLE_HREF);
             processRedirect(details, oldUrl, newUrl);
             expect(getHttpsRedirect(newUrl.href)).toBeTruthy();
         });
 
         test("https", () => {
-            let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-            let newUrl = new URL(HTTPS + EXAMPLE_HREF);
+            const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+            const newUrl = new URL(HTTPS + EXAMPLE_HREF);
             processRedirect(details, oldUrl, newUrl);
             expect(getHttpsRedirect(newUrl.href)).toBeTruthy();
         });
 
         test("https www", () => {
-            let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-            let newUrl = new URL(HTTPS_WWW + EXAMPLE_HREF);
+            const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+            const newUrl = new URL(HTTPS_WWW + EXAMPLE_HREF);
             processRedirect(details, oldUrl, newUrl);
             expect(getHttpsRedirect(newUrl.href)).toBeTruthy();
         });
@@ -83,8 +83,8 @@ describe("https redirects", () => {
 
 describe("redemption", () => {
     test("no redemption if spendId not set", () => {
-        let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-        let newUrl = new URL(HTTP + ALTERN_HREF);
+        const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+        const newUrl = new URL(HTTP + ALTERN_HREF);
         setSpendId(details.requestId, false);
         setRedirectCount(details.requestId, 0);
         processRedirect(details, oldUrl, newUrl);
@@ -93,8 +93,8 @@ describe("redemption", () => {
     });
 
     test("no redemption if redirectCount above maximum", () => {
-        let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-        let newUrl = new URL(HTTP + ALTERN_HREF);
+        const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+        const newUrl = new URL(HTTP + ALTERN_HREF);
         setSpendId(details.requestId, true);
         setRedirectCount(details.requestId, 5);
         processRedirect(details, oldUrl, newUrl);
@@ -103,8 +103,8 @@ describe("redemption", () => {
     });
 
     test("reload is successful", () => {
-        let oldUrl = new URL(HTTP + EXAMPLE_HREF);
-        let newUrl = new URL(HTTP + ALTERN_HREF);
+        const oldUrl = new URL(HTTP + EXAMPLE_HREF);
+        const newUrl = new URL(HTTP + ALTERN_HREF);
         setSpendId(details.requestId, true);
         setRedirectCount(details.requestId, 0);
         processRedirect(details, oldUrl, newUrl);
@@ -135,7 +135,7 @@ describe("committed navigation", () => {
     beforeEach(() => {
         url = new URL(HTTPS+EXAMPLE_HREF);
         details = {
-            tabId: "101"
+            tabId: "101",
         };
     });
 
@@ -221,50 +221,50 @@ describe("committed navigation", () => {
 });
 
 function getTarget(key) {
-    let target = workflow.__get__("target");
+    const target = workflow.__get__("target");
     return target[key];
 }
 
 function getFutureReload(key) {
-    let futureReload = workflow.__get__("futureReload");
+    const futureReload = workflow.__get__("futureReload");
     return futureReload[key];
 }
 
 function setFutureReload(key, val) {
-    let futureReload = new Map();
+    const futureReload = new Map();
     futureReload[key] = val;
     workflow.__set__("futureReload", futureReload);
 }
 
 function getHttpsRedirect(key) {
-    let httpsRedirect = workflow.__get__("httpsRedirect");
+    const httpsRedirect = workflow.__get__("httpsRedirect");
     return httpsRedirect[key];
 }
 
 function setHttpsRedirect(key, val) {
-    let httpsRedirect = new Map();
+    const httpsRedirect = new Map();
     httpsRedirect[key] = val;
     workflow.__set__("httpsRedirect", httpsRedirect);
 }
 
 function getSpendId(key) {
-    let spendId = workflow.__get__("spendId");
+    const spendId = workflow.__get__("spendId");
     return spendId[key];
 }
 
 function setSpendId(key, val) {
-    let spendId = new Map();
+    const spendId = new Map();
     spendId[key] = val;
     workflow.__set__("spendId", spendId);
 }
 
 function getRedirectCount(key) {
-    let redirectCount = workflow.__get__("redirectCount");
+    const redirectCount = workflow.__get__("redirectCount");
     return redirectCount[key];
 }
 
 function setRedirectCount(key, val) {
-    let redirectCount = new Map();
+    const redirectCount = new Map();
     redirectCount[key] = val;
     workflow.__set__("redirectCount", redirectCount);
 }

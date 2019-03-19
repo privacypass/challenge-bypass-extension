@@ -17,6 +17,7 @@ const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720
  * draft-irtf-cfrg-hash-to-curve)
  * @param {sjcl.bitArray} x bits of element to be translated
  * @param {sjcl.ecc.curve} curve elliptic curve
+ * @param {sjcl.hash} hash hash function object
  * @param {string} label context label for domain separation
  * @return {int} integer in the base field of curve
  */
@@ -207,6 +208,7 @@ function getCurveParams(curve) {
  * probailistic failure conditions.
  * @param {sjcl.codec.bitArray} seed
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
+ * @return {sjcl.ecc.point} returns a curve point on the active curve
  */
 function hashAndInc(seed, hash) {
     const h = new hash();
@@ -222,10 +224,10 @@ function hashAndInc(seed, hash) {
     // Increased increments to decrease chance of failure
     for (i = 0; i < 20; i++) {
     // little endian uint32
-        let ctr = new Uint8Array(4);
+        const ctr = new Uint8Array(4);
         // typecast hack: number -> Uint32, bitwise Uint8
         ctr[0] = (i >>> 0) & 0xFF;
-        let ctrBits = sjcl.codec.bytes.toBits(ctr);
+        const ctrBits = sjcl.codec.bytes.toBits(ctr);
 
         // H(s||ctr)
         h.update(seed);
@@ -237,7 +239,7 @@ function hashAndInc(seed, hash) {
         // attempt to decompress a point with a valid tag (don't need to try
         // 0x03 because this is just the negative version)
         // curve choice is implicit based on active curve parameters
-        let point = decompressPoint([2].concat(bytes));
+        const point = decompressPoint([2].concat(bytes));
         if (point !== null) {
             return point;
         }

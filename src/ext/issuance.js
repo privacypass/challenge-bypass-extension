@@ -9,12 +9,20 @@
 /* exported sendXhrSignReq */
 /* export CACHED_COMMITMENTS_STRING */
 
-// readystate == 4 implies that the response has completed successfully
+/**
+ * Checks readystate == 4, this implies a successful response
+ * @param {Number} readystate
+ * @return {boolean}
+ */
 function xhrDone(readystate) {
     return readystate === 4;
 }
 
-// we used to check < 300 but we should be more specific
+/**
+ * Checks a good HTTP response
+ * @param {Number} status
+ * @return {boolean}
+ */
 function xhrGoodStatus(status) {
     return status === 200;
 }
@@ -25,9 +33,10 @@ const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitm
 /**
  * Constructs an issue request for sending tokens in Cloudflare-friendly format
  * @param {URL} url URL object for request
+ * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
 function signReqCF(url) {
-    let reqUrl = url.href;
+    const reqUrl = url.href;
     const manualChallenge = reqUrl.includes("manual_challenge");
     const captchaResp = reqUrl.includes("g-recaptcha-response");
     const alreadyProcessed = reqUrl.includes("&captcha-bypass=true");
@@ -39,22 +48,27 @@ function signReqCF(url) {
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
-    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
+    const tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
-    let newUrl = markSignUrl(reqUrl);
+    const newUrl = markSignUrl(reqUrl);
     // Construct info for xhr signing request
-    let xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens};
+    const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens};
 
     return xhrInfo;
 }
 
+/**
+ * hCaptcha issuance request
+ * @param {URL} url
+ * @return {XMLHttpRequest} XHR info for asynchronous token issuance
+ */
 function signReqHC(url) {
-    let reqUrl = url.href;
+    const reqUrl = url.href;
     const isIssuerUrl = ISSUE_ACTION_URLS
-        .map(issuerUrl => patternToRegExp(issuerUrl))
-        .some(re => reqUrl.match(re));
+        .map((issuerUrl) => patternToRegExp(issuerUrl))
+        .some((re) => reqUrl.match(re));
 
     if (!isIssuerUrl) {
         return null;
@@ -62,33 +76,32 @@ function signReqHC(url) {
 
     sentTokens[reqUrl] = true;
     // Generate tokens and create a JSON request for signing
-    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
+    const tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
     const request = BuildIssueRequest(tokens);
     // Construct info for xhr signing request
-    let xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens};
+    const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens};
     return xhrInfo;
 }
 
 /**
  * Sends an XHR request containing a BlindTokenRequest for signing a set of tokens
- * @param {object} xhrInfo Object containing information for the XHR that will
- * be returned.
+ * @param {Object} xhrInfo XHR info for asynchronous issuance request
  * @param {URL} url URL object
- * @param {int} tabId Tab ID for the current request
- * @returns {XMLHttpRequest}
+ * @param {Number} tabId Tab ID for the current request
+ * @return {XMLHttpRequest}
  */
 function sendXhrSignReq(xhrInfo, url, tabId) {
-    let newUrl = xhrInfo["newUrl"];
-    let requestBody = xhrInfo["requestBody"];
-    let tokens = xhrInfo["tokens"];
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
+    const newUrl = xhrInfo["newUrl"];
+    const requestBody = xhrInfo["requestBody"];
+    const tokens = xhrInfo["tokens"];
+    const xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
         // When we receive a response...
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
             && countStoredTokens() < (MAX_TOKENS - TOKENS_PER_REQUEST)) {
-            const resp_data = xhr.responseText;
+            const respData = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
-            validateResponse(url, tabId, resp_data, tokens);
+            validateResponse(url, tabId, respData, tokens);
         } else if (countStoredTokens() >= (MAX_TOKENS - TOKENS_PER_REQUEST)) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
@@ -107,9 +120,9 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
  * redemptions
  * @param {URL} url URL object
  * @param {int} tabId Tab ID for the current request
- * @param data An issue response takes the form "signatures=[b64 blob]"
- *             where the blob is an array of b64-encoded curve points
- * @param tokens client-generated tokens that correspond to the signed points
+ * @param {string} data An issue response takes the form "signatures=[b64 blob]"
+ * where the blob is an array of b64-encoded curve points
+ * @param {Array<Object>} tokens stored tokens corresponding to signed points
  */
 function validateResponse(url, tabId, data, tokens) {
     let signaturesJSON;
@@ -129,7 +142,7 @@ function validateResponse(url, tabId, data, tokens) {
     }
     // parses into JSON
     const issueResp = JSON.parse(signaturesJSON);
-    let out = parsePointsAndProof(issueResp);
+    const out = parsePointsAndProof(issueResp);
     if (!out.signatures) {
         throw new Error("[privacy-pass]: No signed tokens provided");
     } else if (!out.proof) {
@@ -143,9 +156,10 @@ function validateResponse(url, tabId, data, tokens) {
 /**
  * Parses the server (JSON) response for the issuance data
  * @param {string} data stringified server response
+ * @return {string}
  */
 function parseSigJson(data) {
-    let json = JSON.parse(data);
+    const json = JSON.parse(data);
     // Data should always be b64 encoded
     return atob(json["signatures"]);
 }
@@ -153,9 +167,10 @@ function parseSigJson(data) {
 /**
  * Parses the server (string) response for the issuance data
  * @param {string} data stringified server response
+ * @return {string}
  */
 function parseSigString(data) {
-    let split = data.split("signatures=", 2);
+    const split = data.split("signatures=", 2);
     if (split.length !== 2) {
         return null;
     }
@@ -165,8 +180,9 @@ function parseSigString(data) {
 
 /**
  * Retrieves the batchProof and signatures, depending on the type of object received
- * @param {JSON/array} issueResp object containing signed points, DLEQ proof and potentially commitment version
- * @return {object} Formatted object for inputs
+ * @param {Object} issueResp object containing signed points, DLEQ proof and
+ * optional commitment version
+ * @return {Object} Formatted object for inputs
  */
 function parsePointsAndProof(issueResp) {
     let signatures;
@@ -189,11 +205,12 @@ function parsePointsAndProof(issueResp) {
  * is base64(json(BlindTokenRequest)), where BlindTokenRequest is a JSON struct
  * with "type":"Issue" and "contents":[ base64.encode(compressed_curve_points) ]
  *
- * @param {object array} tokens contains curve points to be signed by the server
+ * @param {Array<Object>} tokens contains curve points for server signing
+ * @return {string} base64-encoded issuance request
  */
 function BuildIssueRequest(tokens) {
-    let contents = [];
-    for (var i = 0; i < tokens.length; i++) {
+    const contents = [];
+    for (let i = 0; i < tokens.length; i++) {
         const encodedPoint = compressPoint(tokens[i].point);
         contents.push(encodedPoint);
     }
@@ -204,15 +221,15 @@ function BuildIssueRequest(tokens) {
  * Retrieves cached commitments or sends an XHR for acquiring them, and verifies
  * server response (returns the xhr object for testing purposes)
  * @param {URL} url URL object for the original request
- * @param {int} tabId Tab ID where the request took place
- * @param {object array} tokens Client-generated token objects
+ * @param {Number} tabId Tab ID where the request took place
+ * @param {Array<Object>} tokens Client-generated token objects
  * @param {string} signatures base64-encoded curve points
- * @param {object} batchProof batched DLEQ proof object
+ * @param {Object} batchProof batched DLEQ proof object
  * @param {string} version version of commitments to use
+ * @return {XMLHttpRequest} commitment XHR object
  */
 function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, version) {
-    let cXhr;
-    let commitments = getCachedCommitments(version);
+    const commitments = getCachedCommitments(version);
     // If cached commitments exist then attempt to verify proof
     if (commitments) {
         if (!commitments.G || !commitments.H) {
@@ -222,7 +239,7 @@ function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, vers
             return;
         }
     }
-    cXhr = createVerificationXHR(url, tabId, tokens, signatures, batchProof, version);
+    const cXhr = createVerificationXHR(url, tabId, tokens, signatures, batchProof, version);
     cXhr.send();
     return cXhr;
 }
@@ -231,17 +248,18 @@ function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, vers
  * Asynchronously retrieves the commitments from the GH beacon and verifies
  * server-sent information
  * @param {URL} url URL object for the original request
- * @param {int} tabId Tab ID where the request took place
- * @param {object} tokens Client-generated token objects
+ * @param {Number} tabId Tab ID where the request took place
+ * @param {Object} tokens Client-generated token objects
  * @param {string} signatures base64-encoded curve points
- * @param {object} batchProof batched DLEQ proof object
+ * @param {Object} batchProof batched DLEQ proof object
  * @param {string} version version of commitments to use
+ * @return {XMLHttpRequest} XHR object for verifying server response
  */
 function createVerificationXHR(url, tabId, tokens, signatures, batchProof, version) {
-    let xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
     xhr.open("GET", COMMITMENT_URL, true);
     xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
+    xhr.onreadystatechange = function() {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
             const commitments = retrieveCommitments(xhr, version);
             if (!commitments.G || !commitments.H) {
@@ -269,7 +287,7 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
 
     // Verify the DLEQ batch proof before handing back the usable points
     if (!verifyProof(batchProof, tokens, sigPoints, commitments)) {
-        throw new Error("[privacy-pass]: Unable to verify DLEQ proof.")
+        throw new Error("[privacy-pass]: Unable to verify DLEQ proof.");
     }
 
     // Store the tokens for future usage
@@ -277,9 +295,9 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
 
     // Reload the page for the originally intended url
     if (RELOAD_ON_SIGN && !url.href.includes(CHL_CAPTCHA_DOMAIN)) {
-        let captchaPath = url.pathname;
-        let pathIndex = url.href.indexOf(captchaPath);
-        let reloadUrl = url.href.substring(0, pathIndex + 1);
+        const captchaPath = url.pathname;
+        const pathIndex = url.href.indexOf(captchaPath);
+        const reloadUrl = url.href.substring(0, pathIndex + 1);
         setSpendFlag(url.host, true);
         updateBrowserTab(tabId, reloadUrl);
     }
@@ -289,13 +307,14 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
  * Retrieves the public commitments that are used for validating the DLEQ proof
  * @param {XMLHttpRequest} xhr XHR for retrieving the active EC commitments
  * @param {string} version commitment version string
+ * @return {Object} Object containing commitment data
  */
 function retrieveCommitments(xhr, version) {
     let commG;
     let commH;
     const respBody = xhr.responseText;
-    let resp = JSON.parse(respBody);
-    let comms = resp[COMMITMENTS_KEY];
+    const resp = JSON.parse(respBody);
+    const comms = resp[COMMITMENTS_KEY];
     version = checkVersion(version);
     if (comms) {
         if (DEV) {
@@ -322,7 +341,7 @@ function cacheCommitments(version, G, H) {
     if (!cache) {
         cache = {};
     }
-    let cachable = {G: G, H: H};
+    const cachable = {G: G, H: H};
     version = checkVersion(version);
     cache[version] = cachable;
     set(CACHED_COMMITMENTS_STRING, JSON.stringify(cache));
@@ -330,9 +349,10 @@ function cacheCommitments(version, G, H) {
 
 /**
  * Recovers all commitments pairs from the cache
+ * @return {Object}
  */
 function getAllCached() {
-    let cache = get(CACHED_COMMITMENTS_STRING);
+    const cache = get(CACHED_COMMITMENTS_STRING);
     if (!cache) {
         return;
     }
@@ -342,10 +362,11 @@ function getAllCached() {
 /**
  * Gets the cached commitments for a particular version string
  * @param {string} version the version of commitments as specified by the server
+ * @return {Object} cache object for specific version
  */
 function getCachedCommitments(version) {
     version = checkVersion(version);
-    let cached = getAllCached();
+    const cached = getAllCached();
     if (!cached) {
         return;
     }
@@ -354,7 +375,8 @@ function getCachedCommitments(version) {
 
 /**
  * Sets the version to be "1.0" if it is undefined
- * @param {string} version version string specified by server
+ * @param {string} version version string (possibly null) specified by server
+ * @return {string} the version string or "1.0" if it is null
  */
 function checkVersion(version) {
     return version || "1.0";
@@ -362,7 +384,8 @@ function checkVersion(version) {
 
 /**
  * Mark the url so that a sign doesn't occur again.
- * @param {URL} url URL object for modification
+ * @param {string} url URL href string for modification
+ * @return {string} marked URL string
  */
 function markSignUrl(url) {
     return url + "&captcha-bypass=true";
