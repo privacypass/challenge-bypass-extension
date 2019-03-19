@@ -3,15 +3,10 @@
  *
  * @author: Alex Davidson
  */
-import btoa from "btoa";
-import atob from "atob";
-
-import rewire from "rewire";
 import each from "jest-each";
 
-let workflow = rewire("../addon/compiled/test_compiled.js");
 
-workflowSet(workflow);
+let workflow = workflowSet();
 /**
  * Functions/variables
  */
@@ -31,11 +26,6 @@ let url;
 each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
     .describe("CONFIG_ID: %i", (config_id) => {
         beforeEach(() => {
-            let storedTokens = `[ { "data":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"data":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
-            // localStorage = {};
-
-            const bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
-
             set(bypassTokens(config_id), storedTokens);
             set(bypassTokensCount(config_id), 2);
 

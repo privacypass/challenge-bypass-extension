@@ -2,25 +2,18 @@
  * Integrations tests for when headers are sent by the browser
  *
  * @author: Alex Davidson
+ * @author: Drazen Urch
  */
-import btoa from "btoa";
-import atob from "atob";
-import createShake256 from "../src/crypto/keccak/keccak.js"
 
-import rewire from "rewire";
-
-var workflow = rewire("../addon/compiled/test_compiled.js");
-var URL = window.URL;
+let workflow = workflowSet();
 
 /**
  * Functions/variables
  */
-const TOKEN_COUNT_STR = "bypass-tokens-count-1";
 const EXAMPLE_HREF = "https://example.com";
 const CAPTCHA_HREF = "https://captcha.website";
 const EXAMPLE_SUFFIX = "/cdn-cgi/l/chk_captcha?id=4716480f5bb534e8&g-recaptcha-response=03AMGVjXh24S6n8-HMQadfr8AmSr-2i87s1TTWUrhfnrIcti9hw1DigphUtiZzhU5R44VlJ3CmoH1W6wZaqde7iJads2bFaErY2bok29QfgZrbhO8q6UBbwLMkVlZ803M1UyDYhA9xYJqLR4kVtKhrHkDsUEKN4vXKc3CNxQpysmvdTqdt31Lz088ptkkksGLzRluDu-Np11ER6NX8XaH2S4iwIR823r3txm4eaMoEeoLfOD5S_6WHD5RhH0B7LRa_l7Vp5ksEB-0vyHQPLQQLOYixrC_peP3dG3dnaTY5UcUAUxZK4E74glzCu2PyRpKNnQ9akFz-niWiFCY0z-cuJeOArMvGOQCC9Q";
 const CAPTCHA_BYPASS_SUFFIX = "&captcha-bypass=true";
-const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
 const getBigNumFromBytes = workflow.__get__("getBigNumFromBytes");
@@ -34,10 +27,7 @@ const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
-let localStorage;
-let details;
-let url;
-const respGoodProof = `signatures=WyJCTGZOdGZ6eG92RXdwZk5LWVBvRkk3dHNLNk5rMjNNalluUklEVFhGdHEwYm9zbWJIN1l1bERYWHVrdVYrKytxZyttYU9UWEF4cXpGSHNkV3p2dEpmQU09IiwiQkVIa1BPT1p3UlIrT0dNKzJQTUJnRWVrdUhobVJpVUlJSGxiaGJqNkNSKzZ2blp3Sk1CTHlNbDR4aURuOVY4SUhQNFdENFRaTUJGQjR0cStXd0c5azdRPSIsIkJBKzM4NkZPNkNXODZJbGIxdzdEOUZWMytwRnN
+let respGoodProof = `signatures=WyJCTGZOdGZ6eG92RXdwZk5LWVBvRkk3dHNLNk5rMjNNalluUklEVFhGdHEwYm9zbWJIN1l1bERYWHVrdVYrKytxZyttYU9UWEF4cXpGSHNkV3p2dEpmQU09IiwiQkVIa1BPT1p3UlIrT0dNKzJQTUJnRWVrdUhobVJpVUlJSGxiaGJqNkNSKzZ2blp3Sk1CTHlNbDR4aURuOVY4SUhQNFdENFRaTUJGQjR0cStXd0c5azdRPSIsIkJBKzM4NkZPNkNXODZJbGIxdzdEOUZWMytwRnN
 SOEpjaC8rcWN2eVRpVTdFM3VONkUxZWJmVkloUjRDd3oxMWJHdlJhNzZhMGRWYlFhRjNZQUozR1Rmdz0iLCJZbUYwWTJndGNISnZiMlk5ZXlKRElqcGJJbEJyYVVVMlRXMXFiMGg0Vm1ZMmJFOXNiVEZvVDNWTFkxRjRZV1JMYlRacU0wZFNjV1Z0YkhOWFQwMDlJaXdpTUZWRFIwZDRRbEZvY0ZCc2VWQnZkV05ITlZkU01sWnJOa2RTTlZCMFQxZG1hVWxPY25sRmNUVmlUVDBpTENKdVJqSkVXV2
 xvVG1wNmJrc3ZUazFvWWxOa1MySndhbkpGTkdzMlZFaEVNR2hEVjJkeVFYRlpRMHBSUFNKZExDSk5JanBiSWtKTVNqTkpiRkprUm5kbUwwaDFhVzFDV1RWMWJXSkpaM2h1U1dWYWJGbzFkekY2VjJ0R1UySlFaWFJsTkN0MFRFaHpXbU42ZFhKRlZtMXZRVlIzTkVvMFZDODFUMjkwYTBaWVdFUjZUMFV4TWxrell6UkRUVDBpTENKQ1R6QXJhbVZVV0ZCUVEwSklVMUZvTTNNeFRVWnNhblZMWlc5d
 VNGWjNSREJ2ZVN0NVFrMUlaa292VkZaSlpFVXJRbkl2V1doellsRk1ObkIyVlRSaU1URlJVVEIyTTA5R2MwdHZjRmx5YTBSa1VFeHlXVTA5SWl3aVFrRklXa1owVVVNeFlYbzFOVUU0TlhVNVRHZFNaVWdyVVRoTmJGUTNNMFpMZDBVMU1WVkthMlJ1WW5aTFdrWkljMlJTVkVkVVprZDRhV2gxU0ZwMU9WVm9SVXh1UVZKcVVFdHBaSFJ3ZVRkd2EyWTNjMHc0UFNKZExDSlFJam9pWlhsS1NFbHFi
@@ -66,84 +56,15 @@ let testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9S
 let testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 let testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
 let testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
+let details;
+let url;
 
-/* mock impls */
-function getMock(key) {
-    return localStorage[key];
-}
-
-function setMock(key, value) {
-    localStorage[key] = value;
-}
-
-function clearCachedCommitmentsMock() {
-    localStorage[CACHED_COMMITMENTS_STRING] = null;
-}
-
-function getSpendFlag(key) {
-    return getMock(key);
-}
-
-function setSpendFlag(key, value) {
-    setMock(key, value);
-}
-
-const updateIconMock = jest.fn();
-const updateBrowserTabMock = jest.fn();
-
-/* mock XHR implementations */
-function mockXHR(_xhr) {
-    _xhr.open = function (method, url) {
-        _xhr.method = method;
-        _xhr.url = url;
-    };
-    _xhr.requestHeaders = new Map();
-    _xhr.getRequestHeader = function (name) {
-        return _xhr.requestHeaders[name];
-    }
-    _xhr.setRequestHeader = function (name, value) {
-        _xhr.requestHeaders[name] = value;
-    }
-    _xhr.overrideMimeType = jest.fn();
-    _xhr.body;
-    _xhr.send = jest.fn();
-    _xhr.onreadystatechange = function () {
-    };
-}
-
-function mockXHRGood() {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-}
-
-function mockXHRBadStatus() {
-    mockXHR(this);
-    this.status = 403;
-    this.readyState = 4;
-}
-
-function mockXHRBadReadyState() {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 5;
-}
-
-function mockXHRCommitments() {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-    this.responseText = `{"CF":{"dev":{"G": "` + testDevG + `","H": "` + testDevH + `"},"1.0":{"G":"` + testG + `","H":"` + testH + `"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"}}}`;
-}
-
-let _xhr;
+let config_id = 1
 
 beforeEach(() => {
-    const storedTokens = `[ { "token":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"token":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
-    localStorage = {
-        "bypass-tokens-1": storedTokens,
-        "bypass-tokens-count-1": 2,
-    };
+    clearLocalStorage();
+    set(bypassTokensCount(config_id), 2);
+
     details = {
         method: "GET",
         requestHeaders: [],
@@ -151,11 +72,8 @@ beforeEach(() => {
         tabId: "101",
     };
     url = new URL(EXAMPLE_HREF);
-    setMockFunctions();
     setTimeSinceLastResp(Date.now());
-    setConfig(1); // set the CF config
-    workflow.__set__("readySign", true);
-    workflow.__set__("TOKENS_PER_REQUEST", () => 3); // limit the # of tokens for tests
+    setConfig(config_id); // set the CF config
 });
 
 /**
@@ -163,22 +81,21 @@ beforeEach(() => {
  */
 describe("commitments parsing and caching", () => {
     beforeEach(() => {
-        workflow.__set__("XMLHttpRequest", mockXHRCommitments);
-        setXHR(mockXHRCommitments);
+        setXHR(mockXHRCommitments, workflow);
     });
 
     test("parse correctly (null version)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr);
-        expect(testG == commitments.G).toBeTruthy();
-        expect(testH == commitments.H).toBeTruthy();
+        expect(testG === commitments.G).toBeTruthy();
+        expect(testH === commitments.H).toBeTruthy();
     });
 
     test("parse correctly (v1.0)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr, "1.0");
-        expect(testG == commitments.G).toBeTruthy();
-        expect(testH == commitments.H).toBeTruthy();
+        expect(testG === commitments.G).toBeTruthy();
+        expect(testH === commitments.H).toBeTruthy();
     });
 
     test("parse correctly (v1.1)", () => {
@@ -186,16 +103,16 @@ describe("commitments parsing and caching", () => {
         const v11H = "new_11_commitment_h";
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr, "1.1");
-        expect(v11G == commitments.G).toBeTruthy();
-        expect(v11H == commitments.H).toBeTruthy();
+        expect(v11G === commitments.G).toBeTruthy();
+        expect(v11H === commitments.H).toBeTruthy();
     });
 
     test("parse correctly (dev)", () => {
         workflow.__with__({DEV: () => true})(() => {
             const xhr = createVerificationXHR(); // this usually takes params
             const commitments = retrieveCommitments(xhr, "1.1");
-            expect(testDevG == commitments.G).toBeTruthy();
-            expect(testDevH == commitments.H).toBeTruthy();
+            expect(testDevG === commitments.G).toBeTruthy();
+            expect(testDevH === commitments.H).toBeTruthy();
         });
     });
 
@@ -211,7 +128,7 @@ describe("commitments parsing and caching", () => {
     });
 
     test("error-free empty cache", () => {
-        clearCachedCommitmentsMock();
+        clearCachedCommitments();
         expect(getCachedCommitments).not.toThrowError();
     });
 });
@@ -268,61 +185,66 @@ describe("test sending sign requests", () => {
     });
 
     test("test that true is returned", () => {
-        const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-        const b = beforeRequest(details, newUrl);
-        expect(b).toBeTruthy();
-        expect(b.xhr).toBeTruthy();
+        workflow.__with__({readySign: true})(() => {
+            const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            const b = beforeRequest(details, newUrl);
+            expect(b).toBeTruthy();
+            expect(b.xhr).toBeTruthy();
+        })
     });
 
     test("bad status does not sign", () => {
         setTimeSinceLastResp(0); // reset the variables
-        _xhr = mockXHRBadStatus;
-        setXHR(_xhr);
+        setXHR(mockXHRBadStatus, workflow);
         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-        const b = beforeRequest(details, newUrl);
-        expect(b).toBeTruthy();
-        const xhr = b.xhr;
-        xhr.onreadystatechange();
-        expect(validateRespMock).not.toBeCalled();
-        expect(updateIconMock).toBeCalledTimes(2);
-        expect(updateBrowserTabMock).not.toBeCalled();
+        workflow.__with__({readySign: true})(() => {
+            let b = beforeRequest(details, newUrl);
+            expect(b).toBeTruthy();
+            let xhr = b.xhr;
+            xhr.onreadystatechange();
+            expect(validateRespMock).not.toBeCalled();
+            expect(updateIconMock).toBeCalledTimes(2);
+            expect(updateBrowserTabMock).not.toBeCalled();
+        })
     });
 
     test("bad readyState does not sign", () => {
         setTimeSinceLastResp(0); // reset the variables
-        _xhr = mockXHRBadReadyState;
-        setXHR(_xhr);
+        setXHR(mockXHRBadReadyState, workflow);
         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-        const b = beforeRequest(details, newUrl);
-        expect(b).toBeTruthy();
-        const xhr = b.xhr;
-        xhr.onreadystatechange();
-        expect(validateRespMock).not.toBeCalled();
-        expect(updateIconMock).toBeCalledTimes(2);
-        expect(updateBrowserTabMock).not.toBeCalled();
+        workflow.__with__({readySign: true})(() => {
+            const b = beforeRequest(details, newUrl);
+            expect(b).toBeTruthy();
+            const xhr = b.xhr;
+            xhr.onreadystatechange();
+            expect(validateRespMock).not.toBeCalled();
+            expect(updateIconMock).toBeCalledTimes(2);
+            expect(updateBrowserTabMock).not.toBeCalled();
+        })
+
     });
 
     test("too many tokens does not sign", () => {
-        _xhr = mockXHRGood;
-        setXHR(_xhr);
-
+        setXHR(mockXHRGood, workflow);
         function run() {
             const b = beforeRequest(details, newUrl);
             const xhr = b.xhr;
             xhr.onreadystatechange();
         }
         setTimeSinceLastResp(0); // reset the variables
-        setMock(TOKEN_COUNT_STR, 400);
+        set(bypassTokensCount(config_id), 400);
         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-        expect(run).toThrowError("upper bound");
-        expect(validateRespMock).not.toBeCalled();
-        expect(updateIconMock).toBeCalledTimes(3);
-        expect(updateBrowserTabMock).not.toBeCalled();
+        workflow.__with__({readySign: true})(() => {
+            expect(run).toThrowError("upper bound");
+            expect(validateRespMock).not.toBeCalled();
+            expect(updateIconMock).toBeCalledTimes(3);
+            expect(updateBrowserTabMock).not.toBeCalled();
+        })
+
     });
 
     test("correct XHR response triggers validation", () => {
-        _xhr = mockXHRGood;
-        setXHR(_xhr);
+        setXHR(mockXHRGood, workflow);
 
         function run() {
             const request = "";
@@ -332,7 +254,7 @@ describe("test sending sign requests", () => {
             xhr.onreadystatechange();
         }
         setTimeSinceLastResp(0); // reset the variables
-        setMock(TOKEN_COUNT_STR, 0);
+        set(bypassTokensCount(config_id), 0);
         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
         expect(run).not.toThrow();
         expect(validateRespMock).toBeCalled();
@@ -350,7 +272,6 @@ describe("test validating response", () => {
                     validateResponse(url, tabId, "", "");
                 });
             }
-
             expect(run).toThrowError("invalid signature response format");
             expect(updateIconMock).toBeCalledTimes(1);
             expect(updateBrowserTabMock).not.toBeCalled();
@@ -373,9 +294,9 @@ describe("test validating response", () => {
         test("parse in old format", () => {
             const issueData = ["sig1", "sig2", "sig3", "proof"];
             const out = parsePointsAndProof(issueData);
-            expect(out.signatures[0] == "sig1").toBeTruthy();
-            expect(out.signatures[2] == "sig3").toBeTruthy();
-            expect(out.proof == "proof").toBeTruthy();
+            expect(out.signatures[0] === "sig1").toBeTruthy();
+            expect(out.signatures[2] === "sig3").toBeTruthy();
+            expect(out.proof === "proof").toBeTruthy();
             expect(out.version).toBeFalsy();
         });
 
@@ -386,16 +307,16 @@ describe("test validating response", () => {
                 version: "1.0"
             };
             const out = parsePointsAndProof(issueData);
-            expect(out.signatures[0] == "sig1").toBeTruthy();
-            expect(out.signatures[2] == "sig3").toBeTruthy();
-            expect(out.proof == "proof").toBeTruthy();
+            expect(out.signatures[0] === "sig1").toBeTruthy();
+            expect(out.signatures[2] === "sig3").toBeTruthy();
+            expect(out.proof === "proof").toBeTruthy();
             expect(out.version).toBeTruthy();
         });
     });
 
     describe("test validation and storage", () => {
         beforeAll(() => {
-            setXHR(mockXHRCommitments);
+            setXHR(mockXHRCommitments, workflow);
         });
         test("test store tokens", () => {
             let before;
@@ -415,22 +336,22 @@ describe("test validating response", () => {
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
                 expect(xhr.send).toBeCalledTimes(1);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = getMock(TOKEN_COUNT_STR);
+                after = get(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            setMock(TOKEN_COUNT_STR, 0);
+            set(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
-            expect(after == before + 3).toBeTruthy();
+            expect(after === before + 3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
-            expect(cache.H == testH).toBeTruthy();
+            expect(cache.H === testH).toBeTruthy();
         });
 
         test("correct verify for cached commitments", () => {
@@ -451,23 +372,23 @@ describe("test validating response", () => {
                     };
                 }
                 const out = parseRespString(respGoodProof);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
-                after = getMock(TOKEN_COUNT_STR);
+                after = get(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            setMock(TOKEN_COUNT_STR, 0);
+            set(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
-            expect(after == before + 3).toBeTruthy();
+            expect(after === before + 3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
-            expect(cache.H == testH).toBeTruthy();
+            expect(cache.H === testH).toBeTruthy();
         });
 
         test("correct verify when cached commitments are bad", () => {
@@ -475,7 +396,7 @@ describe("test validating response", () => {
             let after;
             let version;
             // construct corrupted commitments
-            localStorage[CACHED_COMMITMENTS_STRING] = JSON.stringify({"1.0": {L: testG, H: testH}});
+            set(CACHED_COMMITMENTS_STRING, JSON.stringify({"1.0": {L: testG, H: testH}}));
 
             function run() {
                 const tokens = [];
@@ -487,13 +408,13 @@ describe("test validating response", () => {
                     };
                 }
                 const out = parseRespString(respGoodProof);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
                 expect(xhr.send).toBeCalledTimes(1);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = getMock(TOKEN_COUNT_STR);
+                after = get(bypassTokensCount(config_id));
                 version = out.version;
             }
             const consoleNew = {
@@ -501,17 +422,17 @@ describe("test validating response", () => {
             };
             workflow.__set__("console", consoleNew);
             setTimeSinceLastResp(0); // reset the variables
-            setMock(TOKEN_COUNT_STR, 0);
+            set(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(consoleNew.warn).toBeCalled();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
-            expect(after == before + 3).toBeTruthy();
+            expect(after === before + 3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
-            expect(cache.H == testH).toBeTruthy();
+            expect(cache.H === testH).toBeTruthy();
         });
 
         test("test store tokens for captcha.website", () => {
@@ -530,22 +451,22 @@ describe("test validating response", () => {
                 }
                 const out = parseRespString(respGoodProof);
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = getMock(TOKEN_COUNT_STR);
+                after = get(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            setMock(TOKEN_COUNT_STR, 0);
+            set(bypassTokensCount(config_id), 0);
             const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).not.toBeCalled();
-            expect(after == before + 3).toBeTruthy();
+            expect(after === before + 3).toBeTruthy();
             expect(getSpendFlag(newUrl.host)).toBeFalsy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
-            expect(cache.H == testH).toBeTruthy();
+            expect(cache.H === testH).toBeTruthy();
         });
 
         test("reloading off after sign", () => {
@@ -563,18 +484,18 @@ describe("test validating response", () => {
                 }
                 const out = parseRespString(respGoodProof);
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
-                before = getMock(TOKEN_COUNT_STR);
+                before = get(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = getMock(TOKEN_COUNT_STR);
-            }
+                after = get(bypassTokensCount(config_id));
+            };
             setTimeSinceLastResp(0); // reset the variables
-            setMock(TOKEN_COUNT_STR, 0);
+            set(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             workflow.__with__({RELOAD_ON_SIGN: () => false})(() => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
-                expect(after == before + 3).toBeTruthy();
+                expect(after === before + 3).toBeTruthy();
                 expect(getSpendFlag(newUrl.host)).toBeFalsy();
             });
         });
@@ -595,7 +516,7 @@ describe("test validating response", () => {
                     xhr.onreadystatechange();
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
+                set(bypassTokensCount(config_id), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrow();
                 expect(updateIconMock).toBeCalledTimes(1);
@@ -618,7 +539,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(TOKEN_COUNT_STR, 0);
+                    set(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -640,7 +561,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(TOKEN_COUNT_STR, 0);
+                    set(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -666,7 +587,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(TOKEN_COUNT_STR, 0);
+                    set(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).not.toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -693,7 +614,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(TOKEN_COUNT_STR, 0);
+                    set(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -705,38 +626,9 @@ describe("test validating response", () => {
     });
 });
 
-function parseRespString(respText) {
-    return parsePointsAndProof(JSON.parse(parseSigString(respText)));
-}
+const parseRespString = (respText) => parsePointsAndProof(JSON.parse(parseSigString(respText)));
 
 function getSpentHosts(key) {
     let spentHosts = workflow.__get__("spentHosts", spentHosts);
     return spentHosts[key];
-}
-
-function setSpentHosts(key, value) {
-    let spentHosts = new Map();
-    spentHosts[key] = value;
-    workflow.__set__("spentHosts", spentHosts);
-}
-
-function setTimeSinceLastResp(value) {
-    workflow.__set__("timeSinceLastResp", value);
-}
-
-function setMockFunctions() {
-    workflow.__set__("atob", atob);
-    workflow.__set__("btoa", btoa);
-    workflow.__set__("get", getMock);
-    workflow.__set__("set", setMock);
-    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
-    workflow.__set__("updateIcon", updateIconMock);
-    workflow.__set__("updateBrowserTab", updateBrowserTabMock);
-    workflow.__set__("setSpendFlag", setSpendFlag);
-    workflow.__set__("createShake256", createShake256);
-    workflow.__set__("TOKENS_PER_REQUEST", () => 3);
-}
-
-function setXHR(xhr) {
-    workflow.__set__("XMLHttpRequest", xhr);
 }
