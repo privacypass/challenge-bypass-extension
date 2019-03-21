@@ -15,59 +15,61 @@
 */
 
 chrome.webRequest.onCompleted.addListener(
-    function(details) { handleCompletion(details); },
-    { urls: [LISTENER_URLS] },
+    function(details) {
+        handleCompletion(details);
+    },
+    {urls: [LISTENER_URLS]},
 );
 
 chrome.webRequest.onBeforeRedirect.addListener(
     function(details) {
-        let oldUrl = new URL(details.url);
-        let newUrl = new URL(details.redirectUrl);
+        const oldUrl = new URL(details.url);
+        const newUrl = new URL(details.redirectUrl);
         processRedirect(details, oldUrl, newUrl);
     },
-    { urls: [LISTENER_URLS] },
+    {urls: [LISTENER_URLS]},
 );
 
 // Watches headers for CF-Chl-Bypass and CF-Chl-Bypass-Resp headers.
 chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
-        let url = new URL(details.url);
+        const url = new URL(details.url);
         processHeaders(details, url);
-    },                 // callback
-    { urls: [LISTENER_URLS] },       // targeted pages
+    }, // callback
+    {urls: [LISTENER_URLS]}, // targeted pages
     ["responseHeaders", "blocking"] // desired traits
 );
 
 // Intercepts token-spend reload requests to add a redemption header.
 chrome.webRequest.onBeforeSendHeaders.addListener(
     function(details) {
-        let url = new URL(details.url);
+        const url = new URL(details.url);
         return beforeSendHeaders(details, url);
-    },        // callback
-    { urls: [LISTENER_URLS] }, // targeted pages
+    }, // callback
+    {urls: [LISTENER_URLS]}, // targeted pages
     ["requestHeaders", "blocking"]
 );
 
 // Intercepts CAPTCHA solution requests to add our token blob to the body.
 chrome.webRequest.onBeforeRequest.addListener(
     function(details) {
-        let url = new URL(details.url);
-        let b = beforeRequest(details, url);
+        const url = new URL(details.url);
+        const b = beforeRequest(details, url);
         if (!b) {
             return {cancel: false};
         }
         return {redirectUrl: "javascript:void(0)"};
-    },            // callback
-    { urls: [LISTENER_URLS] }, // targeted pages
-    ["blocking"]              // desired traits
+    }, // callback
+    {urls: [LISTENER_URLS]}, // targeted pages
+    ["blocking"] // desired traits
 );
 
 
 // Removes cookies for captcha.website to enable getting more tokens
 // in the future.
 chrome.cookies.onChanged.addListener(function(changeInfo) {
-    let cookieDomain = changeInfo.cookie.domain;
-    let cookieName = changeInfo.cookie.name;
+    const cookieDomain = changeInfo.cookie.domain;
+    const cookieName = changeInfo.cookie.name;
     if (!changeInfo.removed) {
         if (cookieDomain === "." + CHL_CAPTCHA_DOMAIN // cookies have dots prepended
             && cookieName === CHL_CLEARANCE_COOKIE) {
@@ -89,7 +91,7 @@ chrome.windows.onRemoved.addListener(function() {
 
 // Set the target URL for the spend and update the tab if necessary
 chrome.webNavigation.onCommitted.addListener(function(details) {
-    let url = new URL(details.url);
+    const url = new URL(details.url);
     committedNavigation(details, url);
 });
 

@@ -4,7 +4,7 @@
  * @author: Alex Davidson
  */
 
-/*global sjcl*/
+/* global sjcl*/
 /* exported BuildRedeemHeader */
 
 /**
@@ -12,9 +12,10 @@
  * server. Uses the same BlindTokenRequest as in BuildIssueRequest but sets
  * "type" to "Redeem" and "contents" to [ token_data , request_binding ].
  *
- * @param {object} token token object to redeem
+ * @param {Object} token token object to redeem
  * @param {string} host Host that is being requested
  * @param {string} path Path of the requested HTTP request
+ * @return {string} base64-encoded redemption requestx
  */
 function BuildRedeemHeader(token, host, path) {
     const sharedPoint = unblindPoint(token.blind, token.point);
@@ -30,7 +31,7 @@ function BuildRedeemHeader(token, host, path) {
 
     // Fortunately Go interprets base64-encoded strings as []bytes when
     // unmarshaling JSON.
-    let contents = [];
+    const contents = [];
     contents.push(sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data)));
     contents.push(b64Binding);
     if (SEND_H2C_PARAMS) {
@@ -40,7 +41,7 @@ function BuildRedeemHeader(token, host, path) {
         contents.push(h2cB64);
     }
 
-    return btoa(JSON.stringify({ type: "Redeem", contents: contents}));
+    return btoa(JSON.stringify({type: "Redeem", contents: contents}));
 }
 
 /**
@@ -48,8 +49,9 @@ function BuildRedeemHeader(token, host, path) {
  * by key material derived from signed token data and evaluated over
  * request-specific data (host and http path)
  *
- * @param {[]byte} key Derived HMAC key
- * @param {[]byte} data Input HMAC data
+ * @param {sjcl.codec.bytes} key Derived HMAC key
+ * @param {sjcl.codec.bytes} data Input HMAC data
+ * @return {string} base64-encoded HMAC output
  */
 function createRequestBinding(key, data) {
     // the exact bits of the string "hash_request_binding"
@@ -60,7 +62,7 @@ function createRequestBinding(key, data) {
     h.update(tagBits);
 
     let dataBits = null;
-    for (var i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         dataBits = sjcl.codec.bytes.toBits(data[i]);
         h.update(dataBits);
     }
@@ -70,8 +72,9 @@ function createRequestBinding(key, data) {
 
 /**
  * Derives the shared key used for redemption MACs
- * @param {curvePoint} N Signed curve point associated with token
- * @param {object} token client-generated token data
+ * @param {sjcl.ecc.point} N Signed curve point associated with token
+ * @param {Object} token client-generated token data
+ * @return {sjcl.codec.bytes} bytes of derived key
  */
 function deriveKey(N, token) {
     // the exact bits of the string "hash_derive_key"
