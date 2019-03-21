@@ -283,7 +283,7 @@ function verifyProof(proofObj, tokens, signatures, commitments) {
     const B = cZ.toJac().add(rM).toAffine();
 
     // Recalculate C' and check if C =?= C'
-    const h = new CURVE_H2C_HASH();
+    const h = new CURVE_H2C_HASH(); // use the h2c hash for convenience
     h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(pointG)));
     h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(pointH)));
     h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(composites.M)));
@@ -363,7 +363,7 @@ function getShakeScalar(shake) {
  * @return {string} hex-encoded PRNG seed
  */
 function getSeedPRNG(chkM, chkZ, pointG, pointH) {
-    const h = new CURVE_H2C_HASH();
+    const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
     h.update(encodePointForPRNG(pointG));
     h.update(encodePointForPRNG(pointH));
     for (let i=0; i<chkM.length; i++) {
