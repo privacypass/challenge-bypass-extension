@@ -57,8 +57,9 @@ function createRequestBinding(key, data) {
     // the exact bits of the string "hash_request_binding"
     const tagBits = sjcl.codec.utf8String.toBits("hash_request_binding");
     const keyBits = sjcl.codec.bytes.toBits(key);
+    const hash = getActiveECSettings().hash;
 
-    const h = new sjcl.misc.hmac(keyBits, sjcl.hash.sha256);
+    const h = new sjcl.misc.hmac(keyBits, hash);
     h.update(tagBits);
 
     let dataBits = null;
@@ -79,7 +80,8 @@ function createRequestBinding(key, data) {
 function deriveKey(N, token) {
     // the exact bits of the string "hash_derive_key"
     const tagBits = sjcl.codec.hex.toBits("686173685f6465726976655f6b6579");
-    const h = new sjcl.misc.hmac(tagBits, sjcl.hash.sha256);
+    const hash = getActiveECSettings().hash;
+    const h = new sjcl.misc.hmac(tagBits, hash);
 
     const encodedPoint = sec1EncodePoint(N);
     const tokenBits = sjcl.codec.bytes.toBits(token);

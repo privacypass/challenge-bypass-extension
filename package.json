@@ -18,7 +18,7 @@
     "stringify": "^5.2.0"
   },
   "scripts": {
-    "all": "yarn build:all && yarn test:all",
+    "all": "yarn lint && yarn build:all && yarn test:all",
     "build:all": "yarn build:sjcl && yarn build:ext",
     "test:all": "yarn test:sjcl && yarn test:ext",
     "build:ext": "mkdir -p addon/compiled && google-closure-compiler src/ext/utils.js src/crypto/sjcl/sjcl.js src/ext/config.js src/ext/h2c.js src/crypto/local.js src/ext/tokens.js src/ext/issuance.js src/ext/redemption.js src/ext/browserUtils.js src/ext/background.js src/ext/listeners.js src/crypto/keccak/keccak.js > addon/compiled/bg_compiled.js",

@@ -12,4 +12,5 @@ jobs:
       - run: git submodule update --init
       - run: yarn install
       - run: yarn lint
-      - run: yarn all
+      - run: yarn build:all
+      - run: yarn test:all

@@ -84,7 +84,8 @@
         "signReqHC": true,
         "patternToRegExp": true,
         "ISSUE_ACTION_URLS": true,
-        "LISTENER_URLS": true
+        "LISTENER_URLS": true,
+        "getActiveECSettings": true
     },
     "rules": {
         "new-cap": 0,
