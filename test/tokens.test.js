@@ -102,7 +102,6 @@ describe("building of redemption headers", () => {
         expect(contents[0] == sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data))).toBeTruthy();
         // check request binding (hex is easiest way)
         expect(contents[1] === chkBinding).toBeTruthy();
-
         return contents;
     }
 
@@ -113,7 +112,7 @@ describe("building of redemption headers", () => {
         expect(contents.length === 2).toBeTruthy();
     });
 
-    test("header value is built correctly (SEND_H2C_PARAMS = true)", () => {
+    test("header value is built correctly for P256 (SEND_H2C_PARAMS = true)", () => {
         const contents = testBuildHeader();
         // Test additional H2C parameters are constructed correctly
         expect(contents.length === 3).toBeTruthy();
