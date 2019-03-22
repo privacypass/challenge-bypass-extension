@@ -32,8 +32,8 @@ const chlCaptchaDomain = workflow.__get__("chlCaptchaDomain");
 let config_id;
 
 const setNoTokens = (config_id) => {
-    set(bypassTokens(config_id), "{}");
-    set(bypassTokensCount(config_id), 0);
+    setMock(bypassTokens(config_id), "{}");
+    setMock(bypassTokensCount(config_id), 0);
 }
 /**
  * Tests
@@ -49,8 +49,8 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             workflow.__set__("CONFIG_ID", config_id);
             workflow.__set__("spendActionUrls", () => [LISTENER_URLS])
             workflow.__set__("issueActionUrls", () => [LISTENER_URLS])
-            set(bypassTokens(config_id), storedTokens);
-            set(bypassTokensCount(config_id), 2);
+            setMock(bypassTokens(config_id), storedTokens);
+            setMock(bypassTokensCount(config_id), 2);
         });
 
         describe("ensure that errors are handled properly", () => {
@@ -104,24 +104,24 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             test("config is reset if ID changes", () => {
                 const old_config_id = config_id + 1;
                 workflow.__with__({CONFIG_ID: old_config_id})(() => {
-                    set(bypassTokensCount(old_config_id), 10);
+                    setMock(bypassTokensCount(old_config_id), 10);
                     let header = {name: CHL_BYPASS_SUPPORT, value: `${config_id}`};
-                    let old_count = get(bypassTokensCount(old_config_id))
+                    let old_count = getMock(bypassTokensCount(old_config_id))
                     found = isBypassHeader(header);
                     expect(found).toBeTruthy();
-                    expect(old_count === get(bypassTokensCount(config_id))).toBeFalsy()
+                    expect(old_count === getMock(bypassTokensCount(config_id))).toBeFalsy()
                 })
 
             });
             test("config is not reset if ID does not change", () => {
                 const old_config_id = config_id;
                 workflow.__with__({CONFIG_ID: old_config_id})(() => {
-                    set(bypassTokensCount(old_config_id), 10);
+                    setMock(bypassTokensCount(old_config_id), 10);
                     let header = {name: CHL_BYPASS_SUPPORT, value: `${config_id}`};
-                    let old_count = get(bypassTokensCount(old_config_id))
+                    let old_count = getMock(bypassTokensCount(old_config_id))
                     found = isBypassHeader(header);
                     expect(found).toBeTruthy();
-                    expect(old_count === get(bypassTokensCount(config_id))).toBeTruthy()
+                    expect(old_count === getMock(bypassTokensCount(config_id))).toBeTruthy()
                 })
             });
         });

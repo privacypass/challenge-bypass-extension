@@ -1,5 +1,7 @@
 src/crypto/sjcl/*
 src/crypto/keccak/*
+test/*
+jest/*
 addon/*
 test/*
 coverage/*

@@ -31,9 +31,8 @@ const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
  * Attempts to redeem a token if the series of checks passes
  * @param {URL} url URL of request
  * @param {Number} respTabId ID of the tab where the request originated
- * @param {Array<string>} target Array of possible targets for redemption
  */
-function attemptRedeem(url, respTabId, target) {
+function attemptRedeem(url, respTabId) {
     // Check all cookie stores to see if a clearance cookie is held
     if (CHECK_COOKIES()) {
         chrome.cookies.getAllCookieStores(function (stores) {
@@ -61,12 +60,12 @@ function attemptRedeem(url, respTabId, target) {
 
             // If a clearance cookie is not held then set the spend flag
             if (!clearanceHeld) {
-                fireRedeem(url, respTabId, target);
+                fireRedeem(url, respTabId);
             }
         });
     } else {
         // If cookies aren't checked then we always attempt to redeem.
-        fireRedeem(url, respTabId, target);
+        fireRedeem(url, respTabId);
     }
 }
 
@@ -75,21 +74,20 @@ function attemptRedeem(url, respTabId, target) {
  * Sets a reload to occur for the targeted URL string that is provided
  * @param {URL} url URL of request
  * @param {Number} respTabId ID of the tab where the request originated
- * @param {Array<string>} target Array of possible targets for redemption
  */
-function fireRedeem(url, respTabId, target) {
+function fireRedeem(url, respTabId) {
     if (!isValidRedeemMethod(redeemMethod())) {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
     if (redeemMethod() === "reload") {
         setSpendFlag(url.host, true);
-        const targetUrl = target[respTabId];
+        const targetUrl = getTarget(respTabId);
         if (url.href === targetUrl) {
             chrome.tabs.update(respTabId, {url: targetUrl});
         } else {
             // set a reload in the future when the target has been inited, also
             // reset timer for resetting vars
-            futureReload[respTabId] = url.href;
+            setFutureReload(respTabId, url.href);
             timeSinceLastResp = Date.now();
         }
     }

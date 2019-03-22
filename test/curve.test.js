@@ -3,15 +3,16 @@
  * @author Alex Davidson
  */
 
-import rewire from "rewire";
-const workflow = rewire("../addon/compiled/test_compiled.js");
+
+let workflow = workflowSet()
+
 const sjcl = workflow.__get__("sjcl");
 const h2Curve = workflow.__get__('h2Curve');
 const h2Base = workflow.__get__('h2Base');
 const simplifiedSWU = workflow.__get__('simplifiedSWU');
 const hashAndInc = workflow.__get__('hashAndInc');
 const jacobianSWUP256 = workflow.__get__('jacobianSWUP256');
-const ACTIVE_CONFIG = workflow.__get__('activeConfig');
+const activeConfig = workflow.__get__('activeConfig');
 const setConfig = workflow.__get__('setConfig');
 const getActiveECSettings = workflow.__get__('getActiveECSettings');
 const initECSettings = workflow.__get__('initECSettings');
@@ -23,13 +24,7 @@ const decompressPoint = workflow.__get__('decompressPoint');
 /**
  * Mocking
  */
-const getMock = jest.fn();
-const updateIconMock = jest.fn();
-const clearCachedCommitmentsMock = jest.fn();
-workflow.__set__("get", getMock);
-workflow.__set__("updateIcon", updateIconMock);
-workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
-const consoleMock = {error: jest.fn()};
+let consoleMock = { error: jest.fn() };
 workflow.__set__("console", consoleMock);
 
 /**
@@ -108,41 +103,64 @@ describe("check curve parameters are correct", () => {
     });
 });
 
-describe("hashing to p256", () => {
-    const byteLength = 32;
-    const wordLength = byteLength / 4;
-    test("affine", () => {
-        for (let i=0; i<10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                simplifiedSWU(rndBits, curve, hash, 0);
-            };
-            expect(runH2C).not.toThrowError();
-        }
-    });
+describe('hashing to p256', () => {
+  const byteLength = 32;
+  const wordLength = byteLength / 4;
+  test('affine', () => {
+    for (let i=0; i<10; i++) {
+      const random = sjcl.random.randomWords(wordLength, 10);
+      const rndBits = sjcl.codec.bytes.toBits(random);
+      const runH2C = function run() {
+        simplifiedSWU(rndBits, curve, hash, 0);
+      };
+      expect(runH2C).not.toThrowError();
+    }
+  });
 
-    test("jacobian", () => {
-        for (let i=0; i<10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                simplifiedSWU(rndBits, curve, hash, 1);
-            };
-            expect(runH2C).not.toThrowError();
-        }
-    });
+  test('jacobian', () => {
+    for (let i=0; i<10; i++) {
+      const random = sjcl.random.randomWords(wordLength, 10);
+      const rndBits = sjcl.codec.bytes.toBits(random);
+      const runH2C = function run() {
+        simplifiedSWU(rndBits, curve, hash, 1);
+      };
+      expect(runH2C).not.toThrowError();
+    }
+  });
 
-    test("hash-and-increment no errors", () => {
-        for (let i=0; i<10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                hashAndInc(rndBits, hash);
-            };
-            expect(runH2C).not.toThrowError();
-        }
-    });
+  test('hash-and-increment no errors', () => {
+    for (let i=0; i<10; i++) {
+      const random = sjcl.random.randomWords(wordLength, 10);
+      const rndBits = sjcl.codec.bytes.toBits(random);
+      const runH2C = function run() {
+        hashAndInc(rndBits, hash);
+      };
+      expect(runH2C).not.toThrowError();
+    }
+  });
+
+  test('h2c with increment settings', () => {
+    for (let i=0; i<10; i++) {
+      const random = sjcl.random.randomWords(wordLength, 10);
+      const rndBits = sjcl.codec.bytes.toBits(random);
+      const runH2C = function run() {
+        h2Curve(rndBits, getActiveECSettings());
+      };
+      expect(runH2C).not.toThrowError();
+    }
+  });
+
+  test('h2c with swu settings', () => {
+    for (let i=0; i<10; i++) {
+      const random = sjcl.random.randomWords(wordLength, 10);
+      const rndBits = sjcl.codec.bytes.toBits(random);
+      const runH2C = function run() {
+        activeConfig()["method"] = "swu"
+        h2Curve(rndBits, getActiveECSettings());
+      };
+      expect(runH2C).not.toThrowError();
+    }
+  });
 
     test("h2c with increment settings", () => {
         for (let i=0; i<10; i++) {
@@ -216,17 +234,17 @@ describe("point compression/decompression", () => {
  * @return {p;A;B;t} P256 params and an element in FF_p
  */
 function getInputParams(t) {
-    const params = getCurveParams(curve);
-    let eleFFp;
-    if (!t && t != 0) {
-        const byteLength = 32;
-        const wordLength = byteLength / 4; // SJCL 4 bytes to a word
-        const random = sjcl.random.randomWords(wordLength, 10);
-        const rndBits = sjcl.codec.bytes.toBits(random);
-        eleFFp = h2Base(rndBits, curve, "p256_hashing");
-    } else {
-        eleFFp = new params.baseField(t);
-    }
+  const params = getCurveParams(curve);
+  let eleFFp;
+  if (!t && t !== 0) {
+    const byteLength = 32;
+    const wordLength = byteLength / 4; // SJCL 4 bytes to a word
+    const random = sjcl.random.randomWords(wordLength, 10);
+    const rndBits = sjcl.codec.bytes.toBits(random);
+    eleFFp = h2Base(rndBits, curve, 'p256_hashing');
+  } else {
+    eleFFp = new params.baseField(t);
+  }
 
-    return {baseField: params.baseField, A: params.A, B: params.B, t: eleFFp};
+  return {baseField: params.baseField, A: params.A, B: params.B, t: eleFFp};
 }

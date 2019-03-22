@@ -2,6 +2,7 @@
  * Integrations tests for when headers are sent by the browser
  *
  * @author: Alex Davidson
+ * @author: Drazen Urch
  */
 import each from "jest-each";
 
@@ -26,8 +27,8 @@ let url;
 each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
     .describe("CONFIG_ID: %i", (config_id) => {
         beforeEach(() => {
-            set(bypassTokens(config_id), storedTokens);
-            set(bypassTokensCount(config_id), 2);
+            setMock(bypassTokens(config_id), storedTokens);
+            setMock(bypassTokensCount(config_id), 2);
 
             details = {
                 method: "GET",
@@ -36,7 +37,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 tabId: "101",
             };
             url = new URL(EXAMPLE_HREF);
-            clearSpentTab()
+            clearSpentTabMock()
             resetVars();
             resetSpendVars();
             workflow.__set__("CONFIG_ID", config_id);
@@ -52,7 +53,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 });
             });
             test("spend flag not set", () => {
-                expect(getSpendFlag(url.host)).toBeNull();
+                expect(getSpendFlagMock(url.host)).toBeNull();
                 let redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 expect(redeemHdrs.requestHeaders).toBeFalsy();
@@ -60,7 +61,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             test("url is error page", () => {
                 let newUrl = EXAMPLE_HREF + "/cdn-cgi/styles/";
                 url = new URL(newUrl);
-                setSpendFlag(url.host, true);
+                setSpendFlagMock(url.host, true);
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 expect(redeemHdrs.requestHeaders).toBeFalsy();
@@ -68,16 +69,14 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             test("url is favicon", () => {
                 let newUrl = EXAMPLE_HREF + "/favicon.ico";
                 url = new URL(newUrl);
-                setSpendFlag(url.host, true);
+                setSpendFlagMock(url.host, true);
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 expect(redeemHdrs.requestHeaders).toBeFalsy();
             });
             test("max spend has been reached", () => {
-
-                setSpendFlag(url.host, true);
-                setSpentHosts(url.host, 31);
-
+                setSpendFlagMock(url.host, true);
+                setSpentHostsMock(url.host, 31);
                 let redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (config_id) {
@@ -97,9 +96,9 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 }
             });
             test("spend has been attempted for url", () => {
-                setSpendFlag(url.host, true);
-                setSpentHosts(url.host, 0);
-                setSpentUrl(url.href, true);
+                setSpendFlagMock(url.host, true);
+                setSpentHostsMock(url.host, 0);
+                setSpentUrlMock(url.href, true);
                 let redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (config_id) {
@@ -116,41 +115,41 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             });
             test("redemption method is not reload", () => {
                 workflow.__with__({redeemMethod: () => "invalid"})(() => {
-                    setSpendFlag(url.host, true);
-                    setSpentHosts(url.host, 0);
-                    setSpentUrl(url.href, false);
+                    setSpendFlagMock(url.host, true);
+                    setSpentHostsMock(url.host, 0);
+                    setSpentUrlMock(url.href, false);
                     let redeemHdrs = beforeSendHeaders(details, url);
                     expect(redeemHdrs.cancel).toBeFalsy();
                     expect(redeemHdrs.requestHeaders).toBeFalsy();
                 });
             });
             test(`no token to spend`, () => {
-                set(bypassTokensCount(config_id), 0);
-                set(bypassTokens(config_id), "{}");
-                setSpentUrl(url.href, false);
-                setSpendFlag(url.host, true);
+                setMock(bypassTokensCount(config_id), 0);
+                setMock(bypassTokens(config_id), "{}");
+                setSpentUrlMock(url.href, false);
+                setSpendFlagMock(url.host, true);
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 expect(redeemHdrs.requestHeaders).toBeFalsy();
-                expect(getSpendFlag(url.host)).toBeNull();
+                expect(getSpendFlagMock(url.host)).toBeNull();
             });
         });
         describe("redemption attempted", () => {
             test(`redemption header added (SEND_H2C_PARAMS = false)`, () => {
                 workflow.__with__({sendH2CParams: () => false})(() => {
-                    setSpendFlag(url.host, true);
-                    setSpentUrl(url.href, false);
+                    setSpendFlagMock(url.host, true);
+                    setSpentUrlMock(url.href, false);
                     let redeemHdrs = beforeSendHeaders(details, url);
                     let reqHeaders = redeemHdrs.requestHeaders;
-                    expect(getSpendFlag(url.host)).toBeNull();
-                    expect(getSpendId([details.requestId])).toBeTruthy();
-                    expect(getSpentUrl(url.href)).toBeTruthy();
+                    expect(getSpendFlagMock(url.host)).toBeNull();
+                    expect(getSpendIdMock([details.requestId])).toBeTruthy();
+                    expect(getSpentUrlMock(url.href)).toBeTruthy();
                     switch (config_id) {
                         case 1:
-                            expect(getSpentTab([details.tabId]).includes(url.href)).toBeTruthy();
+                            expect(getSpentTabMock([details.tabId]).includes(url.href)).toBeTruthy();
                             break
                         case 2:
-                            expect(getSpentTab([details.tabId])).toBeUndefined();
+                            expect(getSpentTabMock([details.tabId])).toBeUndefined();
                             break
                         default:
                             throw Error(`Unhandled config.id value => ${config_id}`)
@@ -163,19 +162,19 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             });
             test(`redemption header added (SEND_H2C_PARAMS = true)`, () => {
                 workflow.__with__({sendH2CParams: () => true})(() => {
-                    setSpendFlag(url.host, true);
-                    setSpentUrl(url.href, false);
+                    setSpendFlagMock(url.host, true);
+                    setSpentUrlMock(url.href, false);
                     let redeemHdrs = beforeSendHeaders(details, url);
                     let reqHeaders = redeemHdrs.requestHeaders;
-                    expect(getSpendFlag(url.host)).toBeNull();
-                    expect(getSpendId([details.requestId])).toBeTruthy();
-                    expect(getSpentUrl([url.href])).toBeTruthy();
+                    expect(getSpendFlagMock(url.host)).toBeNull();
+                    expect(getSpendIdMock([details.requestId])).toBeTruthy();
+                    expect(getSpentUrlMock([url.href])).toBeTruthy();
                     switch (config_id) {
                         case 1:
-                            expect(getSpentTab([details.tabId]).includes(url.href)).toBeTruthy();
+                            expect(getSpentTabMock([details.tabId]).includes(url.href)).toBeTruthy();
                             break
                         case 2:
-                            expect(getSpentTab([details.tabId])).toBeUndefined();
+                            expect(getSpentTabMock([details.tabId])).toBeUndefined();
                             break
                         default:
                             throw Error(`Unhandled config.id value => ${config_id}`)

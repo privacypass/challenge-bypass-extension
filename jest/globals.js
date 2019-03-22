@@ -1,58 +1,91 @@
+/**
+ * Global jest variables and functions
+ *
+ * @author Drazen Urch
+ */
+
+
 import atob from "atob";
 import btoa from "btoa";
 import createShake256 from "../src/crypto/keccak/keccak";
 import rewire from "rewire";
 
-let localStorageItems = new Map;
-let spentUrl = new Map;
-let spendId = new Map;
-let spentTab = new Map;
-let spentHosts = new Map;
+let localStorageItems = new Map();
+let spentUrlMock = new Map();
+let spendIdMock = new Map();
+let spentTabMock = new Map();
+let spentHostsMock = new Map();
+let futureReloadMock = new Map();
+let targetMock = new Map();
+let httpsRedirectMock = new Map();
+let redirectCountMock = new Map();
 let timeSinceLastResp = 0;
 
 window.localStorageItems = localStorageItems;
-window.spentUrl = spentUrl;
-window.spendId = spendId;
-window.spentTab = spentTab;
-window.spentHosts = spentHosts;
+window.spentUrlMock = spentUrlMock;
+window.spendIdMock = spendIdMock;
+window.spentTabMock = spentTabMock;
+window.spentHostsMock = spentHostsMock;
+window.futureReloadMock = futureReloadMock;
+window.targetMock = targetMock;
+window.httpsRedirectMock = httpsRedirectMock;
+window.redirectCountMock = redirectCountMock;
 window.timeSinceLastResp = 0;
 
 window.workflowSet = () => {
 
     let workflow = rewire("../addon/compiled/test_compiled.js");
 
-    workflow.__set__("get", get);
-    workflow.__set__("set", set);
+    workflow.__set__("get", getMock);
+    workflow.__set__("set", setMock);
 
     workflow.__set__("localStorage", localStorageMock);
     workflow.__set__("localStorageItems", localStorageItems);
     workflow.__set__("updateIcon", updateIconMock);
     workflow.__set__("updateBrowserTab", updateBrowserTabMock);
+    workflow.__set__("reloadBrowserTab", reloadBrowserTabMock);
     workflow.__set__("atob", atob);
     workflow.__set__("btoa", btoa);
 
-    workflow.__set__("setSpendFlag", setSpendFlag);
-    workflow.__set__("getSpendFlag", getSpendFlag);
+    workflow.__set__("setSpendFlag", setSpendFlagMock);
+    workflow.__set__("getSpendFlag", getSpendFlagMock);
 
-    workflow.__set__("spentUrl", spentUrl);
-    workflow.__set__("setSpentUrl", setSpentUrl);
-    workflow.__set__("getSpentUrl", getSpentUrl);
+    workflow.__set__("spentUrlMock", spentUrlMock);
+    workflow.__set__("setSpentUrl", setSpentUrlMock);
+    workflow.__set__("getSpentUrl", getSpentUrlMock);
 
-    workflow.__set__("spendId", spendId);
-    workflow.__set__("setSpendId", setSpendId);
-    workflow.__set__("getSpendId", getSpendId);
+    workflow.__set__("futureReload", futureReloadMock);
+    workflow.__set__("setFutureReload", setFutureReloadMock);
+    workflow.__set__("getFutureReload", getFutureReloadMock);
 
-    workflow.__set__("spentTab", spentTab);
-    workflow.__set__("setSpentTab", setSpentTab);
-    workflow.__set__("getSpentTab", getSpentTab);
+    workflow.__set__("httpsRedirect", httpsRedirectMock);
+    workflow.__set__("setHttpsRedirect", setHttpsRedirectMock);
+    workflow.__set__("getHttpsRedirect", getHttpsRedirectMock);
+
+    workflow.__set__("redirectCount", redirectCountMock);
+    workflow.__set__("setRedirectCount", setRedirectCountMock);
+    workflow.__set__("getRedirectCount", getRedirectCountMock);
+    workflow.__set__("incrRedirectCount", incrRedirectCountMock);
+
+    workflow.__set__("target", targetMock);
+    workflow.__set__("setTarget", setTargetMock);
+    workflow.__set__("getTarget", getTargetMock);
 
 
-    workflow.__set__("spentHosts", spentHosts);
-    workflow.__set__("setSpentHosts", setSpentHosts);
-    workflow.__set__("getSpentHosts", getSpentHosts);
+    workflow.__set__("spendIdMock", spendIdMock);
+    workflow.__set__("setSpendId", setSpendIdMock);
+    workflow.__set__("getSpendId", getSpendIdMock);
+
+    workflow.__set__("spentTabMock", spentTabMock);
+    workflow.__set__("setSpentTab", setSpentTabMock);
+    workflow.__set__("getSpentTab", getSpentTabMock);
+
+    workflow.__set__("spentHostsMock", spentHostsMock);
+    workflow.__set__("setSpentHosts", setSpentHostsMock);
+    workflow.__set__("getSpentHosts", getSpentHostsMock);
 
     workflow.__set__("createShake256", createShake256);
-    workflow.__set__("clearCachedCommitments", clearCachedCommitments);
+    workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 
     return workflow
@@ -68,16 +101,17 @@ window.localStorageMock = {
 
 window.updateIconMock = jest.fn();
 window.updateBrowserTabMock = jest.fn();
+window.reloadBrowserTabMock = jest.fn();
 window.validateRespMock = jest.fn();
 
 window.CACHED_COMMITMENTS_STRING = "cached-commitments";
-window.clearCachedCommitments = () => set(CACHED_COMMITMENTS_STRING, null);
+window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
 
-window.setSpendFlag = (key, value) => set(key, value);
-window.getSpendFlag = (key) => get(key)
+window.setSpendFlagMock = (key, value) => setMock(key, value);
+window.getSpendFlagMock = (key) => getMock(key)
 
-window.get = (key) => JSON.parse(localStorage.getItem(key));
-window.set = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+window.getMock = (key) => JSON.parse(localStorage.getItem(key));
+window.setMock = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 window.clearLocalStorage = () => localStorage.clear()
 
 window.bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
@@ -123,19 +157,33 @@ window.testDevG = testDevG;
 window.testDevH = testDevH;
 window.storedTokens = storedTokens;
 
-window.getSpentUrl = (key) => spentUrl[key];
-window.setSpentUrl = (key, value) => spentUrl[key] = value;
+window.getSpentUrlMock = (key) => spentUrlMock[key];
+window.setSpentUrlMock = (key, value) => spentUrlMock[key] = value;
 
-window.getSpendId = (key) => spendId[key];
-window.setSpendId = (key, value) => spendId[key] = value;
+window.getSpendIdMock = (key) => spendIdMock[key];
+window.setSpendIdMock = (key, value) => spendIdMock[key] = value;
 
-window.getSpentTab = (key) => spentTab[key];
-window.setSpentTab = (key, value) => spentTab[key] = value;
-window.clearSpentTab = () => spentTab = new Map();
+window.getFutureReloadMock = (key) => futureReloadMock[key];
+window.setFutureReloadMock = (key, value) => futureReloadMock[key] = value;
 
-window.getSpentHosts = (key) => spentHosts[key];
-window.setSpentHosts = (key, value) => spentHosts[key] = value;
-window.clearSpentHOsts = () => spentHosts = new Map();
+window.getHttpsRedirectMock = (key) => httpsRedirectMock[key];
+window.setHttpsRedirectMock = (key, value) => httpsRedirectMock[key] = value;
+
+window.getRedirectCountMock = (key) => redirectCountMock[key];
+window.setRedirectCountMock = (key, value) => redirectCountMock[key] = value;
+window.incrRedirectCountMock = (key) => redirectCountMock[key] += 1;
+
+window.getTargetMock = (key) => targetMock[key];
+window.setTargetMock = (key, value) => targetMock[key] = value;
+window.clearTargetMock = () => targetMock = new Map();
+
+window.getSpentTabMock = (key) => spentTabMock[key];
+window.setSpentTabMock = (key, value) => spentTabMock[key] = value;
+window.clearSpentTabMock = () => spentTabMock = new Map();
+
+window.getSpentHostsMock = (key) => spentHostsMock[key];
+window.setSpentHostsMock = (key, value) => spentHostsMock[key] = value;
+window.clearSpentHosts = () => spentHostsMock = new Map();
 
 window.setXHR = (xhr, workflow) => workflow.__set__("XMLHttpRequest", xhr);
 
