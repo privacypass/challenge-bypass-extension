@@ -67,7 +67,7 @@ let config_id;
 
 beforeEach(() => {
     clearLocalStorage();
-    set(bypassTokensCount(config_id), 2);
+    setMock(bypassTokensCount(config_id), 2);
 
     details = {
         method: "GET",
@@ -135,7 +135,7 @@ describe("commitments parsing and caching", () => {
     });
 
     test("error-free empty cache", () => {
-        clearCachedCommitments();
+        clearCachedCommitmentsMock();
         expect(getCachedCommitments).not.toThrowError();
     });
 });
@@ -158,10 +158,10 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             expect(b).toBeFalsy();
         });
         test("variables are reset", () => {
-            setSpentHosts(url.host, true);
+            setSpentHostsMock(url.host, true);
             setTimeSinceLastResp(0);
             const b = beforeRequest(details, url);
-            expect(getSpentHosts(url.host)).toBeFalsy();
+            expect(getSpentHostsMock(url.host)).toBeFalsy();
             expect(b).toBeFalsy();
         });
         test("already processed", () => {
@@ -171,7 +171,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
         });
         test("already sent", () => {
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-            setSpentHosts(newUrl.host, true);
+            setSpentHostsMock(newUrl.host, true);
             const b = beforeRequest(details, url);
             expect(b).toBeFalsy();
         });
@@ -236,8 +236,9 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                         xhr.onreadystatechange();
                     };
                     setTimeSinceLastResp(0); // reset the variables
-                    set(bypassTokensCount(config_id), 400);
+                    setMock(bypassTokensCount(config_id), 400);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+
                     expect(run).toThrowError("upper bound");
                     expect(validateRespMock).not.toBeCalled();
                     expect(updateIconMock).toBeCalledTimes(3);
@@ -257,7 +258,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                     xhr.onreadystatechange();
                 };
                 setTimeSinceLastResp(0); // reset the variables
-                set(bypassTokensCount(config_id), 0);
+                setMock(bypassTokensCount(config_id), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).not.toThrow();
                 expect(validateRespMock).toBeCalled();
@@ -342,19 +343,19 @@ describe("test validating response", () => {
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
                 expect(xhr.send).toBeCalledTimes(1);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = get(bypassTokensCount(config_id));
+                after = getMock(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            set(bypassTokensCount(config_id), 0);
+            setMock(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
             expect(after === before + 3).toBeTruthy();
-            expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
             expect(cache.H === testH).toBeTruthy();
@@ -378,20 +379,20 @@ describe("test validating response", () => {
                     };
                 }
                 const out = parseRespString(respGoodProof);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
-                after = get(bypassTokensCount(config_id));
+                after = getMock(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            set(bypassTokensCount(config_id), 0);
+            setMock(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
             expect(after === before + 3).toBeTruthy();
-            expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
             expect(cache.H === testH).toBeTruthy();
@@ -402,7 +403,7 @@ describe("test validating response", () => {
             let after;
             let version;
             // construct corrupted commitments
-            set(CACHED_COMMITMENTS_STRING, JSON.stringify({"1.0": {L: testG, H: testH}}));
+            setMock(CACHED_COMMITMENTS_STRING, JSON.stringify({"1.0": {L: testG, H: testH}}));
 
             function run() {
                 const tokens = [];
@@ -414,13 +415,13 @@ describe("test validating response", () => {
                     };
                 }
                 const out = parseRespString(respGoodProof);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
                 expect(xhr).toBeTruthy();
                 expect(xhr.send).toBeCalledTimes(1);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = get(bypassTokensCount(config_id));
+                after = getMock(bypassTokensCount(config_id));
                 version = out.version;
             }
             const consoleNew = {
@@ -428,14 +429,14 @@ describe("test validating response", () => {
             };
             workflow.__set__("console", consoleNew);
             setTimeSinceLastResp(0); // reset the variables
-            set(bypassTokensCount(config_id), 0);
+            setMock(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(consoleNew.warn).toBeCalled();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).toBeCalled();
             expect(after === before + 3).toBeTruthy();
-            expect(getSpendFlag(newUrl.host)).toBeTruthy();
+            expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
             expect(cache.H === testH).toBeTruthy();
@@ -457,19 +458,19 @@ describe("test validating response", () => {
                 }
                 const out = parseRespString(respGoodProof);
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = get(bypassTokensCount(config_id));
+                after = getMock(bypassTokensCount(config_id));
                 version = out.version;
             }
             setTimeSinceLastResp(0); // reset the variables
-            set(bypassTokensCount(config_id), 0);
+            setMock(bypassTokensCount(config_id), 0);
             const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
             expect(run).not.toThrow();
             expect(updateIconMock).toBeCalledTimes(3);
             expect(updateBrowserTabMock).not.toBeCalled();
             expect(after === before + 3).toBeTruthy();
-            expect(getSpendFlag(newUrl.host)).toBeFalsy();
+            expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
             const cache = getCachedCommitments(version);
             expect(cache.G === testG).toBeTruthy();
             expect(cache.H === testH).toBeTruthy();
@@ -489,19 +490,19 @@ describe("test validating response", () => {
                 }
                 const out = parseRespString(respGoodProof);
                 const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out.signatures, out.proof, out.version);
-                before = get(bypassTokensCount(config_id));
+                before = getMock(bypassTokensCount(config_id));
                 xhr.onreadystatechange();
-                after = get(bypassTokensCount(config_id));
+                after = getMock(bypassTokensCount(config_id));
             };
             setTimeSinceLastResp(0); // reset the variables
-            set(bypassTokensCount(config_id), 0);
+            setMock(bypassTokensCount(config_id), 0);
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             workflow.__with__({reloadOnSign: () => false})(() => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
                 expect(after === before + 3).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeFalsy();
+                expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
             });
         });
 
@@ -521,7 +522,7 @@ describe("test validating response", () => {
                     xhr.onreadystatechange();
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                set(bypassTokensCount(config_id), 0);
+                setMock(bypassTokensCount(config_id), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrow();
                 expect(updateIconMock).toBeCalledTimes(1);
@@ -544,7 +545,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    set(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -566,7 +567,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    set(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -592,7 +593,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    set(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).not.toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -619,7 +620,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    set(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(config_id), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -633,7 +634,7 @@ describe("test validating response", () => {
 
 const parseRespString = (respText) => parsePointsAndProof(JSON.parse(parseSigString(respText)));
 
-function getSpentHosts(key) {
+function getSpentHostsMock(key) {
     let spentHosts = workflow.__get__("spentHosts", spentHosts);
     return spentHosts[key];
 }
