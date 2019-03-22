@@ -109,7 +109,7 @@ beforeEach(() => {
     // Some tests make sense only for CF
     config_id = config_id === undefined ? 1 : config_id;
     setConfig(config_id); // set the active config
-    workflow.__set__("ISSUE_ACTION_URLS", () => [LISTENER_URLS])
+    workflow.__set__("issueActionUrls", () => [LISTENER_URLS])
 });
 
 /**
@@ -144,7 +144,7 @@ describe("commitments parsing and caching", () => {
     });
 
     test("parse correctly (dev)", () => {
-        workflow.__with__({DEV: () => true})(() => {
+        workflow.__with__({dev: () => true})(() => {
             const xhr = createVerificationXHR(); // this usually takes params
             const commitments = retrieveCommitments(xhr, "1.1");
             expect(testDevG === commitments.G).toBeTruthy();
@@ -317,7 +317,7 @@ describe("test validating response", () => {
         test("invalid signature response format does not sign", () => {
             function run() {
                 setTimeSinceLastResp(0); // reset the variables
-                workflow.__with__({SIGN_RESPONSE_FMT: () => "bad_fmt"})(() => {
+                workflow.__with__({signResponseFMT: () => "bad_fmt"})(() => {
                     const tabId = details.tabId;
                     validateResponse(url, tabId, "", "");
                 });
