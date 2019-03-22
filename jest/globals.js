@@ -68,6 +68,7 @@ window.localStorageMock = {
 
 window.updateIconMock = jest.fn();
 window.updateBrowserTabMock = jest.fn();
+window.validateRespMock = jest.fn();
 
 window.CACHED_COMMITMENTS_STRING = "cached-commitments";
 window.clearCachedCommitments = () => set(CACHED_COMMITMENTS_STRING, null);
