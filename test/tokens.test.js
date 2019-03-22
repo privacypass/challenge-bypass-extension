@@ -1,10 +1,11 @@
 /**
-* Integration tests for token generation and commitment functionality
-*
-* @author: Alex Davidson
-*/
-import rewire from "rewire";
-const workflow = rewire("../addon/compiled/test_compiled.js");
+ * Integration tests for token generation and commitment functionality
+ *
+ * @author: Alex Davidson
+ */
+
+let workflow = workflowSet()
+
 const sjcl = workflow.__get__("sjcl");
 const setConfig = workflow.__get__("setConfig");
 const CreateBlindToken = workflow.__get__("CreateBlindToken");
@@ -17,33 +18,24 @@ const unblindPoint = workflow.__get__("unblindPoint");
 const deriveKey = workflow.__get__("deriveKey");
 
 // mocking for tests
-import btoa from "btoa";
-import atob from "atob";
-const getMock = jest.fn();
-const updateIconMock = jest.fn();
-const clearCachedCommitmentsMock = jest.fn();
-const consoleMock = {
+
+let consoleMock = {
     warn: jest.fn(),
     error: jest.fn(),
 };
-workflow.__set__("get", getMock);
-workflow.__set__("updateIcon", updateIconMock);
-workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
 workflow.__set__("console", consoleMock);
-workflow.__set__("btoa", btoa);
-workflow.__set__("atob", atob);
 
 /**
-* Configuration
-*/
+ * Configuration
+ */
 let CreateBlindTokenMock;
 let curveSettings;
 beforeEach(() => {
     setConfig(1);
     let count = 0;
-    CreateBlindTokenMock = function() {
+    CreateBlindTokenMock = function () {
         let token;
-        if (count != 1) {
+        if (count !== 1) {
             token = CreateBlindToken();
         }
         count++;
@@ -53,12 +45,12 @@ beforeEach(() => {
 });
 
 /**
-* Tests
-*/
+ * Tests
+ */
 describe("check that null point errors are caught in token generation", () => {
     test("check that token generation happens correctly", () => {
         const tokens = GenerateNewTokens(3);
-        expect(tokens.length == 3).toBeTruthy();
+        expect(tokens.length === 3).toBeTruthy();
         const consoleNew = workflow.__get__("console");
         expect(consoleNew.warn).not.toBeCalled();
     });
@@ -66,7 +58,7 @@ describe("check that null point errors are caught in token generation", () => {
     test("check that null tokens are caught and ignored", () => {
         workflow.__set__("CreateBlindToken", CreateBlindTokenMock);
         const tokens = GenerateNewTokens(3);
-        expect(tokens.length == 2).toBeTruthy();
+        expect(tokens.length === 2).toBeTruthy();
         const consoleNew = workflow.__get__("console");
         expect(consoleNew.warn).toBeCalled();
     });
@@ -99,28 +91,22 @@ describe("building of redemption headers", () => {
         const chkBinding = reconstructRequestBinding(token.data, token.blind, token.point, host, path);
         expect(type === "Redeem").toBeTruthy();
         // check token data is correct
-        expect(contents[0] == sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data))).toBeTruthy();
+        expect(contents[0] === sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data))).toBeTruthy();
         // check request binding (hex is easiest way)
         expect(contents[1] === chkBinding).toBeTruthy();
-<<<<<<< HEAD
-=======
-
->>>>>>> f6105d7... Rename functions
         return contents;
     }
 
     test("header value is built correctly (sendH2CParams = false)", () => {
-        workflow.__set__("sendH2CParams", false);
-        const contents = testBuildHeader();
-        // Test additional H2C parameters are omitted
-        expect(contents.length === 2).toBeTruthy();
+        workflow.__with__({"sendH2CParams": () => false})(() => {
+            const contents = testBuildHeader();
+            // Test additional H2C parameters are omitted
+            expect(contents.length === 2).toBeTruthy();
+        })
+
     });
 
-<<<<<<< HEAD
     test("header value is built correctly for P256 (SEND_H2C_PARAMS = true)", () => {
-=======
-    test("header value is built correctly (sendH2CParams = true)", () => {
->>>>>>> f6105d7... Rename functions
         const contents = testBuildHeader();
         // Test additional H2C parameters are constructed correctly
         expect(contents.length === 3).toBeTruthy();
