@@ -6,7 +6,7 @@
 /* exported DevCommitmentConfig */
 /* exported CHL_BYPASS_SUPPORT */
 /* exported CHL_BYPASS_RESPONSE */
-/* exported ACTIVE_CONFIG */
+/* exported activeConfig */
 /* exported PPConfigs */
 
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported

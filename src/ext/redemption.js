@@ -34,8 +34,8 @@ function BuildRedeemHeader(token, host, path) {
     const contents = [];
     contents.push(sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(token.data)));
     contents.push(b64Binding);
-    if (SEND_H2C_PARAMS()) {
-        const h2cString = JSON.stringify(H2C_PARAMS());
+    if (sendH2CParams()) {
+        const h2cString = JSON.stringify(h2cParams());
         const h2cBits = sjcl.codec.utf8String.toBits(h2cString);
         const h2cB64 = sjcl.codec.base64.fromBits(h2cBits);
         contents.push(h2cB64);

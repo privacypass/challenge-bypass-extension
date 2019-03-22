@@ -23,7 +23,7 @@ explicit data formats mirroring these types.
 
 __Description__: A (JSON) struct used for sending blinded tokens to be signed by
 the edge, this message is appended to the body of a HTTP request holding a
-CAPTCHA solution. 
+CAPTCHA solution.
 
 - `BlindToken`: An elliptic curve point `P` (stored in compressed format as
   defined in Section 2.3.3 of http://www.secg.org/sec1-v2.pdf). `P` is computed
@@ -102,7 +102,7 @@ along with a batched DLEQ proof evaluated over all the tokens.
     ```
 
 - HTTP response body contains a string of the form:
-    
+
         `"signatures=" || base64.encode(IssueResponse)`
 
 - (Optional)
@@ -168,7 +168,7 @@ from the server.
 	```
 	BlindTokenRequest{Type:"Redeem", Contents:[base64.encode(Token), RequestBinding]}
 	```
-    where `Token` is some `[]byte` object. If `ACTIVE_CONFIG["send-h2c-params"]`
+    where `Token` is some `[]byte` object. If `activeConfig()["send-h2c-params"]`
     is set to `true`, then we append `H2CParams` to the array stored in
     `BlindTokenRequest.Contents`.
 
@@ -213,8 +213,8 @@ commitments that are received by the server at some point in the past.
 6. Constructs an `IssueRequest` with `Contents` set to `b64BlindTokenArray`.
 7. Sends the `IssueRequest` in the body of a HTTP request to the
    server.<sup>1</sup>
-8. Stores an array `Tokens` of `ClientStorageObject` objects where: 
-    
+8. Stores an array `Tokens` of `ClientStorageObject` objects where:
+
     ```
     Tokens[i] = ClientStorageObject{Token: t_i, Blind: hex(r_i), Point: null}
     ```
@@ -224,7 +224,7 @@ commitments that are received by the server at some point in the past.
 1. The client receives a string of the form `signatures=<base64-encoded data>`.
 2. Client base64-decodes `<base64-encoded data>` and parses the result in the
    following way:
-   
+
     - If the result is an array then it parses it as a `DeprecatedIssueResponse`
      object, and sets a global variable `keyVersion` equal to `1.0`.
     - If the result is JSON then it parses it as a `IssueResponse` and sets
@@ -234,7 +234,7 @@ commitments that are received by the server at some point in the past.
    `CurvePoints` by applying the [SEC1](http://www.secg.org/sec1-v2.pdf)
    transformation from Section 2.3.3 on each individual byte array.
 4. Converts `IssueResponse.Proof` into a `BatchProof` object by computing:
-    
+
     - `resBP <- JSON.parse(base64-decode(IssueResponse.Proof))`
     - `resDLEQ <- JSON.parse(base64-decode(resBP.P))`
 
@@ -286,8 +286,8 @@ redemption request enables the client to bypass the challenge.
     ```
     RedemptionRequest{Type:"Redeem", Contents: [c.Token,rb]}
     ```
-    optionally appending `H2CParams` if `ACTIVE_CONFIG["send-h2c-params"] =
-    true`. 
+    optionally appending `H2CParams` if `activeConfig()["send-h2c-params"] =
+    true`.
 
 10. Sends the HTTP request with the header:
 

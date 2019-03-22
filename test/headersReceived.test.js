@@ -198,7 +198,7 @@ describe("check redemption attempt conditions", () => {
 
         describe("signing enabled", () => {
             beforeEach(() => {
-                workflow.__set__("DO_SIGN", true);
+                workflow.__set__("doSign", true);
                 workflow.__set__("readySign", false);
             });
 
@@ -243,7 +243,7 @@ describe("check redemption attempt conditions", () => {
             });
 
             test("redemption off", () => {
-                workflow.__set__("DO_REDEEM", false);
+                workflow.__set__("doRedeem", false);
                 const fired = processHeaders(details, url);
                 expect(fired).toBeFalsy();
                 const readySign = workflow.__get__("readySign");
@@ -254,7 +254,7 @@ describe("check redemption attempt conditions", () => {
         describe("signing disabled", () => {
             beforeEach(() => {
                 workflow.__set__("readySign", false);
-                workflow.__set__("DO_SIGN", false);
+                workflow.__set__("doSign", false);
             });
 
             test("signing is not activated", () => {

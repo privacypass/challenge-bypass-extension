@@ -40,12 +40,12 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             resetVars();
             resetSpendVars();
             workflow.__set__("CONFIG_ID", config_id);
-            workflow.__set__("SPEND_ACTION_URLS", () => [LISTENER_URLS])
+            workflow.__set__("spendActionUrls", () => [LISTENER_URLS])
             // config["spend-action"]["urls"] = [LISTENER_URLS];
         });
         describe("redemptions are not attempted", () => {
             test("redemption is off", () => {
-                workflow.__with__({DO_REDEEM: () => false})(() => {
+                workflow.__with__({doRedeem: () => false})(() => {
                     let redeemHdrs = beforeSendHeaders(details, url);
                     expect(redeemHdrs.cancel).toBeFalsy();
                     expect(redeemHdrs.requestHeaders).toBeFalsy();
@@ -81,14 +81,14 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (config_id) {
                     case 1:
-                        workflow.__with__({SPEND_MAX: () => 3})(() => {
+                        workflow.__with__({spendMax: () => 3})(() => {
                             expect(redeemHdrs.requestHeaders).toBeFalsy();
                         })
                         break
                     case 2:
-                        // hCaptcha has no SPEND_MAX
+                        // hCaptcha has no spendMax
                         expect(workflow.__get__("CONFIG_ID")).toBe(2);
-                        expect(workflow.__get__("SPEND_MAX")()).toBe(0);
+                        expect(workflow.__get__("spendMax")()).toBe(0);
                         expect(redeemHdrs.requestHeaders).toBeTruthy();
                         break
                     default:
@@ -114,7 +114,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 }
             });
             test("redemption method is not reload", () => {
-                workflow.__with__({REDEEM_METHOD: () => "invalid"})(() => {
+                workflow.__with__({redeemMethod: () => "invalid"})(() => {
                     setSpendFlag(url.host, true);
                     setSpentHosts(url.host, 0);
                     setSpentUrl(url.href, false);
@@ -136,7 +136,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
         });
         describe("redemption attempted", () => {
             test(`redemption header added (SEND_H2C_PARAMS = false)`, () => {
-                workflow.__with__({SEND_H2C_PARAMS: () => false})(() => {
+                workflow.__with__({sendH2CParams: () => false})(() => {
                     setSpendFlag(url.host, true);
                     setSpentUrl(url.href, false);
                     let redeemHdrs = beforeSendHeaders(details, url);
@@ -155,13 +155,13 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                             throw Error(`Unhandled config.id value => ${config_id}`)
                     }
                     expect(reqHeaders).toBeTruthy();
-                    let headerName = workflow.__get__("HEADER_NAME")();
+                    let headerName = workflow.__get__("headerName")();
                     expect(reqHeaders[0].name === headerName).toBeTruthy();
                     expect(reqHeaders[0].value === b64EncodedTokenNoH2CParams).toBeTruthy();
                 })
             });
             test(`redemption header added (SEND_H2C_PARAMS = true)`, () => {
-                workflow.__with__({SEND_H2C_PARAMS: () => true})(() => {
+                workflow.__with__({sendH2CParams: () => true})(() => {
                     setSpendFlag(url.host, true);
                     setSpentUrl(url.href, false);
                     let redeemHdrs = beforeSendHeaders(details, url);
@@ -180,7 +180,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                             throw Error(`Unhandled config.id value => ${config_id}`)
                     }
                     expect(reqHeaders).toBeTruthy();
-                    let headerName = workflow.__get__("HEADER_NAME")();
+                    let headerName = workflow.__get__("headerName")();
                     expect(reqHeaders[0].name === headerName).toBeTruthy();
                     expect(reqHeaders[0].value === b64EncodedToken).toBeTruthy();
                 });

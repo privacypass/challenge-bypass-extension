@@ -25,7 +25,7 @@
 /* exported set */
 /* exported UpdateCallback */
 "use strict"
-const CHECK_COOKIES = () => ACTIVE_CONFIG()["cookies"]["check-cookies"];
+const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
 
 /**
  * Attempts to redeem a token if the series of checks passes
@@ -48,9 +48,9 @@ function attemptRedeem(url, respTabId, target) {
                 if (tabIds.includes(respTabId)) {
                     chrome.cookies.get({
                         "url": url.href,
-                        "name": CHL_CLEARANCE_COOKIE,
-                        "storeId": store.id,
-                    }, function(cookie) {
+                        "name": chlClearanceCookie(),
+                        "storeId": store.id
+                    }, function (cookie) {
                         // Require an existing, non-expired cookie.
                         if (cookie) {
                             clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
@@ -78,10 +78,10 @@ function attemptRedeem(url, respTabId, target) {
  * @param {Array<string>} target Array of possible targets for redemption
  */
 function fireRedeem(url, respTabId, target) {
-    if (!isValidRedeemMethod(REDEEM_METHOD())) {
+    if (!isValidRedeemMethod(redeemMethod())) {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
-    if (REDEEM_METHOD() === "reload") {
+    if (redeemMethod() === "reload") {
         setSpendFlag(url.host, true);
         const targetUrl = target[respTabId];
         if (url.href === targetUrl) {

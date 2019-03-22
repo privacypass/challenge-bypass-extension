@@ -34,7 +34,7 @@ let CURVE_H2C_METHOD;
 
 /**
  * Sets the curve parameters for the current session based on the contents of
- * ACTIVE_CONFIG.h2c-params
+ * activeConfig.h2c-params
  * @param {JSON} h2cParams
  */
 function initECSettings(h2cParams) {

@@ -6,19 +6,19 @@
 import rewire from "rewire";
 const workflow = rewire("../addon/compiled/test_compiled.js");
 const sjcl = workflow.__get__("sjcl");
-const h2Curve = workflow.__get__("h2Curve");
-const h2Base = workflow.__get__("h2Base");
-const simplifiedSWU = workflow.__get__("simplifiedSWU");
-const hashAndInc = workflow.__get__("hashAndInc");
-const jacobianSWUP256 = workflow.__get__("jacobianSWUP256");
-const ACTIVE_CONFIG = workflow.__get__("ACTIVE_CONFIG");
-const setConfig = workflow.__get__("setConfig");
-const getActiveECSettings = workflow.__get__("getActiveECSettings");
-const initECSettings = workflow.__get__("initECSettings");
-const getCurveParams = workflow.__get__("getCurveParams");
-const newRandomPoint = workflow.__get__("newRandomPoint");
-const compressPoint = workflow.__get__("compressPoint");
-const decompressPoint = workflow.__get__("decompressPoint");
+const h2Curve = workflow.__get__('h2Curve');
+const h2Base = workflow.__get__('h2Base');
+const simplifiedSWU = workflow.__get__('simplifiedSWU');
+const hashAndInc = workflow.__get__('hashAndInc');
+const jacobianSWUP256 = workflow.__get__('jacobianSWUP256');
+const ACTIVE_CONFIG = workflow.__get__('activeConfig');
+const setConfig = workflow.__get__('setConfig');
+const getActiveECSettings = workflow.__get__('getActiveECSettings');
+const initECSettings = workflow.__get__('initECSettings');
+const getCurveParams = workflow.__get__('getCurveParams');
+const newRandomPoint = workflow.__get__('newRandomPoint');
+const compressPoint = workflow.__get__('compressPoint');
+const decompressPoint = workflow.__get__('decompressPoint');
 
 /**
  * Mocking

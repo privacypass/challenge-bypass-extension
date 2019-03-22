@@ -48,7 +48,7 @@ function signReqCF(url) {
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
-    let tokens = GenerateNewTokens(TOKENS_PER_REQUEST());
+    let tokens = GenerateNewTokens(tokensPerRequest());
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
@@ -66,7 +66,7 @@ function signReqCF(url) {
  */
 function signReqHC(url) {
     let reqUrl = url.href;
-    const isIssuerUrl = ISSUE_ACTION_URLS()
+    const isIssuerUrl = issueActionUrls()
         .map(issuerUrl => patternToRegExp(issuerUrl))
         .some(re => reqUrl.match(re));
 
@@ -76,7 +76,7 @@ function signReqHC(url) {
 
     sentTokens[reqUrl] = true;
     // Generate tokens and create a JSON request for signing
-    const tokens = GenerateNewTokens(TOKENS_PER_REQUEST);
+    const tokens = GenerateNewTokens(tokensPerRequest());
     const request = BuildIssueRequest(tokens);
     // Construct info for xhr signing request
     const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens};
@@ -98,11 +98,11 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     xhr.onreadystatechange = function() {
         // When we receive a response...
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
-            && countStoredTokens() < (MAX_TOKENS() - TOKENS_PER_REQUEST())) {
+            && countStoredTokens() < (maxTokens() - tokensPerRequest())) {
             const resp_data = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
             validateResponse(url, tabId, resp_data, tokens);
-        } else if (countStoredTokens() >= (MAX_TOKENS() - TOKENS_PER_REQUEST())) {
+        } else if (countStoredTokens() >= (maxTokens() - tokensPerRequest())) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
     };
@@ -126,7 +126,7 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
  */
 function validateResponse(url, tabId, data, tokens) {
     let signaturesJSON;
-    switch (SIGN_RESPONSE_FMT()) {
+    switch (signResponseFMT()) {
     case "string":
         signaturesJSON = parseSigString(data);
         break;
@@ -134,7 +134,7 @@ function validateResponse(url, tabId, data, tokens) {
         signaturesJSON = parseSigJson(data);
         break;
     default:
-        throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT());
+        throw new Error("[privacy-pass]: invalid signature response format " + signResponseFMT());
     }
 
     if (signaturesJSON == null) {
@@ -294,7 +294,7 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
     storeNewTokens(tokens, sigPoints);
 
     // Reload the page for the originally intended url
-    if (RELOAD_ON_SIGN() && !url.href.includes(CHL_CAPTCHA_DOMAIN())) {
+    if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {
         let captchaPath = url.pathname;
         let pathIndex = url.href.indexOf(captchaPath);
         let reloadUrl = url.href.substring(0, pathIndex + 1);
@@ -314,10 +314,10 @@ function retrieveCommitments(xhr, version) {
     let commH;
     const respBody = xhr.responseText;
     let resp = JSON.parse(respBody);
-    let comms = resp[COMMITMENTS_KEY()];
+    let comms = resp[commitmentsKey()];
     version = checkVersion(version);
     if (comms) {
-        if (DEV()) {
+        if (dev()) {
             commG = comms["dev"]["G"];
             commH = comms["dev"]["H"];
         } else {
