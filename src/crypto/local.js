@@ -42,18 +42,18 @@ function initECSettings(h2cParams) {
     const hashStr = h2cParams.hash;
     const methodStr = h2cParams.method;
     switch (curveStr) {
-    case "p256":
-        if (methodStr != "swu" && methodStr != "increment") {
-            throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
-        } else if (hashStr != "sha256") {
-            throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
-        }
-        CURVE = sjcl.ecc.curves.c256;
-        CURVE_H2C_HASH = sjcl.hash.sha256;
-        CURVE_H2C_METHOD = methodStr;
-        break;
-    default:
-        throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
+        case "p256":
+            if (methodStr != "swu" && methodStr != "increment") {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
+            } else if (hashStr != "sha256") {
+                throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
+            }
+            CURVE = sjcl.ecc.curves.c256;
+            CURVE_H2C_HASH = sjcl.hash.sha256;
+            CURVE_H2C_METHOD = methodStr;
+            break;
+        default:
+            throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
     }
 }
 
@@ -255,9 +255,10 @@ function getCurvePoints(signatures) {
  * @param {Object} tokens array of token objects containing blinded curve points
  * @param {Array<sjcl.ecc.point>} signatures array of signed point
  * @param {Object} commitments JSON object containing encoded curve points
+ * @param {string} prngName name of the PRNG used for verifying proof
  * @return {boolean}
  */
-function verifyProof(proofObj, tokens, signatures, commitments) {
+function verifyProof(proofObj, tokens, signatures, commitments, prngName) {
     const bp = getMarshaledBatchProof(proofObj);
     const dleq = retrieveProof(bp);
     if (!dleq) {
@@ -277,7 +278,7 @@ function verifyProof(proofObj, tokens, signatures, commitments) {
     const rG = _scalarMult(dleq.R, pointG);
     const A = cH.toJac().add(rG).toAffine();
 
-    const composites = recomputeComposites(chkM, chkZ, pointG, pointH);
+    const composites = recomputeComposites(chkM, chkZ, pointG, pointH, prngName);
     const cZ = _scalarMult(dleq.C, composites.Z);
     const rM = _scalarMult(dleq.R, composites.M);
     const B = cZ.toJac().add(rM).toAffine();
@@ -307,51 +308,71 @@ function verifyProof(proofObj, tokens, signatures, commitments) {
  * @param {Array<sjcl.ecc.point>} chkZ array of signed curve points
  * @param {sjcl.ecc.point} pointG curve point
  * @param {sjcl.ecc.point} pointH curve point
+ * @param {string} prngName name of PRNG used to verify proof
  * @return {Object} Object containing composite points M and Z
  */
-function recomputeComposites(chkM, chkZ, pointG, pointH) {
-    const seed = getSeedPRNG(chkM, chkZ, pointG, pointH);
-    const shake = createShake256();
-    shake.update(seed, "hex");
+function recomputeComposites(chkM, chkZ, pointG, pointH, prngName) {
+    const seed = computeSeed(chkM, chkZ, pointG, pointH);
     let cM = new sjcl.ecc.pointJac(CURVE); // can only add points in jacobian representation
     let cZ = new sjcl.ecc.pointJac(CURVE);
+    const prng = {name: prngName};
+    switch (prng.name) {
+        case "shake":
+            prng.func = createShake256();
+            prng.func.update(seed, "hex");
+            break;
+        case "hkdf":
+            prng.func = sjcl.misc.hkdf;
+            break;
+        default:
+            throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
+    }
+    let iter = -1;
     for (let i=0; i<chkM.length; i++) {
-        const ci = getShakeScalar(shake);
+        iter++;
+        const ci = computePRNGScalar(prng, seed, (new sjcl.bn(iter)).toBits());
+        if (ci.greaterEquals(CURVE.r)) {
+            i--;
+            continue;
+        }
         const cMi = _scalarMult(ci, chkM[i].point);
         const cZi = _scalarMult(ci, chkZ[i]);
         cM = cM.add(cMi);
         cZ = cZ.add(cZi);
     }
-
     return {M: cM.toAffine(), Z: cZ.toAffine()};
 }
 
 /**
- * Computes an output of seeded SHAKE function as a BigNumber
- * @param {Object} shake seeded SHAKE object
- * @return {sjcl.bn} SHAKE output
+ * Computes an output of a PRNG (using the seed if it is HKDF) as a sjcl bn
+ * object
+ * @param {Object} prng
+ * @param {string} seed
+ * @param {sjcl.bitArray} salt optional salt for each PRNG eval
+ * @return {sjcl.bn}
  */
-function getShakeScalar(shake) {
+function computePRNGScalar(prng, seed, salt) {
     const curveOrder = CURVE.r;
     const bitLen = sjcl.bitArray.bitLength(curveOrder.toBits());
     const mask = MASK[bitLen % 8];
-    let rnd;
-
-    while (!rnd) {
-        let out = shake.squeeze(32, "hex");
-        // Masking is not strictly necessary for p256 but better to be completely
-        // compatible in case that the curve changes
-        const h = "0x" + out.substr(0, 2);
-        const mh = sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits([h & mask]));
-        out = mh + out.substr(2);
-        const nOut = getBigNumFromHex(out);
-        // Reject samples outside of correct range
-        if (nOut.greaterEquals(curveOrder)) {
-            continue;
-        }
-        rnd = nOut;
+    let out;
+    switch (prng.name) {
+        case "shake":
+            out = prng.func.squeeze(32, "hex");
+            break;
+        case "hkdf":
+            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), bitLen/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
+            break;
+        default:
+            throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
     }
-    return rnd;
+    // Masking is not strictly necessary for p256 but better to be completely
+    // compatible in case that the curve changes
+    const h = "0x" + out.substr(0, 2);
+    const mh = sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits([h & mask]));
+    out = mh + out.substr(2);
+    const nOut = getBigNumFromHex(out);
+    return nOut;
 }
 
 /**
@@ -362,7 +383,7 @@ function getShakeScalar(shake) {
  * @param {sjcl.ecc.point} pointH curve point
  * @return {string} hex-encoded PRNG seed
  */
-function getSeedPRNG(chkM, chkZ, pointG, pointH) {
+function computeSeed(chkM, chkZ, pointG, pointH) {
     const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
     h.update(encodePointForPRNG(pointG));
     h.update(encodePointForPRNG(pointH));
