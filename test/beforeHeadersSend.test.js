@@ -114,7 +114,7 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                         throw Error(`Unhandled config.id value => ${config_id}`)
                 }
             });
-            test("redemption method is not reload", () => {
+            test("redemption method is invalid", () => {
                 workflow.__with__({redeemMethod: () => "invalid"})(() => {
                     setSpendFlagMock(url.host, true);
                     setSpentHostsMock(url.host, 0);
