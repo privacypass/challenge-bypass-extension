@@ -34,7 +34,7 @@ function exampleConfig() {
         }, // These spending restrictions are examples that apply in the CF case
         "spend-action": {
             "urls": ["<all_urls>"], // urls that listeners act on
-            "redeem-method": "", // what method to use to perform redemption, currently we support "reload" for CF.
+            "redeem-method": "", // what method to use to perform redemption, currently we support "reload" for CF and "no-reload" for HC.
             "header-name": "challenge-bypass-token", // name of header for sending redemption token
             "header-host-name": "challenge-bypass-host", // needed for no-reload method
             "header-path-name": "challenge-bypass-path", // needed for no-reload method

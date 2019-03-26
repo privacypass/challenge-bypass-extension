@@ -34,7 +34,11 @@
 "use strict";
 
 const LISTENER_URLS = "<all_urls>";
+// CF config is initialized by default
 let CONFIG_ID = 1;
+const getConfigId = () => CONFIG_ID;
+const setConfigId = (val) => CONFIG_ID = val;
+
 const STORAGE_STR = "bypass-tokens-";
 const COUNT_STR = STORAGE_STR + "count-";
 const activeConfig = () => PPConfigs()[CONFIG_ID];
