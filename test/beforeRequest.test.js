@@ -64,13 +64,13 @@ const goodResponses = [
             VFUTlhWazU2VWpKMFQyTkhaRXBXU0ZKcVVGTkpjMGxzU1dsUGFVbzFVbE4wYkUxWFpFVldha3BwVGxoYVRHTkVRbGRXV0d3MVRVUm9URlI2VVRSbFJXaEhWbXhLYjFWRlRtMWhWbXgxVlZkT1VtTXlNV3BRVTBselNXdE5hVTlwU2xobGFrMXlWbXBzY2s1clRqSmpSVGxhWWtabk1rNHpXblZqTWxwc1ZWVTFjbGRyTlZoV1NFcFhVMFJCTlZkRlNscFZNMmhNWVhwQ1ZsQlRTamtpTENKYUlqcGJJa0pNWms1
             MFpucDRiM1pGZDNCbVRrdFpVRzlHU1RkMGMwczJUbXN5TTAxcVdXNVNTVVJVV0VaMGNUQmliM050WWtnM1dYVnNSRmhZZFd0MVZpc3JLM0ZuSzIxaFQxUllRWGh4ZWtaSWMyUlhlblowU21aQlRUMGlMQ0pDUlVoclVFOVBXbmRTVWl0UFIwMHJNbEJOUW1kRlpXdDFTR2h0VW1sVlNVbEliR0pvWW1vMlExSXJOblp1V25kS1RVSk1lVTFzTkhocFJHNDVWamhKU0ZBMFYwUTBWRnBOUWtaQ05IUnhLMWQzUnp
             sck4xRTlJaXdpUWtFck16ZzJSazgyUTFjNE5rbHNZakYzTjBRNVJsWXpLM0JHYzFJNFNtTm9MeXR4WTNaNVZHbFZOMFV6ZFU0MlJURmxZbVpXU1doU05FTjNlakV4WWtkMlVtRTNObUV3WkZaaVVXRkdNMWxCU2pOSFZHWjNQU0pkZlE9PSIKfQ==`,
-        name: "json"
+        name: "json",
     },
     {
         string: `signatures=eyJzaWdzIjpbIkJEcTF6TGFRMkVUY3Q0Q3kyZVdSSnRZcnlGTzZBYkxET2JvY0czakFQa3RxM0ZRQzkzbjhLZlk1N2NFNEFTOE9ZWllPRjRTWE96ZjRaT1RjaXJ2R2pncz0iLCJCR1IrR3JlVWF4REJ3Y2t0MHpQaS9KNlQ2Ri9lOVpPYjh2TjJyb1dTU0ZFK0ROa1JGZVNNYUZMWTNSYzVWcTdIcUJRQncvWTZFemswaVkwWGZ5b2pmdXM9Il0sInByb29mIjoiWW1GMFkyZ3RjSEp2YjJ
             ZOWV5SlFJam9pWlhsS1JFbHFiMmxTV0VaUlZHcEpNRkZVU1hkUFIwWnlUbXBvUWxreWJIcFVSVFZPWld0YWMyVkhZelJpTTJSd1ZGaG9VMVpzVGt0Uk1FMHlUVWR3VUZsNk1HbE1RMHBUU1dwdmFWcFVSa1ZsUldneFRXMHhORk5yY0V0TlEzUkRUWHBvV2xWRWFHcFJNbFY2Vkdwc1NtSkViRWxTUkZaRllUSktlbGR0WkcxWlZtaERWMVF3YVdaUlBUMGlmUT09IiwidmVyc2lvbiI6ImhrZGYiLCJwcm5nIjoiaGtkZiJ9`,
-        name: "hkdf"
-    }
+        name: "hkdf",
+    },
 ];
 const respBadProof = `signatures=WyJCQVRkL01qTnNuTTZxaHBQZzFLS216RnVHOUNQRzdFbERVSU5EVjFJQmd5WTN2RkVrdENUMk8ybW82dGNNLy9qMWE2Zkoyb1dMb2Z5MGZqYWVjTlBEeWM9IiwiQk9aQnY4dnNxdFg3VzRKcFlSZERHMm5QSEtHTDBMVUtFY1VCY1ZTZjcrcnlxRHRRdC9WZFFlZHRLMkVNa1AvMXZvcjl6dkkvRDZ0ekNZQi9CQkRLRkpRPSIsIkJNMW9UdW9Bc3RiTzQvN3ZIcUEwaDhNbG5
 rNG5UdEJ6NzdvN25RWitqM2RhQ09FU3RXM1VTWHRKdGdmcnVramZBNkxDUksyUmpFVGZVUWU1cmhpaEY0ND0iLCJZbUYwWTJndGNISnZiMlk5ZXlKRElqcGJJbXhrWldacVJ6QXZaRXh2VUhVdkt6UjNURkl5TTJaM2JsWllWVGQwY1dSYU5uSmhlbWhqYTNSa1JYYzlJaXdpZWt4M2QyZHROVGxaU0c5T2FtRkVhVkJ5UzBSd1VrOU5ZMnBsTlhwc2IxaEtXa2MyY1ZJMGJUQXhRVDBpTENKbl
@@ -431,7 +431,7 @@ describe("test validating response", () => {
                 sigs: ["sig1", "sig2", "sig3"],
                 proof: "proof",
                 version: "1.0",
-                prng: "hkdf"
+                prng: "hkdf",
             };
             const out = parseIssueResp(issueData);
             expect(out.signatures[0] == "sig1").toBeTruthy();
@@ -449,7 +449,7 @@ describe("test validating response", () => {
             consoleMock = {
                 warn: jest.fn(),
                 error: jest.fn(),
-            }
+            };
             workflow.__set__("console", consoleMock);
         });
         goodResponses.forEach((element) => {
@@ -469,8 +469,8 @@ describe("test validating response", () => {
                     G = testG;
                     H = testH;
                 }
-            })
-           test(`test store tokens: ${element.name}`, () => {
+            });
+            test(`test store tokens: ${element.name}`, () => {
                 let before;
                 let after;
                 let version;
@@ -540,7 +540,7 @@ describe("test validating response", () => {
                 let after;
                 let version;
                 // construct corrupted commitments
-                let commStruct = {};
+                const commStruct = {};
                 commStruct[commVersion] = {L: G, H: H};
                 localStorage[CACHED_COMMITMENTS_STRING] = JSON.stringify(commStruct);
                 function run() {
