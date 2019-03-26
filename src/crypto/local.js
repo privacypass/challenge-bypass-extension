@@ -331,6 +331,7 @@ function recomputeComposites(chkM, chkZ, pointG, pointH, prngName) {
     for (let i=0; i<chkM.length; i++) {
         iter++;
         const ci = computePRNGScalar(prng, seed, (new sjcl.bn(iter)).toBits());
+        // Moved this check out of computePRNGScalar to here
         if (ci.greaterEquals(CURVE.r)) {
             i--;
             continue;
@@ -352,8 +353,7 @@ function recomputeComposites(chkM, chkZ, pointG, pointH, prngName) {
  * @return {sjcl.bn}
  */
 function computePRNGScalar(prng, seed, salt) {
-    const curveOrder = CURVE.r;
-    const bitLen = sjcl.bitArray.bitLength(curveOrder.toBits());
+    const bitLen = sjcl.bitArray.bitLength(CURVE.r.toBits());
     const mask = MASK[bitLen % 8];
     let out;
     switch (prng.name) {
