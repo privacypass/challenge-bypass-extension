@@ -41,7 +41,7 @@ const setConfigId = (val) => CONFIG_ID = val;
 
 const STORAGE_STR = "bypass-tokens-";
 const COUNT_STR = STORAGE_STR + "count-";
-const activeConfig = () => PPConfigs()[CONFIG_ID];
+const activeConfig = () => PPConfigs()[getConfigId()];
 const dev = () => activeConfig()["dev"];
 const chlClearanceCookie = () => activeConfig()["cookies"]["clearance-cookie"];
 const chlCaptchaDomain = () => activeConfig()["captcha-domain"]; // cookies have dots prepended
@@ -70,7 +70,7 @@ const storageKeyTokens = () => STORAGE_STR + activeConfig()["id"];
 const storageKeyCount = () => COUNT_STR + activeConfig()["id"];
 const h2cParams = () => activeConfig()["h2c-params"];
 const sendH2CParams = () => activeConfig()["send-h2c-params"];
-const issueActionUrls = () => activeConfig()["issue-action"]["urls"]
+const issueActionUrls = () => activeConfig()["issue-action"]["urls"];
 const reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
 const signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
 const tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
@@ -153,7 +153,7 @@ function handleCompletion(details) {
     if (getSpendId(details.requestId) && redeemMethod() === "reload") {
         reloadBrowserTab(details.tabId);
     }
-    setSpendId(details.requestId, false)
+    setSpendId(details.requestId, false);
 }
 
 /**
@@ -183,8 +183,8 @@ function processRedirect(details, oldUrl, newUrl) {
  */
 function validRedirect(oldUrl, redirectUrl) {
     if (oldUrl.includes("http://")) {
-        let urlStr = oldUrl.substring(7);
-        let valids = validRedirects();
+        const urlStr = oldUrl.substring(7);
+        const valids = validRedirects();
         for (let i = 0; i < valids.length; i++) {
             const newUrl = valids[i] + urlStr;
             if (newUrl === redirectUrl) {
@@ -233,7 +233,7 @@ function processHeaders(details, url) {
     // If we have tokens to spend, cancel the request and pass execution over to the token handler.
     let attempted = false;
     if (activated && !getSpentUrl(url.href)) {
-        let count = countStoredTokens();
+        const count = countStoredTokens();
         if (doRedeem()) {
             if (count > 0 && !url.host.includes(chlCaptchaDomain())) {
                 attemptRedeem(url, details.tabId, target);
@@ -270,8 +270,8 @@ function beforeSendHeaders(request, url) {
         if (redeemMethod() === "no-reload") {
             // check that we're at an URL that can handle redeems
             const isRedeemUrl = spendActionUrls()
-                .map(redeemUrl => patternToRegExp(redeemUrl))
-                .some(re => reqUrl.match(re));
+                .map((redeemUrl) => patternToRegExp(redeemUrl))
+                .some((re) => reqUrl.match(re));
 
             setSpendFlag(url.host, null);
 
@@ -283,14 +283,18 @@ function beforeSendHeaders(request, url) {
                 setSpendFlag(host, null);
                 incrementSpentHost(host);
 
-                const http_path = request.method + " " + url.pathname;
-                const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
-                let headers = request.requestHeaders
+                const httpPath = request.method + " " + url.pathname;
+                const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, httpPath);
+                const headers = request.requestHeaders;
                 headers.push({name: headerName(), value: redemptionString});
                 headers.push({name: headerHostName(), value: url.hostname});
-                headers.push({name: headerPathName(), value: http_path});
+                headers.push({name: headerPathName(), value: httpPath});
                 setSpendId(request.requestId, true);
                 setSpentUrl(reqUrl, true);
+                if (!getSpentTab(request.tabId)) {
+                    setSpentTab(request.tabId, []);
+                }
+                getSpentTab(request.tabId).push(url.href);
                 return {requestHeaders: headers};
             }
         } else if (redeemMethod() === "reload" && !getSpentUrl(reqUrl)) {
@@ -320,8 +324,8 @@ function getReloadHeaders(request, url) {
     }
 
     const method = request.method;
-    const http_path = method + " " + url.pathname;
-    const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, http_path);
+    const httpPath = method + " " + url.pathname;
+    const redemptionString = BuildRedeemHeader(tokenToSpend, url.hostname, httpPath);
     const newHeader = {name: headerName(), value: redemptionString};
     headers.push(newHeader);
     setSpendId(request.requestId, true);
@@ -329,8 +333,8 @@ function getReloadHeaders(request, url) {
     if (!getSpentTab(request.tabId)) {
         setSpentTab(request.tabId, []);
     }
-    let spentTabs = getSpentTab(request.tabId);
-    spentTabs.push(url.href)
+    const spentTabs = getSpentTab(request.tabId);
+    spentTabs.push(url.href);
     setSpentTab(request.tabId, spentTabs);
     return {requestHeaders: headers};
 }
@@ -385,8 +389,8 @@ function beforeRequest(details, url) {
  * @param {URL} url URL of navigation
  */
 function committedNavigation(details, url) {
-    let redirect = details.transitionQualifiers[0];
-    let tabId = details.tabId;
+    const redirect = details.transitionQualifiers[0];
+    const tabId = details.tabId;
     if (!badNav().includes(details.transitionType)
         && (!checkBadTransition(url.href, redirect, details.transitionType))
         && !isNewTab(url.href)
@@ -427,7 +431,7 @@ function incrementSpentHost(host) {
     if (getSpentHosts(host) === undefined) {
         setSpentHosts(host, 0);
     }
-    setSpentHosts(host, getSpentHosts(host) + 1)
+    setSpentHosts(host, getSpentHosts(host) + 1);
 }
 
 /**
@@ -485,7 +489,7 @@ function checkBadTransition(href, type, transitionType) {
         setHttpsRedirect(href, false);
         return false;
     }
-    let maybeGood = (validTransitions().includes(transitionType));
+    const maybeGood = (validTransitions().includes(transitionType));
     if (!type && !maybeGood) {
         return true;
     }
@@ -549,7 +553,7 @@ function isBypassHeader(header) {
  * @param {int} val
  */
 function setConfig(val) {
-    CONFIG_ID = val
+    setConfigId(val);
     initECSettings(h2cParams());
     clearCachedCommitments();
     countStoredTokens();

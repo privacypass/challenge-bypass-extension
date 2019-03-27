@@ -7,7 +7,7 @@
 
 import each from "jest-each";
 
-let workflow = workflowSet();
+const workflow = workflowSet();
 
 /**
  * Functions/variables
@@ -73,11 +73,11 @@ const PPConfigs = workflow.__get__("PPConfigs")
 let details;
 let url;
 
-let config_id;
+let configId;
 
 beforeEach(() => {
     clearLocalStorage();
-    setMock(bypassTokensCount(config_id), 2);
+    setMock(bypassTokensCount(configId), 2);
 
     details = {
         method: "GET",
@@ -88,9 +88,9 @@ beforeEach(() => {
     url = new URL(EXAMPLE_HREF);
     setTimeSinceLastResp(Date.now());
     // Some tests make sense only for CF
-    config_id = config_id === undefined ? 1 : config_id;
-    setConfig(config_id); // set the active config
-    workflow.__set__("issueActionUrls", () => [LISTENER_URLS])
+    configId = configId === undefined ? 1 : configId;
+    setConfig(configId); // set the active config
+    workflow.__set__("issueActionUrls", () => [LISTENER_URLS]);
 });
 
 /**
@@ -166,8 +166,8 @@ describe("commitments parsing and caching", () => {
     });
 });
 
-each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
-    .describe("config_id = %i signing request is cancelled", (config_id) => {
+each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
+    .describe("config_id = %i signing request is cancelled", (configId) => {
         test("signing off", () => {
             workflow.__with__({DO_SIGN: () => false})(() => {
                 const b = beforeRequest(details, url);
@@ -202,16 +202,15 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
             expect(b).toBeFalsy();
         });
     });
-each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
-    .describe("config_id = %i, test sending sign requests", (config_id) => {
+each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
+    .describe("config_id = %i, test sending sign requests", (configId) => {
         test("incorrect config id", () => {
             function tryRun() {
                 workflow.__with__({CONFIG_ID: () => 3})(() => {
                     beforeRequest(details, newUrl);
                 });
-
             }
-            let newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
             expect(tryRun).toThrowError("Cannot read property 'var-reset'");
         });
 
@@ -221,13 +220,13 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 expect(b.xhr).toBeTruthy();
-            })
+            });
         });
 
         test("bad status does not sign", () => {
             setTimeSinceLastResp(0); // reset the variables
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-            workflow.__with__({readySign: true, "XMLHttpRequest": mockXHRBadStatus})(() => {
+            workflow.__with__({"readySign": true, "XMLHttpRequest": mockXHRBadStatus})(() => {
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 const xhr = b.xhr;
@@ -235,13 +234,13 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 expect(validateRespMock).not.toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(2);
                 expect(updateBrowserTabMock).not.toBeCalled();
-            })
+            });
         });
 
         test("bad readyState does not sign", () => {
             setTimeSinceLastResp(0); // reset the variables
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-            workflow.__with__({readySign: true, "XMLHttpRequest": mockXHRBadReadyState})(() => {
+            workflow.__with__({"readySign": true, "XMLHttpRequest": mockXHRBadReadyState})(() => {
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 const xhr = b.xhr;
@@ -249,29 +248,28 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 expect(validateRespMock).not.toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(2);
                 expect(updateBrowserTabMock).not.toBeCalled();
-            })
-
+            });
         });
 
         test("too many tokens does not sign", () => {
-            if (config_id === 1) {
+            // Always test CF here due to mock data being available
+            if (configId === 1) {
                 workflow.__with__({readySign: true, XMLHttpRequest: mockXHRGood})(() => {
                     function run() {
                         const b = beforeRequest(details, newUrl);
                         const xhr = b.xhr;
                         xhr.onreadystatechange();
-                    };
+                    }
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(bypassTokensCount(config_id), 400);
+                    setMock(bypassTokensCount(configId), 400);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
 
                     expect(run).toThrowError("upper bound");
                     expect(validateRespMock).not.toBeCalled();
                     expect(updateIconMock).toBeCalledTimes(3);
                     expect(updateBrowserTabMock).not.toBeCalled();
-                })
+                });
             }
-            // Always test CF here due to mock data being available
         });
 
         test("correct XHR response triggers validation", () => {
@@ -279,19 +277,18 @@ each(PPConfigs().filter(config => config.id > 0).map(config => [config.id]))
                 function run() {
                     const request = "";
                     const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
-                    let xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId);
+                    const xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId);
                     xhr.responseText = "";
                     xhr.onreadystatechange();
-                };
+                }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(bypassTokensCount(config_id), 0);
+                setMock(bypassTokensCount(configId), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).not.toThrow();
                 expect(validateRespMock).toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(2);
-            })
-
-        })
+            });
+        });
     });
 
 describe("test validating response", () => {
@@ -560,7 +557,7 @@ describe("test validating response", () => {
                         tokens[i] = {
                             data: testTokens[i].data,
                             point: sec1DecodePointFromBytes(testTokens[i].point),
-                            blind: getBigNumFromBytes(testTokens[i].blind)
+                            blind: getBigNumFromBytes(testTokens[i].blind),
                         };
                     }
                     const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
@@ -568,7 +565,7 @@ describe("test validating response", () => {
                     xhr.onreadystatechange();
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(bypassTokensCount(config_id), 0);
+                setMock(bypassTokensCount(configId), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(run).toThrow();
                 expect(updateIconMock).toBeCalledTimes(1);
@@ -583,7 +580,7 @@ describe("test validating response", () => {
                             tokens[i] = {
                                 data: testTokens[i].data,
                                 point: sec1DecodePointFromBytes(testTokens[i].point),
-                                blind: getBigNumFromBytes(testTokens[i].blind)
+                                blind: getBigNumFromBytes(testTokens[i].blind),
                             };
                         }
                         const out = parseRespString(respBadJson);
@@ -591,7 +588,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(configId), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -605,7 +602,7 @@ describe("test validating response", () => {
                             tokens[i] = {
                                 data: testTokens[i].data,
                                 point: sec1DecodePointFromBytes(testTokens[i].point),
-                                blind: getBigNumFromBytes(testTokens[i].blind)
+                                blind: getBigNumFromBytes(testTokens[i].blind),
                             };
                         }
                         const out = parseRespString(respBadPoints);
@@ -613,7 +610,7 @@ describe("test validating response", () => {
                         xhr.onreadystatechange();
                     }
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(configId), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrow();
                     expect(updateIconMock).toBeCalledTimes(1);
@@ -627,7 +624,7 @@ describe("test validating response", () => {
                             tokens[i] = {
                                 data: testTokens[i].data,
                                 point: sec1DecodePointFromBytes(testTokens[i].point),
-                                blind: getBigNumFromBytes(testTokens[i].blind)
+                                blind: getBigNumFromBytes(testTokens[i].blind),
                             };
                         }
                         const out = parseRespString(respBadProof);
@@ -639,7 +636,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(configId), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).not.toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -654,7 +651,7 @@ describe("test validating response", () => {
                             tokens[i] = {
                                 data: testTokens[i].data,
                                 point: sec1DecodePointFromBytes(testTokens[i].point),
-                                blind: getBigNumFromBytes(testTokens[i].blind)
+                                blind: getBigNumFromBytes(testTokens[i].blind),
                             };
                         }
                         const out = parseRespString(respBadProof);
@@ -666,7 +663,7 @@ describe("test validating response", () => {
                     };
                     workflow.__set__("console", consoleNew); // fake the console to check logs
                     setTimeSinceLastResp(0); // reset the variables
-                    setMock(bypassTokensCount(config_id), 0);
+                    setMock(bypassTokensCount(configId), 0);
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(run).toThrowError("Unable to verify DLEQ");
                     expect(consoleNew.error).toHaveBeenCalledWith(workflow.__get__("DIGEST_INEQUALITY_ERR"));
@@ -683,6 +680,6 @@ function parseRespString(respText) {
 }
 
 function getSpentHostsMock(key) {
-    let spentHosts = workflow.__get__("spentHosts", spentHosts);
+    const spentHosts = workflow.__get__("spentHosts", spentHosts);
     return spentHosts[key];
 }
