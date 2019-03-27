@@ -5,7 +5,7 @@
  * @author Drazen Urch
  */
 
-let workflow = workflowSet();
+const workflow = workflowSet();
 
 /**
  * Functions/variables

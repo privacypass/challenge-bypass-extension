@@ -24,7 +24,7 @@
 /* exported get */
 /* exported set */
 /* exported UpdateCallback */
-"use strict"
+"use strict";
 const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
 
 /**
@@ -35,7 +35,7 @@ const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
 function attemptRedeem(url, respTabId) {
     // Check all cookie stores to see if a clearance cookie is held
     if (CHECK_COOKIES()) {
-        chrome.cookies.getAllCookieStores(function (stores) {
+        chrome.cookies.getAllCookieStores(function(stores) {
             let clearanceHeld = false;
             stores.forEach(function(store, index) {
                 let tabIds = store.tabIds;
@@ -48,8 +48,8 @@ function attemptRedeem(url, respTabId) {
                     chrome.cookies.get({
                         "url": url.href,
                         "name": chlClearanceCookie(),
-                        "storeId": store.id
-                    }, function (cookie) {
+                        "storeId": store.id,
+                    }, function(cookie) {
                         // Require an existing, non-expired cookie.
                         if (cookie) {
                             clearanceHeld = (cookie.expirationDate * 1000 >= Date.now());
@@ -244,9 +244,9 @@ function isFaviconUrl(url) {
  */
 function isValidRedeemMethod(method) {
     return PPConfigs()
-        .filter(config => config.id > 0)
-        .map(config => config["spend-action"]["redeem-method"])
-        .some(config_method => config_method === method)
+        .filter((config) => config.id > 0)
+        .map((config) => config["spend-action"]["redeem-method"])
+        .some((configMethod) => configMethod === method);
 }
 
 /**

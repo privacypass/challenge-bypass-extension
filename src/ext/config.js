@@ -12,6 +12,10 @@
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 
+/**
+ * Generates exampleConfig configuration object
+ * @return {Object} Example configuration object
+ */
 function exampleConfig() {
     return {
         "id": 0, // unique integer identifying each individual config
@@ -24,13 +28,13 @@ function exampleConfig() {
         "var-reset-ms": 100, // variable reset time limit
         "commitments": "example", // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
         "spending-restrictions": {
-            "status-code": [200,], // array of status codes that should trigger token redemption (e.g. 403 for CF)
+            "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
             "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
-            "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank",], // urls that should not trigger page reloads/redemptions (these should probably be standard)
-            "bad-navigation": ["auto_subframe",], // navigation types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
-            "bad-transition": ["server_redirect",], // transition types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
-            "valid-redirects": ["https://", "https://www.", "http://www.",], // valid redirects that should trigger token redemptions
-            "valid-transitions": ["link", "typed", "auto_bookmark", "reload",], // transition types that fine for triggering redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+            "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank"], // urls that should not trigger page reloads/redemptions (these should probably be standard)
+            "bad-navigation": ["auto_subframe"], // navigation types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+            "bad-transition": ["server_redirect"], // transition types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
+            "valid-redirects": ["https://", "https://www.", "http://www."], // valid redirects that should trigger token redemptions
+            "valid-transitions": ["link", "typed", "auto_bookmark", "reload"], // transition types that fine for triggering redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
         }, // These spending restrictions are examples that apply in the CF case
         "spend-action": {
             "urls": ["<all_urls>"], // urls that listeners act on
@@ -63,16 +67,20 @@ function exampleConfig() {
     };
 }
 
-function PPConfigs() {
 
+/**
+ * Generates array of configuration objects
+ * @return {Array} Array of configuration objects
+ */
+function PPConfigs() {
     // The configuration used by Cloudflare
-    let cfConfig = exampleConfig();
+    const cfConfig = exampleConfig();
     cfConfig.id = 1;
     cfConfig.dev = false;
     cfConfig["max-tokens"] = 300;
     cfConfig["var-reset-ms"] = 2000;
     cfConfig.commitments = "CF";
-    cfConfig["spending-restrictions"]["status-code"] = [403,];
+    cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
     cfConfig["issue-action"]["tokens-per-request"] = 30;
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
@@ -80,17 +88,17 @@ function PPConfigs() {
     cfConfig["send-h2c-params"] = true;
 
     // The configuration used by hcaptcha
-    let hcConfig = exampleConfig()
+    const hcConfig = exampleConfig();
     hcConfig.id = 2;
     hcConfig.dev = false;
     hcConfig["max-spends"] = 0;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
-    hcConfig.commitments = "HC"
-    hcConfig["spending-restrictions"]["status-code"] = [200,];
+    hcConfig.commitments = "HC";
+    hcConfig["spending-restrictions"]["status-code"] = [200];
     hcConfig["spend-action"]["redeem-method"] = "no-reload";
     hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];
-    hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*",];
+    hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*"];
     hcConfig["issue-action"]["sign-reload"] = false;
     hcConfig["issue-action"]["sign-response-format"] = "json";
     hcConfig.cookies["clearance-cookie"] = "hc_clearance";

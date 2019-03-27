@@ -4,7 +4,7 @@
  * @author: Alex Davidson
  */
 
-let workflow = workflowSet()
+const workflow = workflowSet();
 
 const sjcl = workflow.__get__("sjcl");
 const setConfig = workflow.__get__("setConfig");
@@ -19,7 +19,7 @@ const deriveKey = workflow.__get__("deriveKey");
 
 // mocking for tests
 
-let consoleMock = {
+const consoleMock = {
     warn: jest.fn(),
     error: jest.fn(),
 };
@@ -33,7 +33,7 @@ let curveSettings;
 beforeEach(() => {
     setConfig(1);
     let count = 0;
-    CreateBlindTokenMock = function () {
+    CreateBlindTokenMock = function() {
         let token;
         if (count !== 1) {
             token = CreateBlindToken();
@@ -102,8 +102,7 @@ describe("building of redemption headers", () => {
             const contents = testBuildHeader();
             // Test additional H2C parameters are omitted
             expect(contents.length === 2).toBeTruthy();
-        })
-
+        });
     });
 
     test("header value is built correctly for P256 (SEND_H2C_PARAMS = true)", () => {

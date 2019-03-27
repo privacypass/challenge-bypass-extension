@@ -48,7 +48,7 @@ function signReqCF(url) {
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
-    let tokens = GenerateNewTokens(tokensPerRequest());
+    const tokens = GenerateNewTokens(tokensPerRequest());
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
@@ -65,10 +65,10 @@ function signReqCF(url) {
  * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
 function signReqHC(url) {
-    let reqUrl = url.href;
+    const reqUrl = url.href;
     const isIssuerUrl = issueActionUrls()
-        .map(issuerUrl => patternToRegExp(issuerUrl))
-        .some(re => reqUrl.match(re));
+        .map((issuerUrl) => patternToRegExp(issuerUrl))
+        .some((re) => reqUrl.match(re));
 
     if (!isIssuerUrl) {
         return null;
@@ -99,9 +99,9 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
         // When we receive a response...
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
             && countStoredTokens() < (maxTokens() - tokensPerRequest())) {
-            const resp_data = xhr.responseText;
+            const respData = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
-            validateResponse(url, tabId, resp_data, tokens);
+            validateResponse(url, tabId, respData, tokens);
         } else if (countStoredTokens() >= (maxTokens() - tokensPerRequest())) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
@@ -295,9 +295,9 @@ function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, 
 
     // Reload the page for the originally intended url
     if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {
-        let captchaPath = url.pathname;
-        let pathIndex = url.href.indexOf(captchaPath);
-        let reloadUrl = url.href.substring(0, pathIndex + 1);
+        const captchaPath = url.pathname;
+        const pathIndex = url.href.indexOf(captchaPath);
+        const reloadUrl = url.href.substring(0, pathIndex + 1);
         setSpendFlag(url.host, true);
         updateBrowserTab(tabId, reloadUrl);
     }
@@ -313,8 +313,8 @@ function retrieveCommitments(xhr, version) {
     let commG;
     let commH;
     const respBody = xhr.responseText;
-    let resp = JSON.parse(respBody);
-    let comms = resp[commitmentsKey()];
+    const resp = JSON.parse(respBody);
+    const comms = resp[commitmentsKey()];
     version = checkVersion(version);
     if (comms) {
         if (dev()) {
