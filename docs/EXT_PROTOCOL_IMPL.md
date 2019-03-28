@@ -96,8 +96,11 @@ along with a batched DLEQ proof evaluated over all the tokens.
         Sigs     []PointData
         Proof    EncodedBatchProof
         Version  KeyVersion
+        Prng     string
     }
     ```
+    where the string `Prng` dictates which pseudorandom number generator (PRNG)
+    was used for computing the batched DLEQ proof.
 
 - HTTP response body contains a string of the form:
 
