@@ -71,7 +71,8 @@ along with a batched DLEQ proof evaluated over all the tokens.
     where `P` is a `DLEQProof` object.
 
     Remark: All extra information sent by the server should be ignored. In
-    addition, in a future change we hope to remove the arbirary
+    addition, in a future change we hope to remove the arbitrary enclosure of
+    the DLEQProof object within in the BatchProof struct.
 
 - `EncodedDLEQProof`: A base64-encoded `DLEQProof` object, where all fields are
   also individually base64-encoded.
