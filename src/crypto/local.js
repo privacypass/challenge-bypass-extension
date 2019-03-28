@@ -416,6 +416,10 @@ function evaluateHkdf(ikm, length, info, salt, hash) {
 
     const hashLength = (sjcl.bitArray.bitLength(prk)+7)/8;
     const numBlocks = Math.ceil(length / hashLength);
+    if (numBlocks > 255) {
+        throw new Error(`[privacy-pass]: HKDF error, number of proposed iterations too large: ${numBlocks}`);
+    }
+
     let prev = sjcl.codec.hex.toBits("");
     let output = "";
     for (let i = 0; i < numBlocks; i++) {
