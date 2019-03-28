@@ -361,7 +361,7 @@ function computePRNGScalar(prng, seed, salt) {
             out = prng.func.squeeze(32, "hex");
             break;
         case "hkdf":
-            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), bitLen/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
+            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), (bitLen+7)/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
             break;
         default:
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
@@ -414,7 +414,7 @@ function evaluateHkdf(ikm, length, info, salt, hash) {
     mac.update(ikm);
     const prk = mac.digest();
 
-    const hashLength = sjcl.bitArray.bitLength(prk)/8;
+    const hashLength = (sjcl.bitArray.bitLength(prk)+7)/8;
     const numBlocks = Math.ceil(length / hashLength);
     let prev = sjcl.codec.hex.toBits("");
     let output = "";
