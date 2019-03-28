@@ -347,10 +347,10 @@ function recomputeComposites(chkM, chkZ, pointG, pointH, prngName) {
 /**
  * Computes an output of a PRNG (using the seed if it is HKDF) as a sjcl bn
  * object
- * @param {Object} prng
- * @param {string} seed
+ * @param {Object} prng PRNG object for generating output
+ * @param {string} seed hex-encoded seed
  * @param {sjcl.bitArray} salt optional salt for each PRNG eval
- * @return {sjcl.bn}
+ * @return {sjcl.bn} PRNG output as scalar value
  */
 function computePRNGScalar(prng, seed, salt) {
     const bitLen = sjcl.bitArray.bitLength(CURVE.r.toBits());
