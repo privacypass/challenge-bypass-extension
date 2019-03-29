@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:8.12
+      - image: circleci/node:8.12-stretch
     working_directory: ~/challenge-bypass-extension
     steps:
       - run: sudo apt update

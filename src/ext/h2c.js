@@ -39,14 +39,14 @@ function h2Base(x, curve, hash, label) {
 function h2Curve(alpha, ecSettings) {
     let point;
     switch (ecSettings.method) {
-    case "swu":
-        point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_POINT_REPRESENTATION);
-        break;
-    case "increment":
-        point = hashAndInc(alpha, ecSettings.hash);
-        break;
-    default:
-        throw new Error("[privacy-pass]: Incompatible curve chosen for hashing, SJCL chosen curve: " + sjcl.ecc.curveName(ecSettings.curve));
+        case "swu":
+            point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_POINT_REPRESENTATION);
+            break;
+        case "increment":
+            point = hashAndInc(alpha, ecSettings.hash);
+            break;
+        default:
+            throw new Error("[privacy-pass]: Incompatible curve chosen for hashing, SJCL chosen curve: " + sjcl.ecc.curveName(ecSettings.curve));
     }
     return point;
 }
@@ -65,14 +65,14 @@ function simplifiedSWU(alpha, activeCurve, hash, mode) {
 
     let point;
     switch (mode) {
-    case 0:
-        point = affineSWUP256(activeCurve, params.baseField, params.A, params.B, t);
-        break;
-    case 1:
-        point = jacobianSWUP256(activeCurve, params.baseField, params.A, params.B, t);
-        break;
-    default:
-        throw new Error("[privacy-pass]: Incompatible mode type chosen for SWU");
+        case 0:
+            point = affineSWUP256(activeCurve, params.baseField, params.A, params.B, t);
+            break;
+        case 1:
+            point = jacobianSWUP256(activeCurve, params.baseField, params.A, params.B, t);
+            break;
+        default:
+            throw new Error("[privacy-pass]: Incompatible mode type chosen for SWU");
     }
 
     if (!point.isValid()) {

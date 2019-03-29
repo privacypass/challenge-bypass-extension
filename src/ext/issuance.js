@@ -127,30 +127,35 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
 function validateResponse(url, tabId, data, tokens) {
     let signaturesJSON;
     switch (SIGN_RESPONSE_FMT) {
-    case "string":
-        signaturesJSON = parseSigString(data);
-        break;
-    case "json":
-        signaturesJSON = parseSigJson(data);
-        break;
-    default:
-        throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT);
+        case "string":
+            signaturesJSON = parseSigString(data);
+            break;
+        case "json":
+            signaturesJSON = parseSigJson(data);
+            break;
+        default:
+            throw new Error("[privacy-pass]: invalid signature response format " + SIGN_RESPONSE_FMT);
     }
 
     if (signaturesJSON == null) {
         throw new Error("[privacy-pass]: signature response invalid or in unexpected format, got response: " + data);
     }
-    // parses into JSON
-    const issueResp = JSON.parse(signaturesJSON);
-    const out = parsePointsAndProof(issueResp);
-    if (!out.signatures) {
+
+    // creates issueResp object from JSON
+    // includes the fields:
+    // - signatures
+    // - proof
+    // - version (optional)
+    // - prng (optional)
+    const issueResp = parseIssueResp(JSON.parse(signaturesJSON));
+    if (!issueResp.signatures) {
         throw new Error("[privacy-pass]: No signed tokens provided");
-    } else if (!out.proof) {
+    } else if (!issueResp.proof) {
         throw new Error("[privacy-pass]: No batch proof provided");
     }
 
     // Validate the received information and store the tokens
-    validateAndStoreTokens(url, tabId, tokens, out.signatures, out.proof, out.version);
+    validateAndStoreTokens(url, tabId, tokens, issueResp);
 }
 
 /**
@@ -184,7 +189,7 @@ function parseSigString(data) {
  * optional commitment version
  * @return {Object} Formatted object for inputs
  */
-function parsePointsAndProof(issueResp) {
+function parseIssueResp(issueResp) {
     let signatures;
     let batchProof;
     let version;
@@ -197,7 +202,8 @@ function parsePointsAndProof(issueResp) {
         batchProof = issueResp[issueResp.length - 1];
         signatures = issueResp.slice(0, issueResp.length - 1);
     }
-    return {signatures: signatures, proof: batchProof, version: version};
+    const prng = issueResp.prng || "shake";
+    return {signatures: signatures, proof: batchProof, version: version, prng: prng};
 }
 
 /**
@@ -223,23 +229,22 @@ function BuildIssueRequest(tokens) {
  * @param {URL} url URL object for the original request
  * @param {Number} tabId Tab ID where the request took place
  * @param {Array<Object>} tokens Client-generated token objects
- * @param {string} signatures base64-encoded curve points
- * @param {Object} batchProof batched DLEQ proof object
- * @param {string} version version of commitments to use
+ * @param {Object} issueResp Contains the parameters sent back by the server,
+ * including signed tokens, batched DLEQ proof and optional others
  * @return {XMLHttpRequest} commitment XHR object
  */
-function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, version) {
-    const commitments = getCachedCommitments(version);
+function validateAndStoreTokens(url, tabId, tokens, issueResp) {
+    const commitments = getCachedCommitments(issueResp.version);
     // If cached commitments exist then attempt to verify proof
     if (commitments) {
         if (!commitments.G || !commitments.H) {
-            console.warn("[privacy-pass]: cached commitments are corrupted: " + commitments + ", version: " + version + ", will retrieve via XHR.");
+            console.warn("[privacy-pass]: cached commitments are corrupted: " + commitments + ", version: " + issueResp.version + ", will retrieve via XHR.");
         } else {
-            verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, batchProof);
+            verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
             return;
         }
     }
-    const cXhr = createVerificationXHR(url, tabId, tokens, signatures, batchProof, version);
+    const cXhr = createVerificationXHR(url, tabId, tokens, issueResp);
     cXhr.send();
     return cXhr;
 }
@@ -250,23 +255,21 @@ function validateAndStoreTokens(url, tabId, tokens, signatures, batchProof, vers
  * @param {URL} url URL object for the original request
  * @param {Number} tabId Tab ID where the request took place
  * @param {Object} tokens Client-generated token objects
- * @param {string} signatures base64-encoded curve points
- * @param {Object} batchProof batched DLEQ proof object
- * @param {string} version version of commitments to use
+ * @param {Object} issueResp Contains the parameters sent back by the server
  * @return {XMLHttpRequest} XHR object for verifying server response
  */
-function createVerificationXHR(url, tabId, tokens, signatures, batchProof, version) {
+function createVerificationXHR(url, tabId, tokens, issueResp) {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", COMMITMENT_URL, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function() {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
-            const commitments = retrieveCommitments(xhr, version);
+            const commitments = retrieveCommitments(xhr, issueResp.version);
             if (!commitments.G || !commitments.H) {
-                throw new Error("[privacy-pass]: Retrieved commitments are are incorrectly specified: " + commitments + ", version: " + version);
+                throw new Error("[privacy-pass]: Retrieved commitments are are incorrectly specified: " + commitments + ", version: " + issueResp.version);
             }
-            cacheCommitments(version, commitments.G, commitments.H);
-            verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, batchProof);
+            cacheCommitments(issueResp.version, commitments.G, commitments.H);
+            verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
         }
     };
     return xhr;
@@ -278,15 +281,14 @@ function createVerificationXHR(url, tabId, tokens, signatures, batchProof, versi
  * @param {URL} url URL object for the original request
  * @param {int} tabId Tab ID where the request took place
  * @param {object} tokens Client-generated token objects
- * @param {string} signatures base64-encoded curve points
+ * @param {Object} issueResp Contains the parameters sent back by the server
  * @param {string} commitments base64-encoded curve points
- * @param {object} batchProof batched DLEQ proof object
  */
-function verifyProofAndStoreTokens(url, tabId, tokens, signatures, commitments, batchProof) {
-    const sigPoints = getCurvePoints(signatures);
+function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
+    const sigPoints = getCurvePoints(issueResp.signatures);
 
     // Verify the DLEQ batch proof before handing back the usable points
-    if (!verifyProof(batchProof, tokens, sigPoints, commitments)) {
+    if (!verifyProof(issueResp.proof, tokens, sigPoints, commitments, issueResp.prng)) {
         throw new Error("[privacy-pass]: Unable to verify DLEQ proof.");
     }
 

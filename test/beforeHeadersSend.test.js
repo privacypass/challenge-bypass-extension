@@ -89,27 +89,27 @@ PPConfigs
                 setSpendFlag(url.host, true);
                 setSpentHosts(url.host, 31);
                 switch (config.id) {
-                case 1:
-                    workflow.__set__("SPEND_MAX", 3);
-                    break;
-                case 2:
-                    workflow.__set__("SPEND_MAX", undefined);
-                    break;
-                default:
-                    throw Error(`Unhandled config.id, ${config.id}`);
+                    case 1:
+                        workflow.__set__("SPEND_MAX", 3);
+                        break;
+                    case 2:
+                        workflow.__set__("SPEND_MAX", undefined);
+                        break;
+                    default:
+                        throw Error(`Unhandled config.id, ${config.id}`);
                 }
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (config.id) {
-                case 1:
-                    expect(redeemHdrs.requestHeaders).toBeFalsy();
-                    break;
-                case 2:
+                    case 1:
+                        expect(redeemHdrs.requestHeaders).toBeFalsy();
+                        break;
+                    case 2:
                     // hCaptcha has no SPEND_MAX
-                    expect(redeemHdrs.requestHeaders).toBeTruthy();
-                    break;
-                default:
-                    throw Error(`Unhandled config.id value => ${config.id}`);
+                        expect(redeemHdrs.requestHeaders).toBeTruthy();
+                        break;
+                    default:
+                        throw Error(`Unhandled config.id value => ${config.id}`);
                 }
             });
             test(`spend has been attempted for url, config.id = ${config.id}`, () => {
@@ -120,15 +120,15 @@ PPConfigs
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (config.id) {
-                case 1:
-                    expect(redeemHdrs.requestHeaders).toBeFalsy();
-                    break;
-                case 2:
+                    case 1:
+                        expect(redeemHdrs.requestHeaders).toBeFalsy();
+                        break;
+                    case 2:
                     // hCaptcha will always spend on its URLS
-                    expect(redeemHdrs.requestHeaders).toBeTruthy();
-                    break;
-                default:
-                    throw Error(`Unhandled config.id value => ${config.id}`);
+                        expect(redeemHdrs.requestHeaders).toBeTruthy();
+                        break;
+                    default:
+                        throw Error(`Unhandled config.id value => ${config.id}`);
                 }
             });
             test(`redemption method is not reload, config.id = ${config.id}`, () => {
@@ -195,14 +195,14 @@ PPConfigs
 
 function setReedemMethod(configId) {
     switch (configId) {
-    case 1:
-        workflow.__set__("REDEEM_METHOD", "reload");
-        break;
-    case 2:
-        workflow.__set__("REDEEM_METHOD", "no-reload");
-        break;
-    default:
-        throw Error(`Unhandled config.id, ${configId}`);
+        case 1:
+            workflow.__set__("REDEEM_METHOD", "reload");
+            break;
+        case 2:
+            workflow.__set__("REDEEM_METHOD", "no-reload");
+            break;
+        default:
+            throw Error(`Unhandled config.id, ${configId}`);
     }
 }
 

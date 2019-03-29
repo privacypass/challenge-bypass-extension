@@ -324,14 +324,14 @@ function beforeRequest(details, url) {
     // Different signing methods based on configs
     let xhrInfo;
     switch (CONFIG_ID) {
-    case 1:
-        xhrInfo = signReqCF(url);
-        break;
-    case 2:
-        xhrInfo = signReqHC(url);
-        break;
-    default:
-        throw new Error("Incorrect config ID specified");
+        case 1:
+            xhrInfo = signReqCF(url);
+            break;
+        case 2:
+            xhrInfo = signReqHC(url);
+            break;
+        default:
+            throw new Error("Incorrect config ID specified");
     }
 
     // If this is null then signing is not appropriate
