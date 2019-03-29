@@ -21,7 +21,6 @@
 "use strict";
 
 const BATCH_PROOF_PREFIX = "batch-proof=";
-const UNCOMPRESSED_POINT_PREFIX = "04";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
 const DIGEST_INEQUALITY_ERR = "[privacy-pass]: Recomputed digest does not equal received digest";
@@ -124,13 +123,22 @@ function newRandomPoint() {
  * Compresses a curve point into a base64-encoded string via Section 2.3.4 of
  * SEC1
  * @param {sjcl.ecc.point} P
- * @return {sjcl.codec.bytes}
+ * @return {sjcl.codec.base64}
  */
 function compressPoint(P) {
+    const taggedBytes = compressPointToBytes(P);
+    return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
+}
+
+/**
+ * Compresses a curve point into bytes via Section 2.3.4 of SEC1
+ * @param {sjcl.ecc.point} P
+ * @return {sjcl.codec.bytes}
+ */
+function compressPointToBytes(P) {
     const xBytes = sjcl.codec.bytes.fromBits(P.x.toBits());
     const sign = P.y.limbs[0] & 1 ? 0x03 : 0x02;
-    const taggedBytes = [sign].concat(xBytes);
-    return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
+    return [sign].concat(xBytes);
 }
 
 /**
@@ -229,20 +237,69 @@ function decodeStorablePoint(s) {
 }
 
 /**
+ * Recovers the curve point according to whether it is compressed or not
+ * @param {sjcl.codec.bytes} buf bytes of curve point
+ * @param {bool} compressed indicator of whether curve is compressed or not
+ * @return {sjcl.ecc.point} decoded point
+ */
+function recoverPoint(buf, compressed) {
+    return compressed ? decompressPoint(buf) : sec1DecodePointFromBytes(buf);
+}
+
+/**
  * Decodes the received curve points
  * @param {Array<string>} signatures An array of base64-encoded signed points
- * @return {Array<sjcl.ecc.point>} array of curve points
+ * @return {Object} object containing array of curve points and compression flag
  */
 function getCurvePoints(signatures) {
-    const usablePoints = [];
+    const compression = {on: false, set: false};
+    const sigBytes = [];
     signatures.forEach(function(signature) {
-        const usablePoint = sec1DecodePoint(signature);
+        const buf = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(signature));
+        let setting = false;
+        switch (buf[0]) {
+            case 2:
+            case 3:
+                setting = true;
+                break;
+            case 4:
+                // do nothing
+                break;
+            default:
+                throw new Error(`[privacy-pass]: point, ${buf}, is not encoded correctly`);
+        }
+        if (!validResponseCompression(compression, setting)) {
+            throw new Error("[privacy-pass]: inconsistent point compression in server response");
+        }
+        sigBytes.push(buf);
+    });
+
+    const usablePoints = [];
+    sigBytes.forEach(function(buf) {
+        const usablePoint = recoverPoint(buf, compression.on);
         if (usablePoint == null) {
-            throw new Error("[privacy-pass]: unable to decode point " + signature + " in " + JSON.stringify(signatures));
+            throw new Error("[privacy-pass]: unable to decode point: " + buf);
         }
         usablePoints.push(usablePoint);
     });
-    return usablePoints;
+    return {points: usablePoints, compressed: compression.on};
+}
+
+/**
+ * Checks that the signed points from the IssueResponse have consistent
+ * compression
+ * @param {Object} compression compression object to be checked for consistency
+ * @param {bool} setting new setting based on point data
+ * @return {bool}
+ */
+function validResponseCompression(compression, setting) {
+    if (!compression.set) {
+        compression.on = setting;
+        compression.set = true;
+    } else if (compression.on !== setting) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -253,12 +310,13 @@ function getCurvePoints(signatures) {
  * Verify the DLEQ proof object using the information provided
  * @param {string} proofObj base64-encoded batched DLEQ proof object
  * @param {Object} tokens array of token objects containing blinded curve points
- * @param {Array<sjcl.ecc.point>} signatures array of signed point
+ * @param {Array<sjcl.ecc.point>} signatures an array of signed points
+ * @param {bool} compressed a flag indicating whether points were received compressed
  * @param {Object} commitments JSON object containing encoded curve points
  * @param {string} prngName name of the PRNG used for verifying proof
  * @return {boolean}
  */
-function verifyProof(proofObj, tokens, signatures, commitments, prngName) {
+function verifyProof(proofObj, tokens, signatures, compressed, commitments, prngName) {
     const bp = getMarshaledBatchProof(proofObj);
     const dleq = retrieveProof(bp);
     if (!dleq) {
@@ -278,19 +336,19 @@ function verifyProof(proofObj, tokens, signatures, commitments, prngName) {
     const rG = _scalarMult(dleq.R, pointG);
     const A = cH.toJac().add(rG).toAffine();
 
-    const composites = recomputeComposites(chkM, chkZ, pointG, pointH, prngName);
+    const composites = recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName);
     const cZ = _scalarMult(dleq.C, composites.Z);
     const rM = _scalarMult(dleq.R, composites.M);
     const B = cZ.toJac().add(rM).toAffine();
 
     // Recalculate C' and check if C =?= C'
     const h = new CURVE_H2C_HASH(); // use the h2c hash for convenience
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(pointG)));
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(pointH)));
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(composites.M)));
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(composites.Z)));
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(A)));
-    h.update(sjcl.codec.bytes.toBits(sec1EncodePoint(B)));
+    h.update(encodePointForDleq(pointG, compressed));
+    h.update(encodePointForDleq(pointH, compressed));
+    h.update(encodePointForDleq(composites.M, compressed));
+    h.update(encodePointForDleq(composites.Z, compressed));
+    h.update(encodePointForDleq(A, compressed));
+    h.update(encodePointForDleq(B, compressed));
     const digestBits = h.finalize();
     const receivedDigestBits = dleq.C.toBits();
     if (!sjcl.bitArray.equal(digestBits, receivedDigestBits)) {
@@ -305,14 +363,15 @@ function verifyProof(proofObj, tokens, signatures, commitments, prngName) {
 /**
  * Recompute the composite M and Z values for verifying DLEQ
  * @param {Array<Object>} chkM array of token objects containing blinded curve points
- * @param {Array<sjcl.ecc.point>} chkZ array of signed curve points
+ * @param {Object} chkZ contains array of signed curve points and compression flag
  * @param {sjcl.ecc.point} pointG curve point
  * @param {sjcl.ecc.point} pointH curve point
+ * @param {bool} compressed compression flag
  * @param {string} prngName name of PRNG used to verify proof
  * @return {Object} Object containing composite points M and Z
  */
-function recomputeComposites(chkM, chkZ, pointG, pointH, prngName) {
-    const seed = computeSeed(chkM, chkZ, pointG, pointH);
+function recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName) {
+    const seed = computeSeed(chkM, chkZ, pointG, pointH, compressed);
     let cM = new sjcl.ecc.pointJac(CURVE); // can only add points in jacobian representation
     let cZ = new sjcl.ecc.pointJac(CURVE);
     const prng = {name: prngName};
@@ -381,15 +440,16 @@ function computePRNGScalar(prng, seed, salt) {
  * @param {sjcl.ecc.point[]} chkZ array of signed curve points
  * @param {sjcl.ecc.point} pointG curve point
  * @param {sjcl.ecc.point} pointH curve point
+ * @param {bool} compressed point compression flag
  * @return {string} hex-encoded PRNG seed
  */
-function computeSeed(chkM, chkZ, pointG, pointH) {
+function computeSeed(chkM, chkZ, pointG, pointH, compressed) {
     const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
-    h.update(encodePointForPRNG(pointG));
-    h.update(encodePointForPRNG(pointH));
+    h.update(encodePointForDleq(pointG, compressed));
+    h.update(encodePointForDleq(pointH, compressed));
     for (let i=0; i<chkM.length; i++) {
-        h.update(encodePointForPRNG(chkM[i].point));
-        h.update(encodePointForPRNG(chkZ[i]));
+        h.update(encodePointForDleq(chkM[i].point, compressed));
+        h.update(encodePointForDleq(chkZ[i], compressed));
     }
     return sjcl.codec.hex.fromBits(h.finalize());
 }
@@ -445,7 +505,7 @@ function retrieveProof(bp) {
     try {
         dleqProof = parseDleqProof(atob(bp.P));
     } catch (e) {
-        console.error(PARSE_ERR);
+        console.error(`${PARSE_ERR}: ${e}`);
         return;
     }
     return dleqProof;
@@ -507,12 +567,17 @@ function getBigNumFromHex(hex) {
 }
 
 /**
- * Encodes a curve point into hex for a PRNG input
+ * Encodes a curve point into bits for using as input to hash functions etc
  * @param {sjcl.ecc.point} point curve point
- * @return {string}
+ * @param {bool} compressed flag indicating whether points have been compressed
+ * @return {sjcl.bitArray}
  */
-function encodePointForPRNG(point) {
-    const hex = sjcl.codec.hex.fromBits(point.toBits());
-    const newHex = UNCOMPRESSED_POINT_PREFIX + hex;
-    return sjcl.codec.hex.toBits(newHex);
+function encodePointForDleq(point, compressed) {
+    let bytes;
+    if (!compressed) {
+        bytes = sec1EncodePoint(point);
+    } else {
+        bytes = compressPointToBytes(point);
+    }
+    return sjcl.codec.bytes.toBits(bytes);
 }

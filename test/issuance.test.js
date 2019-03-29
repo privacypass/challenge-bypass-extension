@@ -25,6 +25,7 @@ const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
 const getBigNumFromBytes = workflow.__get__("getBigNumFromBytes");
 const sec1DecodePointFromBytes = workflow.__get__("sec1DecodePointFromBytes");
+const decompressPoint = workflow.__get__("decompressPoint");
 const createVerificationXHR = workflow.__get__("createVerificationXHR");
 const retrieveCommitments = workflow.__get__("retrieveCommitments");
 const validateResponse = workflow.__get__("validateResponse");
@@ -34,8 +35,6 @@ const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
-const _scalarMult = workflow.__get__("_scalarMult");
-const sec1EncodePoint = workflow.__get__("sec1EncodePoint");
 let localStorage;
 let details;
 let url;
@@ -71,6 +70,11 @@ const goodResponses = [
             ZOWV5SlFJam9pWlhsS1JFbHFiMmxTV0VaUlZHcEpNRkZVU1hkUFIwWnlUbXBvUWxreWJIcFVSVFZPWld0YWMyVkhZelJpTTJSd1ZGaG9VMVpzVGt0Uk1FMHlUVWR3VUZsNk1HbE1RMHBUU1dwdmFWcFVSa1ZsUldneFRXMHhORk5yY0V0TlEzUkRUWHBvV2xWRWFHcFJNbFY2Vkdwc1NtSkViRWxTUkZaRllUSktlbGR0WkcxWlZtaERWMVF3YVdaUlBUMGlmUT09IiwidmVyc2lvbiI6ImhrZGYiLCJwcm5nIjoiaGtkZiJ9`,
         name: "hkdf",
     },
+    {
+        string: `signatures=eyJzaWdzIjpbIkF6cTF6TGFRMkVUY3Q0Q3kyZVdSSnRZcnlGTzZBYkxET2JvY0czakFQa3RxIiwiQTJSK0dyZVVheERCd2NrdDB6UGkvSjZUNkYvZTlaT2I4dk4ycm9XU1NGRSsiXSwicHJvb2YiOiJZbUYwWTJndGNISnZiMlk5ZXlKUUlqb2laWGxLUkVscWIybFVSR3d3WTJwS2ExVnRlRTFaYlRWMVZGVjRhV0ZHU2xGbFZ6QjNUVzA1VldGWE9WWlRiVkpwVjBaV2FGTXdZM1pSYTF
+            aUlRUQjBWMUpVTUdsTVEwcFRTV3B2YVUxVlNuWlZWR1J6WkRCa1VtRnFSbTFVUjNSU1MzcHNNVm96YjNwVVJXUnlZbGM1YzFsdWJERmlSMVpYVGtoS1ZXVnFUbFJsYkVKSFZGUXdhV1pSUFQwaWZRPT0iLCJ2ZXJzaW9uIjoiaGtkZiIsInBybmciOiJoa2RmIn0=`,
+        name: "compressed-hkdf",
+    },
 ];
 const respBadProof = `signatures=WyJCQVRkL01qTnNuTTZxaHBQZzFLS216RnVHOUNQRzdFbERVSU5EVjFJQmd5WTN2RkVrdENUMk8ybW82dGNNLy9qMWE2Zkoyb1dMb2Z5MGZqYWVjTlBEeWM9IiwiQk9aQnY4dnNxdFg3VzRKcFlSZERHMm5QSEtHTDBMVUtFY1VCY1ZTZjcrcnlxRHRRdC9WZFFlZHRLMkVNa1AvMXZvcjl6dkkvRDZ0ekNZQi9CQkRLRkpRPSIsIkJNMW9UdW9Bc3RiTzQvN3ZIcUEwaDhNbG5
 rNG5UdEJ6NzdvN25RWitqM2RhQ09FU3RXM1VTWHRKdGdmcnVramZBNkxDUksyUmpFVGZVUWU1cmhpaEY0ND0iLCJZbUYwWTJndGNISnZiMlk5ZXlKRElqcGJJbXhrWldacVJ6QXZaRXh2VUhVdkt6UjNURkl5TTJaM2JsWllWVGQwY1dSYU5uSmhlbWhqYTNSa1JYYzlJaXdpZWt4M2QyZHROVGxaU0c5T2FtRkVhVkJ5UzBSd1VrOU5ZMnBsTlhwc2IxaEtXa2MyY1ZJMGJUQXhRVDBpTENKbl
@@ -91,12 +95,13 @@ const testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/
 const testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
 const testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
 // different test data for where HKDF is used for proof verification
-const hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
 const genBytes = [4, 107, 23, 209, 242, 225, 44, 66, 71, 248, 188, 230, 229, 99, 164, 64, 242, 119, 3, 125, 129, 45, 235, 51, 160, 244, 161, 57, 69, 216, 152, 194, 150, 79, 227, 66, 226, 254, 26, 127, 155, 142, 231, 235, 74, 124, 15, 158, 22, 43, 206, 51, 87, 107, 49, 94, 206, 203, 182, 64, 104, 55, 191, 81, 245];
+const hBytes = [4, 97, 25, 196, 70, 213, 45, 33, 189, 8, 106, 8, 111, 95, 39, 119, 7, 91, 32, 101, 186, 169, 186, 87, 156, 1, 140, 185, 141, 106, 90, 5, 193, 178, 251, 89, 7, 236, 175, 62, 91, 196, 188, 86, 40, 203, 15, 230, 241, 15, 49, 65, 124, 16, 47, 188, 65, 97, 15, 118, 139, 47, 130, 143, 161];
 const hkdfG = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(genBytes));
-const hkdfH = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(sec1EncodePoint(_scalarMult(hkdfTestKey, sec1DecodePointFromBytes(genBytes)))));
+const hkdfH = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(hBytes));
 // we only need token.point (so token.data and token.blind are mocked and do match the point data)
 const testTokensHkdf = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112,80,67,186,92,112,0,18,62,31,208,88,21,10,77,55,151,0,143,87,168,178,83,119,102,217,65,156,115,150,186,82,121],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252,160,47,15,9,200,58,130,65,180,69,114,160,89,171,73,192,128,163,157,11,206,45,93,11,68,255,93,1,43,81,132,231],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
+const testTokensHkdfCompressed = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[3,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[3,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
 
 /* mock impls */
 function getMock(key) {
@@ -454,13 +459,20 @@ describe("test validating response", () => {
         });
         goodResponses.forEach((element) => {
             let commVersion;
+            let decodePoint;
             let testTokenData;
             let G;
             let H;
             beforeEach(() => {
-                if (element.name == "hkdf") {
+                decodePoint = sec1DecodePointFromBytes;
+                if (element.name.includes("hkdf")) {
                     commVersion = "hkdf";
-                    testTokenData = testTokensHkdf;
+                    if (element.name.includes("compressed")) {
+                        testTokenData = testTokensHkdfCompressed;
+                        decodePoint = decompressPoint;
+                    } else {
+                        testTokenData = testTokensHkdf;
+                    }
                     G = hkdfG;
                     H = hkdfH;
                 } else {
@@ -477,7 +489,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -512,7 +524,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {token: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     before = getMock(TOKEN_COUNT_STR);
@@ -546,7 +558,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {token: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     before = getMock(TOKEN_COUNT_STR);
@@ -580,7 +592,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -609,7 +621,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
