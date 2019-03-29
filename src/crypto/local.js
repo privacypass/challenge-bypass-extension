@@ -361,14 +361,14 @@ function computePRNGScalar(prng, seed, salt) {
             out = prng.func.squeeze(32, "hex");
             break;
         case "hkdf":
-            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), (bitLen+7)/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
+            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), Math.ceil(bitLen/8), sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
             break;
         default:
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
     }
     // Masking is not strictly necessary for p256 but better to be completely
     // compatible in case that the curve changes
-    const h = "0x" + out.substr(0, 2);
+    const h = parseInt(out.substr(0, 2), 16);
     const mh = sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits([h & mask]));
     out = mh + out.substr(2);
     const nOut = getBigNumFromHex(out);
@@ -414,7 +414,7 @@ function evaluateHkdf(ikm, length, info, salt, hash) {
     mac.update(ikm);
     const prk = mac.digest();
 
-    const hashLength = (sjcl.bitArray.bitLength(prk)+7)/8;
+    const hashLength = Math.ceil(sjcl.bitArray.bitLength(prk)/8);
     const numBlocks = Math.ceil(length / hashLength);
     if (numBlocks > 255) {
         throw new Error(`[privacy-pass]: HKDF error, number of proposed iterations too large: ${numBlocks}`);
