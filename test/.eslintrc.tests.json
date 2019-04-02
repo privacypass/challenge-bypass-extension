@@ -53,7 +53,8 @@
         "getSpentUrlMock": true,
         "setSpendFlagMock": true,
         "getSpendFlagMock": true,
-        "clearSpentTabMock": true
+        "clearSpentTabMock": true,
+        "mockXHR": true
     },
     "rules": {
         "no-func-assign": 0,

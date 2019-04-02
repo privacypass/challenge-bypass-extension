@@ -8,6 +8,7 @@
 import each from "jest-each";
 
 const workflow = workflowSet();
+const sjcl = workflow.__get__("sjcl");
 
 /**
  * Functions/variables
@@ -32,8 +33,6 @@ const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
 const _scalarMult = workflow.__get__("_scalarMult");
 const sec1EncodePoint = workflow.__get__("sec1EncodePoint");
-let details;
-let url;
 const goodResponses = [
     {
         string: `signatures=WyJCTGZOdGZ6eG92RXdwZk5LWVBvRkk3dHNLNk5rMjNNalluUklEVFhGdHEwYm9zbWJIN1l1bERYWHVrdVYrKytxZyttYU9UWEF4cXpGSHNkV3p2dEpmQU09IiwiQkVIa1BPT1p3UlIrT0dNKzJQTUJnRWVrdUhobVJpVUlJSGxiaGJqNkNSKzZ2blp3Sk1CTHlNbDR4aURuOVY4SUhQNFdENFRaTUJGQjR0cStXd0c5azdRPSIsIkJBKzM4NkZPNkNXODZJbGIxdzdEOUZWMytwRnN
@@ -68,12 +67,27 @@ const goodResponses = [
     },
 ];
 
-const PPConfigs = workflow.__get__("PPConfigs")
+const PPConfigs = workflow.__get__("PPConfigs");
 
 let details;
 let url;
-
 let configId;
+
+// different test data for where HKDF is used for proof verification
+const hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
+const genBytes = [4, 107, 23, 209, 242, 225, 44, 66, 71, 248, 188, 230, 229, 99, 164, 64, 242, 119, 3, 125, 129, 45, 235, 51, 160, 244, 161, 57, 69, 216, 152, 194, 150, 79, 227, 66, 226, 254, 26, 127, 155, 142, 231, 235, 74, 124, 15, 158, 22, 43, 206, 51, 87, 107, 49, 94, 206, 203, 182, 64, 104, 55, 191, 81, 245];
+const hkdfG = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(genBytes));
+const hkdfH = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(sec1EncodePoint(_scalarMult(hkdfTestKey, sec1DecodePointFromBytes(genBytes)))));
+// we only need token.point (so token.data and token.blind are mocked and do match the point data)
+const testTokensHkdf = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112,80,67,186,92,112,0,18,62,31,208,88,21,10,77,55,151,0,143,87,168,178,83,119,102,217,65,156,115,150,186,82,121],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252,160,47,15,9,200,58,130,65,180,69,114,160,89,171,73,192,128,163,157,11,206,45,93,11,68,255,93,1,43,81,132,231],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
+
+function mockXHRCommitments() {
+    mockXHR(this);
+    this.status = 200;
+    this.readyState = 4;
+    this.responseText = `{"CF":{"dev":{"G": "${testDevG}","H": "${testDevH}"},"1.0":{"G":"${testG}","H":"${testH}"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"},"hkdf":{"G":"${hkdfG}","H":"${hkdfH}"}}}`;
+}
+
 
 beforeEach(() => {
     clearLocalStorage();
@@ -402,20 +416,20 @@ describe("test validating response", () => {
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
                     expect(xhr).toBeTruthy();
                     expect(xhr.send).toBeCalledTimes(1);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     xhr.onreadystatechange();
-                    after = getMock(TOKEN_COUNT_STR);
+                    after = getMock(bypassTokensCount(1));
                     version = out.version;
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
+                setMock(bypassTokensCount(1), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after == before+testTokenData.length).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeTruthy();
+                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
                 expect(cache.H === H).toBeTruthy();
@@ -434,21 +448,21 @@ describe("test validating response", () => {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
                     expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
-                    after = getMock(TOKEN_COUNT_STR);
+                    after = getMock(bypassTokensCount(1));
                     version = out.version;
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
+                setMock(bypassTokensCount(1), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after == before+testTokenData.length).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeTruthy();
+                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
                 expect(cache.H === H).toBeTruthy();
@@ -461,24 +475,24 @@ describe("test validating response", () => {
                 // construct corrupted commitments
                 const commStruct = {};
                 commStruct[commVersion] = {L: G, H: H};
-                localStorage[CACHED_COMMITMENTS_STRING] = JSON.stringify(commStruct);
+                setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodePointFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
                     expect(xhr).toBeTruthy();
                     expect(xhr.send).toBeCalledTimes(1);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     xhr.onreadystatechange();
-                    after = getMock(TOKEN_COUNT_STR);
+                    after = getMock(bypassTokensCount(1));
                     version = out.version;
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
+                setMock(bypassTokensCount(1), 0);
                 const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
@@ -486,7 +500,7 @@ describe("test validating response", () => {
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after == before+testTokenData.length).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeTruthy();
+                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
                 expect(cache.H === H).toBeTruthy();
@@ -503,20 +517,20 @@ describe("test validating response", () => {
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     xhr.onreadystatechange();
-                    after = getMock(TOKEN_COUNT_STR);
+                    after = getMock(bypassTokensCount(1));
                     version = out.version;
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
+                setMock(bypassTokensCount(1), 0);
                 const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
                 expect(after == before+testTokenData.length).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeFalsy();
+                expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
                 expect(cache.H === H).toBeTruthy();
@@ -525,6 +539,9 @@ describe("test validating response", () => {
             test(`reloading off after sign: ${element.name}`, () => {
                 let before;
                 let after;
+                const commStruct = {};
+                commStruct[commVersion] = {L: G, H: H};
+                const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
@@ -532,20 +549,21 @@ describe("test validating response", () => {
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    before = getMock(TOKEN_COUNT_STR);
+                    before = getMock(bypassTokensCount(1));
                     xhr.onreadystatechange();
-                    after = getMock(TOKEN_COUNT_STR);
+                    after = getMock(bypassTokensCount(1));
                 }
                 setTimeSinceLastResp(0); // reset the variables
-                setMock(TOKEN_COUNT_STR, 0);
-                workflow.__set__("RELOAD_ON_SIGN", false);
-                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                expect(consoleMock.error).not.toBeCalled();
-                expect(run).not.toThrow();
-                expect(updateIconMock).toBeCalledTimes(3);
-                expect(updateBrowserTabMock).not.toBeCalled();
-                expect(after == before+testTokenData.length).toBeTruthy();
-                expect(getSpendFlag(newUrl.host)).toBeFalsy();
+                setMock(bypassTokensCount(1), 0);
+                workflow.__with__({"reloadOnSign": () => false})(() => {
+                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                    expect(consoleMock.error).not.toBeCalled();
+                    expect(run).not.toThrow();
+                    expect(updateIconMock).toBeCalledTimes(3);
+                    expect(updateBrowserTabMock).not.toBeCalled();
+                    expect(after == before + testTokenData.length).toBeTruthy();
+                    expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
+                });
             });
         });
 

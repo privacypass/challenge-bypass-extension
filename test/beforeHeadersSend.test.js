@@ -77,19 +77,19 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (configId) {
-                case 1:
-                    workflow.__with__({spendMax: () => 3})(() => {
-                        expect(redeemHdrs.requestHeaders).toBeFalsy();
-                    });
-                    break;
-                case 2:
-                    // hCaptcha has no spendMax
-                    expect(workflow.__get__("CONFIG_ID")).toBe(2);
-                    expect(workflow.__get__("spendMax")()).toBe(0);
-                    expect(redeemHdrs.requestHeaders).toBeTruthy();
-                    break;
-                default:
-                    throw Error(`Unhandled config.id value => ${configId}`);
+                    case 1:
+                        workflow.__with__({spendMax: () => 3})(() => {
+                            expect(redeemHdrs.requestHeaders).toBeFalsy();
+                        });
+                        break;
+                    case 2:
+                        // hCaptcha has no spendMax
+                        expect(workflow.__get__("CONFIG_ID")).toBe(2);
+                        expect(workflow.__get__("spendMax")()).toBe(0);
+                        expect(redeemHdrs.requestHeaders).toBeTruthy();
+                        break;
+                    default:
+                        throw Error(`Unhandled config.id value => ${configId}`);
                 }
             });
             test("spend has been attempted for url", () => {
@@ -99,15 +99,15 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 const redeemHdrs = beforeSendHeaders(details, url);
                 expect(redeemHdrs.cancel).toBeFalsy();
                 switch (configId) {
-                case 1:
-                    expect(redeemHdrs.requestHeaders).toBeFalsy();
-                    break;
-                case 2:
-                    // hCaptcha will always spend on its URLS
-                    expect(redeemHdrs.requestHeaders).toBeTruthy();
-                    break;
-                default:
-                    throw Error(`Unhandled config.id value => ${configId}`);
+                    case 1:
+                        expect(redeemHdrs.requestHeaders).toBeFalsy();
+                        break;
+                    case 2:
+                        // hCaptcha will always spend on its URLS
+                        expect(redeemHdrs.requestHeaders).toBeTruthy();
+                        break;
+                    default:
+                        throw Error(`Unhandled config.id value => ${configId}`);
                 }
             });
             test("redemption method is invalid", () => {
