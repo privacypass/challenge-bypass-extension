@@ -120,8 +120,7 @@ function newRandomPoint() {
 }
 
 /**
- * Compresses a curve point into a base64-encoded string via Section 2.3.4 of
- * SEC1
+ * Compresses a curve point into a base64-encoded string
  * @param {sjcl.ecc.point} P
  * @return {sjcl.codec.base64}
  */
@@ -131,13 +130,14 @@ function compressPoint(P) {
 }
 
 /**
- * Compresses a curve point into bytes via Section 2.3.4 of SEC1
+ * Compresses a curve point into bytes via Section 2.3.3 of SEC1
  * @param {sjcl.ecc.point} P
  * @return {sjcl.codec.bytes}
  */
 function compressPointToBytes(P) {
     const xBytes = sjcl.codec.bytes.fromBits(P.x.toBits());
-    const sign = P.y.limbs[0] & 1 ? 0x03 : 0x02;
+    const y = P.y.normalize();
+    const sign = y.limbs[0] & 1 ? 0x03 : 0x02;
     return [sign].concat(xBytes);
 }
 
