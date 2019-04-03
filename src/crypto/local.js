@@ -296,21 +296,18 @@ function validResponseCompression(compression, setting) {
  * @param {string} proofObj base64-encoded batched DLEQ proof object
  * @param {Object} tokens array of token objects containing blinded curve points
  * @param {Array<sjcl.ecc.point>} signatures an array of signed points
- * @param {bool} compressed a flag indicating whether points were received compressed
  * @param {Object} commitments JSON object containing encoded curve points
  * @param {string} prngName name of the PRNG used for verifying proof
  * @return {boolean}
  */
-function verifyProof(proofObj, tokens, signatures, compressed, commitments, prngName) {
+function verifyProof(proofObj, tokens, signatures, commitments, prngName) {
     const bp = getMarshaledBatchProof(proofObj);
     const dleq = retrieveProof(bp);
     if (!dleq) {
         // Error has probably occurred
         return false;
     }
-    const chkM = tokens;
-    const chkZ = signatures;
-    if (chkM.length !== chkZ.length) {
+    if (tokens.length !== signatures.points.length) {
         return false;
     }
     const pointG = sec1DecodeFromBase64(commitments.G);
@@ -321,19 +318,19 @@ function verifyProof(proofObj, tokens, signatures, compressed, commitments, prng
     const rG = _scalarMult(dleq.R, pointG);
     const A = cH.toJac().add(rG).toAffine();
 
-    const composites = recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName);
+    const composites = recomputeComposites(tokens, signatures, pointG, pointH, prngName);
     const cZ = _scalarMult(dleq.C, composites.Z);
     const rM = _scalarMult(dleq.R, composites.M);
     const B = cZ.toJac().add(rM).toAffine();
 
     // Recalculate C' and check if C =?= C'
     const h = new CURVE_H2C_HASH(); // use the h2c hash for convenience
-    h.update(sec1EncodeToBits(pointG, compressed));
-    h.update(sec1EncodeToBits(pointH, compressed));
-    h.update(sec1EncodeToBits(composites.M, compressed));
-    h.update(sec1EncodeToBits(composites.Z, compressed));
-    h.update(sec1EncodeToBits(A, compressed));
-    h.update(sec1EncodeToBits(B, compressed));
+    h.update(sec1EncodeToBits(pointG, signatures.compressed));
+    h.update(sec1EncodeToBits(pointH, signatures.compressed));
+    h.update(sec1EncodeToBits(composites.M, signatures.compressed));
+    h.update(sec1EncodeToBits(composites.Z, signatures.compressed));
+    h.update(sec1EncodeToBits(A, signatures.compressed));
+    h.update(sec1EncodeToBits(B, signatures.compressed));
     const digestBits = h.finalize();
     const receivedDigestBits = dleq.C.toBits();
     if (!sjcl.bitArray.equal(digestBits, receivedDigestBits)) {
@@ -347,16 +344,15 @@ function verifyProof(proofObj, tokens, signatures, compressed, commitments, prng
 
 /**
  * Recompute the composite M and Z values for verifying DLEQ
- * @param {Array<Object>} chkM array of token objects containing blinded curve points
- * @param {Object} chkZ contains array of signed curve points and compression flag
+ * @param {Array<Object>} tokens array of token objects containing blinded curve points
+ * @param {Object} signatures contains array of signed curve points and compression flag
  * @param {sjcl.ecc.point} pointG curve point
  * @param {sjcl.ecc.point} pointH curve point
- * @param {bool} compressed compression flag
  * @param {string} prngName name of PRNG used to verify proof
  * @return {Object} Object containing composite points M and Z
  */
-function recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName) {
-    const seed = computeSeed(chkM, chkZ, pointG, pointH, compressed);
+function recomputeComposites(tokens, signatures, pointG, pointH, prngName) {
+    const seed = computeSeed(tokens, signatures, pointG, pointH);
     let cM = new sjcl.ecc.pointJac(CURVE); // can only add points in jacobian representation
     let cZ = new sjcl.ecc.pointJac(CURVE);
     const prng = {name: prngName};
@@ -372,7 +368,7 @@ function recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName) {
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
     }
     let iter = -1;
-    for (let i=0; i<chkM.length; i++) {
+    for (let i=0; i<tokens.length; i++) {
         iter++;
         const ci = computePRNGScalar(prng, seed, (new sjcl.bn(iter)).toBits());
         // Moved this check out of computePRNGScalar to here
@@ -380,8 +376,8 @@ function recomputeComposites(chkM, chkZ, pointG, pointH, compressed, prngName) {
             i--;
             continue;
         }
-        const cMi = _scalarMult(ci, chkM[i].point);
-        const cZi = _scalarMult(ci, chkZ[i]);
+        const cMi = _scalarMult(ci, tokens[i].point);
+        const cZi = _scalarMult(ci, signatures.points[i]);
         cM = cM.add(cMi);
         cZ = cZ.add(cZi);
     }
@@ -425,16 +421,16 @@ function computePRNGScalar(prng, seed, salt) {
  * @param {sjcl.ecc.point[]} chkZ array of signed curve points
  * @param {sjcl.ecc.point} pointG curve point
  * @param {sjcl.ecc.point} pointH curve point
- * @param {bool} compressed point compression flag
  * @return {string} hex-encoded PRNG seed
  */
-function computeSeed(chkM, chkZ, pointG, pointH, compressed) {
+function computeSeed(chkM, chkZ, pointG, pointH) {
+    const compressed = chkZ.compressed;
     const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
     h.update(sec1EncodeToBits(pointG, compressed));
     h.update(sec1EncodeToBits(pointH, compressed));
     for (let i=0; i<chkM.length; i++) {
         h.update(sec1EncodeToBits(chkM[i].point, compressed));
-        h.update(sec1EncodeToBits(chkZ[i], compressed));
+        h.update(sec1EncodeToBits(chkZ.points[i], compressed));
     }
     return sjcl.codec.hex.fromBits(h.finalize());
 }

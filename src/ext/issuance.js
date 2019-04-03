@@ -288,7 +288,7 @@ function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
     const ret = getCurvePoints(issueResp.signatures);
 
     // Verify the DLEQ batch proof before handing back the usable points
-    if (!verifyProof(issueResp.proof, tokens, ret.points, ret.compressed, commitments, issueResp.prng)) {
+    if (!verifyProof(issueResp.proof, tokens, ret, commitments, issueResp.prng)) {
         throw new Error("[privacy-pass]: Unable to verify DLEQ proof.");
     }
 
