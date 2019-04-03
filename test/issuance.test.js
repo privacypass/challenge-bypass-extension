@@ -24,8 +24,7 @@ const CACHED_COMMITMENTS_STRING = "cached-commitments";
 const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
 const getBigNumFromBytes = workflow.__get__("getBigNumFromBytes");
-const sec1DecodePointFromBytes = workflow.__get__("sec1DecodePointFromBytes");
-const decompressPoint = workflow.__get__("decompressPoint");
+const sec1DecodeFromBytes = workflow.__get__("sec1DecodeFromBytes");
 const createVerificationXHR = workflow.__get__("createVerificationXHR");
 const retrieveCommitments = workflow.__get__("retrieveCommitments");
 const validateResponse = workflow.__get__("validateResponse");
@@ -459,17 +458,14 @@ describe("test validating response", () => {
         });
         goodResponses.forEach((element) => {
             let commVersion;
-            let decodePoint;
             let testTokenData;
             let G;
             let H;
             beforeEach(() => {
-                decodePoint = sec1DecodePointFromBytes;
                 if (element.name.includes("hkdf")) {
                     commVersion = "hkdf";
                     if (element.name.includes("compressed")) {
                         testTokenData = testTokensHkdfCompressed;
-                        decodePoint = decompressPoint;
                     } else {
                         testTokenData = testTokensHkdf;
                     }
@@ -489,7 +485,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -524,7 +520,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     before = getMock(TOKEN_COUNT_STR);
@@ -558,7 +554,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     before = getMock(TOKEN_COUNT_STR);
@@ -592,7 +588,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -621,7 +617,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: decodePoint(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -647,7 +643,7 @@ describe("test validating response", () => {
                 function run() {
                     const tokens = [];
                     for (let i=0; i<testTokens.length; i++) {
-                        tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                        tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                     }
                     const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
                     const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -666,7 +662,7 @@ describe("test validating response", () => {
                     function run() {
                         const tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                            tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadJson);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -684,7 +680,7 @@ describe("test validating response", () => {
                     function run() {
                         const tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                            tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadPoints);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -702,7 +698,7 @@ describe("test validating response", () => {
                     function run() {
                         const tokens = [];
                         for (let i=0; i<testTokensBadLength.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                            tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadProof);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
@@ -725,7 +721,7 @@ describe("test validating response", () => {
                     function run() {
                         const tokens = [];
                         for (let i=0; i<testTokens.length; i++) {
-                            tokens[i] = {data: testTokens[i].data, point: sec1DecodePointFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
+                            tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadProof);
                         const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);

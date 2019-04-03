@@ -17,8 +17,10 @@ const getActiveECSettings = workflow.__get__("getActiveECSettings");
 const initECSettings = workflow.__get__("initECSettings");
 const getCurveParams = workflow.__get__("getCurveParams");
 const newRandomPoint = workflow.__get__("newRandomPoint");
-const compressPoint = workflow.__get__("compressPoint");
-const decompressPoint = workflow.__get__("decompressPoint");
+const sec1Encode = workflow.__get__("sec1Encode");
+const sec1EncodeToBase64 = workflow.__get__("sec1EncodeToBase64");
+const sec1DecodeFromBytes = workflow.__get__("sec1DecodeFromBytes");
+const sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
 
 /**
  * Mocking
@@ -188,23 +190,55 @@ describe("hashing to p256", () => {
     });
 });
 
-describe("point compression/decompression", () => {
-    test("check bad tag fails", () => {
+describe("point encoding/decoding", () => {
+    test("check bad tag fails for compressed encoding", () => {
         function run() {
             const P = newRandomPoint().point;
-            const b64 = compressPoint(P);
-            const bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
+            const bytes = sec1Encode(P, true);
             bytes[0] = 4;
-            return decompressPoint(bytes);
+            return sec1DecodeFromBytes(bytes);
         }
         expect(run).toThrowError();
     });
 
-    test("random point", () => {
+    test("check bad tag fails for uncompressed encoding", () => {
+        function run() {
+            const P = newRandomPoint().point;
+            const bytes = sec1Encode(P, false);
+            bytes[0] = 3;
+            return sec1DecodeFromBytes(bytes);
+        }
+        expect(run).toThrowError();
+    });
+
+    test("compressed random point (bytes)", () => {
         const P = newRandomPoint().point;
-        const b64 = compressPoint(P);
-        const bytes = sjcl.codec.bytes.fromBits(sjcl.codec.base64.toBits(b64));
-        const newP = decompressPoint(bytes);
+        const bytes = sec1Encode(P, true);
+        const newP = sec1DecodeFromBytes(bytes);
+        expect(P.x.equals(newP.x)).toBeTruthy();
+        expect(P.y.equals(newP.y)).toBeTruthy();
+    });
+
+    test("compressed random point (base64)", () => {
+        const P = newRandomPoint().point;
+        const b64 = sec1EncodeToBase64(P, true);
+        const newP = sec1DecodeFromBase64(b64);
+        expect(P.x.equals(newP.x)).toBeTruthy();
+        expect(P.y.equals(newP.y)).toBeTruthy();
+    });
+
+    test("uncompressed random point (bytes)", () => {
+        const P = newRandomPoint().point;
+        const bytes = sec1Encode(P, false);
+        const newP = sec1DecodeFromBytes(bytes);
+        expect(P.x.equals(newP.x)).toBeTruthy();
+        expect(P.y.equals(newP.y)).toBeTruthy();
+    });
+
+    test("uncompressed random point (base64)", () => {
+        const P = newRandomPoint().point;
+        const b64 = sec1EncodeToBase64(P, false);
+        const newP = sec1DecodeFromBase64(b64);
         expect(P.x.equals(newP.x)).toBeTruthy();
         expect(P.y.equals(newP.y)).toBeTruthy();
     });

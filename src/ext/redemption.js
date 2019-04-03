@@ -83,7 +83,8 @@ function deriveKey(N, token) {
     const hash = getActiveECSettings().hash;
     const h = new sjcl.misc.hmac(tagBits, hash);
 
-    const encodedPoint = sec1EncodePoint(N);
+    // Always compute derived key using uncompressed point bytes
+    const encodedPoint = sec1Encode(N, false);
     const tokenBits = sjcl.codec.bytes.toBits(token);
     const pointBits = sjcl.codec.bytes.toBits(encodedPoint);
 

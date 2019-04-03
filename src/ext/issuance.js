@@ -217,7 +217,7 @@ function parseIssueResp(issueResp) {
 function BuildIssueRequest(tokens) {
     const contents = [];
     for (let i = 0; i < tokens.length; i++) {
-        const encodedPoint = compressPoint(tokens[i].point);
+        const encodedPoint = sec1EncodeToBase64(tokens[i].point, true);
         contents.push(encodedPoint);
     }
     return btoa(JSON.stringify({type: "Issue", contents: contents}));

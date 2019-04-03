@@ -6,11 +6,10 @@
  */
 
 /* global sjcl */
-/* exported compressPoint */
-/* exported decompressPoint */
-/* exported sec1EncodePoint */
-/* exported decodeStorablePoint */
-/* exported encodeStorablePoint */
+/* exported sec1Encode */
+/* exported sec1EncodeToBase64 */
+/* exported sec1DecodeFromBase64 */
+/* exported sec1DecodeFromBytes */
 /* exported newRandomPoint */
 /* exported blindPoint, unblindPoint */
 /* exported verifyProof */
@@ -120,25 +119,75 @@ function newRandomPoint() {
 }
 
 /**
- * Compresses a curve point into a base64-encoded string
+ * Encodes a curve point as bytes in SEC1 uncompressed format
  * @param {sjcl.ecc.point} P
- * @return {sjcl.codec.base64}
+ * @param {bool} compressed
+ * @return {sjcl.codec.bytes}
  */
-function compressPoint(P) {
-    const taggedBytes = compressPointToBytes(P);
-    return sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(taggedBytes));
+function sec1Encode(P, compressed) {
+    let out = [];
+    if (!compressed) {
+        const xyBytes = sjcl.codec.bytes.fromBits(P.toBits());
+        out = [0x04].concat(xyBytes);
+    } else {
+        const xBytes = sjcl.codec.bytes.fromBits(P.x.toBits());
+        const y = P.y.normalize();
+        const sign = y.limbs[0] & 1 ? 0x03 : 0x02;
+        out = [sign].concat(xBytes);
+    }
+    return out;
 }
 
 /**
- * Compresses a curve point into bytes via Section 2.3.3 of SEC1
- * @param {sjcl.ecc.point} P
- * @return {sjcl.codec.bytes}
+ * Encodes a curve point into bits for using as input to hash functions etc
+ * @param {sjcl.ecc.point} point curve point
+ * @param {bool} compressed flag indicating whether points have been compressed
+ * @return {sjcl.bitArray}
  */
-function compressPointToBytes(P) {
-    const xBytes = sjcl.codec.bytes.fromBits(P.x.toBits());
-    const y = P.y.normalize();
-    const sign = y.limbs[0] & 1 ? 0x03 : 0x02;
-    return [sign].concat(xBytes);
+function sec1EncodeToBits(point, compressed) {
+    return sjcl.codec.bytes.toBits(sec1Encode(point, compressed));
+}
+
+/**
+ * Encodes a point into a base 64 string
+ * @param {sjcl.ecc.point} point
+ * @param {bool} compressed
+ * @return {string}
+ */
+function sec1EncodeToBase64(point, compressed) {
+    return sjcl.codec.base64.fromBits(sec1EncodeToBits(point, compressed));
+}
+
+/**
+ * Decodes a base64-encoded string into a curve point
+ * @param {string} p a base64-encoded, uncompressed curve point
+ * @return {sjcl.ecc.point}
+ */
+function sec1DecodeFromBase64(p) {
+    const sec1Bits = sjcl.codec.base64.toBits(p);
+    const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
+    return sec1DecodeFromBytes(sec1Bytes);
+}
+
+/**
+ * Decodes (SEC1) curve point bytes into a valid curve point
+ * @param {sjcl.codec.bytes} sec1Bytes bytes of an uncompressed curve point
+ * @return {sjcl.ecc.point}
+ */
+function sec1DecodeFromBytes(sec1Bytes) {
+    let P;
+    switch (sec1Bytes[0]) {
+        case 0x02:
+        case 0x03:
+            P = decompressPoint(sec1Bytes);
+            break;
+        case 0x04:
+            P = CURVE.fromBits(sjcl.codec.bytes.toBits(sec1Bytes.slice(1)));
+            break;
+        default:
+            throw new Error("[privacy-pass]: attempted sec1 point decoding with incorrect tag: " + sec1Bytes[0]);
+    }
+    return P;
 }
 
 /**
@@ -149,8 +198,11 @@ function compressPointToBytes(P) {
  */
 function decompressPoint(bytes) {
     const yTag = bytes[0];
+    const expLength = Math.ceil(sjcl.bitArray.bitLength(CURVE.r.toBits())/8)+1;
     if (yTag != 2 && yTag != 3) {
         throw new Error("[privacy-pass]: compressed point is invalid, bytes[0] = " + yTag);
+    } else if (bytes.length !== expLength) {
+        throw new Error(`[privacy-pass]: compressed point is too long, actual = ${bytes.length}, expected = ${expLength}`);
     }
     const xBytes = bytes.slice(1);
     const x = CURVE.field.fromBits(sjcl.codec.bytes.toBits(xBytes)).normalize();
@@ -177,73 +229,6 @@ function decompressPoint(bytes) {
         return null;
     }
     return point;
-}
-
-/**
- * Encodes a curve point as bytes in SEC1 uncompressed format
- * @param {sjcl.ecc.point} P
- * @return {sjcl.codec.bytes}
- */
-function sec1EncodePoint(P) {
-    const pointBits = P.toBits();
-    const xyBytes = sjcl.codec.bytes.fromBits(pointBits);
-    return [0x04].concat(xyBytes);
-}
-
-/**
- * Decodes a base64-encoded string into a curve point
- * @param {string} p a base64-encoded, uncompressed curve point
- * @return {sjcl.ecc.point}
- */
-function sec1DecodePoint(p) {
-    const sec1Bits = sjcl.codec.base64.toBits(p);
-    const sec1Bytes = sjcl.codec.bytes.fromBits(sec1Bits);
-    return sec1DecodePointFromBytes(sec1Bytes);
-}
-
-/**
- * Decodes (SEC1) uncompressed curve point bytes into a valid curve point
- * @param {sjcl.codec.bytes} sec1Bytes bytes of an uncompressed curve point
- * @return {sjcl.ecc.point}
- */
-function sec1DecodePointFromBytes(sec1Bytes) {
-    if (sec1Bytes[0] != 0x04) {
-        throw new Error("[privacy-pass]: attempted sec1 point decoding with incorrect tag: " + sec1Bytes);
-    }
-    const coordinates = sec1Bytes.slice(1); // remove "uncompressed" tag
-    const pointBits = sjcl.codec.bytes.toBits(coordinates);
-    return CURVE.fromBits(pointBits);
-}
-
-/**
- * Marshals a point in an SJCL-internal format that can be used with
- * JSON.stringify for localStorage.
- * @param {sjcl.ecc.point} P curve point
- * @return {string}
- */
-function encodeStorablePoint(P) {
-    const bits = P.toBits();
-    return sjcl.codec.base64.fromBits(bits);
-}
-
-/**
- * Renders a point from SJCL-internal base64.
- * @param {string} s base64-encoded string
- * @return {sjcl.ecc.point}
- */
-function decodeStorablePoint(s) {
-    const bits = sjcl.codec.base64.toBits(s);
-    return CURVE.fromBits(bits);
-}
-
-/**
- * Recovers the curve point according to whether it is compressed or not
- * @param {sjcl.codec.bytes} buf bytes of curve point
- * @param {bool} compressed indicator of whether curve is compressed or not
- * @return {sjcl.ecc.point} decoded point
- */
-function recoverPoint(buf, compressed) {
-    return compressed ? decompressPoint(buf) : sec1DecodePointFromBytes(buf);
 }
 
 /**
@@ -276,7 +261,7 @@ function getCurvePoints(signatures) {
 
     const usablePoints = [];
     sigBytes.forEach(function(buf) {
-        const usablePoint = recoverPoint(buf, compression.on);
+        const usablePoint = sec1DecodeFromBytes(buf);
         if (usablePoint == null) {
             throw new Error("[privacy-pass]: unable to decode point: " + buf);
         }
@@ -328,8 +313,8 @@ function verifyProof(proofObj, tokens, signatures, compressed, commitments, prng
     if (chkM.length !== chkZ.length) {
         return false;
     }
-    const pointG = sec1DecodePoint(commitments.G);
-    const pointH = sec1DecodePoint(commitments.H);
+    const pointG = sec1DecodeFromBase64(commitments.G);
+    const pointH = sec1DecodeFromBase64(commitments.H);
 
     // Recompute A and B for proof verification
     const cH = _scalarMult(dleq.C, pointH);
@@ -343,12 +328,12 @@ function verifyProof(proofObj, tokens, signatures, compressed, commitments, prng
 
     // Recalculate C' and check if C =?= C'
     const h = new CURVE_H2C_HASH(); // use the h2c hash for convenience
-    h.update(encodePointForDleq(pointG, compressed));
-    h.update(encodePointForDleq(pointH, compressed));
-    h.update(encodePointForDleq(composites.M, compressed));
-    h.update(encodePointForDleq(composites.Z, compressed));
-    h.update(encodePointForDleq(A, compressed));
-    h.update(encodePointForDleq(B, compressed));
+    h.update(sec1EncodeToBits(pointG, compressed));
+    h.update(sec1EncodeToBits(pointH, compressed));
+    h.update(sec1EncodeToBits(composites.M, compressed));
+    h.update(sec1EncodeToBits(composites.Z, compressed));
+    h.update(sec1EncodeToBits(A, compressed));
+    h.update(sec1EncodeToBits(B, compressed));
     const digestBits = h.finalize();
     const receivedDigestBits = dleq.C.toBits();
     if (!sjcl.bitArray.equal(digestBits, receivedDigestBits)) {
@@ -445,11 +430,11 @@ function computePRNGScalar(prng, seed, salt) {
  */
 function computeSeed(chkM, chkZ, pointG, pointH, compressed) {
     const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
-    h.update(encodePointForDleq(pointG, compressed));
-    h.update(encodePointForDleq(pointH, compressed));
+    h.update(sec1EncodeToBits(pointG, compressed));
+    h.update(sec1EncodeToBits(pointH, compressed));
     for (let i=0; i<chkM.length; i++) {
-        h.update(encodePointForDleq(chkM[i].point, compressed));
-        h.update(encodePointForDleq(chkZ[i], compressed));
+        h.update(sec1EncodeToBits(chkM[i].point, compressed));
+        h.update(sec1EncodeToBits(chkZ[i], compressed));
     }
     return sjcl.codec.hex.fromBits(h.finalize());
 }
@@ -564,20 +549,4 @@ function getBigNumFromBytes(bytes) {
  */
 function getBigNumFromHex(hex) {
     return sjcl.bn.fromBits(sjcl.codec.hex.toBits(hex));
-}
-
-/**
- * Encodes a curve point into bits for using as input to hash functions etc
- * @param {sjcl.ecc.point} point curve point
- * @param {bool} compressed flag indicating whether points have been compressed
- * @return {sjcl.bitArray}
- */
-function encodePointForDleq(point, compressed) {
-    let bytes;
-    if (!compressed) {
-        bytes = sec1EncodePoint(point);
-    } else {
-        bytes = compressPointToBytes(point);
-    }
-    return sjcl.codec.bytes.toBits(bytes);
 }
