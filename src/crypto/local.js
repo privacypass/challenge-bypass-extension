@@ -198,7 +198,7 @@ function sec1DecodeFromBytes(sec1Bytes) {
  */
 function decompressPoint(bytes) {
     const yTag = bytes[0];
-    const expLength = Math.ceil(sjcl.bitArray.bitLength(CURVE.r.toBits())/8)+1;
+    const expLength = Math.ceil(CURVE.r.bitLength()/8)+1;
     if (yTag != 2 && yTag != 3) {
         throw new Error("[privacy-pass]: compressed point is invalid, bytes[0] = " + yTag);
     } else if (bytes.length !== expLength) {
@@ -393,7 +393,7 @@ function recomputeComposites(tokens, signatures, pointG, pointH, prngName) {
  * @return {sjcl.bn} PRNG output as scalar value
  */
 function computePRNGScalar(prng, seed, salt) {
-    const bitLen = sjcl.bitArray.bitLength(CURVE.r.toBits());
+    const bitLen = CURVE.r.bitLength();
     const mask = MASK[bitLen % 8];
     let out;
     switch (prng.name) {
