@@ -239,7 +239,7 @@ function hashAndInc(seed, hash) {
         // attempt to decompress a point with a valid tag (don't need to try
         // 0x03 because this is just the negative version)
         // curve choice is implicit based on active curve parameters
-        const point = decompressPoint([2].concat(bytes));
+        const point = sec1DecodeFromBytes([2].concat(bytes));
         if (point !== null) {
             return point;
         }

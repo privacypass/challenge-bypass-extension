@@ -36,7 +36,7 @@ PPConfigs
     .filter((config) => config.id > 0)
     .forEach((config) => {
         beforeEach(() => {
-            const storedTokens = `[ { "data":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"/MWxehOPdGROly7JRQxXp4G8WRzMHTqIjtc17kXrk6W4i2nIp3QRv3/1EVQAeJfmTvIwVUgJTMI3KhGQ4pSNTQ==","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"data":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"sn4KWtjU+RL7aE53zp4wUdhok4UU9iZTAwQVVAmBoGA+XltG/E3V5xIKZ1fxDs0qhbFG1ujXajYUt831rQcCug==","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
+            const storedTokens = `[ { "data":[24,62,56,102,76,127,201,111,161,218,249,109,34,122,160,219,93,186,246,12,178,249,241,108,69,181,77,140,158,13,216,184],"point":"BPzFsXoTj3RkTpcuyUUMV6eBvFkczB06iI7XNe5F65OluItpyKd0Eb9/9RFUAHiX5k7yMFVICUzCNyoRkOKUjU0=","blind":"0x46af9794d53f040607a35ad297f92aef6a9879686279a12a0a478b2e0bde9089"},{"data":[131,120,153,53,158,58,11,155,160,109,247,176,176,153,14,161,150,120,43,180,188,37,35,75,52,219,177,16,24,101,241,159],"point":"BLJ+ClrY1PkS+2hOd86eMFHYaJOFFPYmUwMEFVQJgaBgPl5bRvxN1ecSCmdX8Q7NKoWxRtbo12o2FLfN9a0HAro=","blind":"0xd475b86c84c94586503f035911388dd702f056472a755e964cbbb3b58c76bd53" } ]`;
             localStorage = {};
             localStorage[`bypass-tokens-${config.id}`] = storedTokens;
             localStorage[`bypass-tokens-count-${config.id}`] = 2;
