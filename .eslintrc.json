@@ -88,7 +88,9 @@
         "LISTENER_URLS": true,
         "getTarget": true,
         "setFutureReload": true,
-        "commitmentsKey": true
+        "commitmentsKey": true,
+        "validMethods": true,
+        "appendSpentTab": true
     },
     "rules": {
         "new-cap": 0,

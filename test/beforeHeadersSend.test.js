@@ -85,7 +85,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     case 2:
                         // hCaptcha has no spendMax
                         expect(workflow.__get__("CONFIG_ID")).toBe(2);
-                        expect(workflow.__get__("spendMax")()).toBe(0);
+                        expect(workflow.__get__("spendMax")()).toBeUndefined();
                         expect(redeemHdrs.requestHeaders).toBeTruthy();
                         break;
                     default:

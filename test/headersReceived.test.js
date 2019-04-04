@@ -220,6 +220,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                             header = {name: "Different-header-name", value: configId};
                             details.responseHeaders = [header];
                             const fired = processHeaders(details, url);
+                            expect(workflow.__get__("readySign")).toBeFalsy();
                             expect(fired).toBeFalsy();
                         });
                     });

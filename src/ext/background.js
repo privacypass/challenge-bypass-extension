@@ -121,6 +121,12 @@ const setSpendId = (key, value) => spendId[key] = value;
 
 const getSpentTab = (key) => spentTab[key];
 const setSpentTab = (key, value) => spentTab[key] = value;
+const pushSpentTab = (key, value) => {
+    if (!Array.isArray(getSpentTab(key))) {
+        setSpentTab(key, []);
+    }
+    spentTab[key].push(value);
+};
 
 const getSpentHosts = (key) => spentHosts[key];
 const setSpentHosts = (key, value) => spentHosts[key] = value;
@@ -291,10 +297,7 @@ function beforeSendHeaders(request, url) {
                 headers.push({name: headerPathName(), value: httpPath});
                 setSpendId(request.requestId, true);
                 setSpentUrl(reqUrl, true);
-                if (!getSpentTab(request.tabId)) {
-                    setSpentTab(request.tabId, []);
-                }
-                getSpentTab(request.tabId).push(url.href);
+                pushSpentTab(request.tabId, url.href);
                 return {requestHeaders: headers};
             }
         } else if (redeemMethod() === "reload" && !getSpentUrl(reqUrl)) {
@@ -330,12 +333,7 @@ function getReloadHeaders(request, url) {
     headers.push(newHeader);
     setSpendId(request.requestId, true);
     setSpentUrl(url.href, true);
-    if (!getSpentTab(request.tabId)) {
-        setSpentTab(request.tabId, []);
-    }
-    const spentTabs = getSpentTab(request.tabId);
-    spentTabs.push(url.href);
-    setSpentTab(request.tabId, spentTabs);
+    pushSpentTab(request.tabId, url.href);
     return {requestHeaders: headers};
 }
 
@@ -440,7 +438,7 @@ function incrementSpentHost(host) {
  * @return {boolean}
  */
 function checkMaxSpend(host) {
-    if (getSpentHosts(host) === undefined || getSpentHosts(host) < spendMax() || spendMax() === 0) {
+    if (getSpentHosts(host) === undefined || getSpentHosts(host) < spendMax() || spendMax() === undefined) {
         return false;
     }
     return true;

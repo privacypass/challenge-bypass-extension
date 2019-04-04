@@ -8,9 +8,11 @@
 /* exported CHL_BYPASS_RESPONSE */
 /* exported activeConfig */
 /* exported PPConfigs */
+/* exported validMethods */
 
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
+const validMethods = () => ["reload", "no-reload"];
 
 /**
  * Generates exampleConfig configuration object
@@ -22,7 +24,7 @@ function exampleConfig() {
         "dev": true, // sets whether the configuration should only be used in development
         "sign": true, // sets whether tokens should be sent for signing
         "redeem": true, // sets whether tokens should be sent for redemption
-        "max-spends": 3, // for each host header, sets the max number of tokens that will be spent, 0 for unlimited
+        "max-spends": 3, // for each host header, sets the max number of tokens that will be spent, undefined for unlimited
         "max-tokens": 10, // max number of tokens held by the extension
         "var-reset": true, // whether variables should be reset after time limit expires
         "var-reset-ms": 100, // variable reset time limit
@@ -91,7 +93,7 @@ function PPConfigs() {
     const hcConfig = exampleConfig();
     hcConfig.id = 2;
     hcConfig.dev = false;
-    hcConfig["max-spends"] = 0;
+    hcConfig["max-spends"] = undefined;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
     hcConfig.commitments = "HC";

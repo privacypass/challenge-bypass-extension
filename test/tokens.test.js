@@ -17,12 +17,6 @@ const createRequestBinding = workflow.__get__("createRequestBinding");
 const unblindPoint = workflow.__get__("unblindPoint");
 const deriveKey = workflow.__get__("deriveKey");
 
-// mocking for tests
-
-const consoleMock = {
-    warn: jest.fn(),
-    error: jest.fn(),
-};
 workflow.__set__("console", consoleMock);
 
 /**

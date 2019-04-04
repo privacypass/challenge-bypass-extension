@@ -30,13 +30,11 @@
         "respBadProof": true,
         "testTokens": true,
         "setTimeSinceLastResp": true,
-        "respBadProof": true,
         "testTokensBadLength": true,
-        "respBadPoints": true,
-        "respGoodProof": true,
         "testH": true,
         "testG": true,
         "respBadJson": true,
+        "respBadPoints": true,
         "mockXHRCommitments": true,
         "setXHR": true,
         "validateRespMock": true,
@@ -54,7 +52,10 @@
         "setSpendFlagMock": true,
         "getSpendFlagMock": true,
         "clearSpentTabMock": true,
-        "mockXHR": true
+        "mockXHR": true,
+        "goodResponses": true,
+        "appendSpentTabMock": true,
+        "consoleMock": true
     },
     "rules": {
         "no-func-assign": 0,

@@ -25,7 +25,7 @@
 /* exported set */
 /* exported UpdateCallback */
 "use strict";
-const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
+const checkCookies = () => activeConfig()["cookies"]["check-cookies"];
 
 /**
  * Attempts to redeem a token if the series of checks passes
@@ -34,7 +34,7 @@ const CHECK_COOKIES = () => activeConfig()["cookies"]["check-cookies"];
  */
 function attemptRedeem(url, respTabId) {
     // Check all cookie stores to see if a clearance cookie is held
-    if (CHECK_COOKIES()) {
+    if (checkCookies()) {
         chrome.cookies.getAllCookieStores(function(stores) {
             let clearanceHeld = false;
             stores.forEach(function(store, index) {
@@ -242,12 +242,8 @@ function isFaviconUrl(url) {
  * @param {string} method Config string indicating how redemptions are handled
  * @return {boolean}
  */
-function isValidRedeemMethod(method) {
-    return PPConfigs()
-        .filter((config) => config.id > 0)
-        .map((config) => config["spend-action"]["redeem-method"])
-        .some((configMethod) => configMethod === method);
-}
+const isValidRedeemMethod = (method) => validMethods().includes(method);
+
 
 /**
  * Clears the commitments that are cached for the active configuration
@@ -256,10 +252,14 @@ function clearCachedCommitments() {
     localStorage.removeItem(CACHED_COMMITMENTS_STRING);
 }
 
-// localStorage API function for getting values
-// function get(key) {
-//     return localStorage.getItem(key);
-// }
+/**
+ * localStorage API function for getting string values for the key provided
+ * @param {string} key
+ * @return {string}
+ */
+function get(key) {
+    return localStorage.getItem(key);
+}
 
 /**
  * localStorage API function for setting string values for the key provided

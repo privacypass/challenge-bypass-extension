@@ -33,39 +33,6 @@ const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
 const _scalarMult = workflow.__get__("_scalarMult");
 const sec1EncodePoint = workflow.__get__("sec1EncodePoint");
-const goodResponses = [
-    {
-        string: `signatures=WyJCTGZOdGZ6eG92RXdwZk5LWVBvRkk3dHNLNk5rMjNNalluUklEVFhGdHEwYm9zbWJIN1l1bERYWHVrdVYrKytxZyttYU9UWEF4cXpGSHNkV3p2dEpmQU09IiwiQkVIa1BPT1p3UlIrT0dNKzJQTUJnRWVrdUhobVJpVUlJSGxiaGJqNkNSKzZ2blp3Sk1CTHlNbDR4aURuOVY4SUhQNFdENFRaTUJGQjR0cStXd0c5azdRPSIsIkJBKzM4NkZPNkNXODZJbGIxdzdEOUZWMytwRnN
-            SOEpjaC8rcWN2eVRpVTdFM3VONkUxZWJmVkloUjRDd3oxMWJHdlJhNzZhMGRWYlFhRjNZQUozR1Rmdz0iLCJZbUYwWTJndGNISnZiMlk5ZXlKRElqcGJJbEJyYVVVMlRXMXFiMGg0Vm1ZMmJFOXNiVEZvVDNWTFkxRjRZV1JMYlRacU0wZFNjV1Z0YkhOWFQwMDlJaXdpTUZWRFIwZDRRbEZvY0ZCc2VWQnZkV05ITlZkU01sWnJOa2RTTlZCMFQxZG1hVWxPY25sRmNUVmlUVDBpTENKdVJqSkVXV2
-            xvVG1wNmJrc3ZUazFvWWxOa1MySndhbkpGTkdzMlZFaEVNR2hEVjJkeVFYRlpRMHBSUFNKZExDSk5JanBiSWtKTVNqTkpiRkprUm5kbUwwaDFhVzFDV1RWMWJXSkpaM2h1U1dWYWJGbzFkekY2VjJ0R1UySlFaWFJsTkN0MFRFaHpXbU42ZFhKRlZtMXZRVlIzTkVvMFZDODFUMjkwYTBaWVdFUjZUMFV4TWxrell6UkRUVDBpTENKQ1R6QXJhbVZVV0ZCUVEwSklVMUZvTTNNeFRVWnNhblZMWlc5d
-            VNGWjNSREJ2ZVN0NVFrMUlaa292VkZaSlpFVXJRbkl2V1doellsRk1ObkIyVlRSaU1URlJVVEIyTTA5R2MwdHZjRmx5YTBSa1VFeHlXVTA5SWl3aVFrRklXa1owVVVNeFlYbzFOVUU0TlhVNVRHZFNaVWdyVVRoTmJGUTNNMFpMZDBVMU1WVkthMlJ1WW5aTFdrWkljMlJTVkVkVVprZDRhV2gxU0ZwMU9WVm9SVXh1UVZKcVVFdHBaSFJ3ZVRkd2EyWTNjMHc0UFNKZExDSlFJam9pWlhsS1NFbHFi
-            MmxSYXpsd1drVldNVlI2YkVsVk1IQjZWRlp3V2xKVE9WRmFiVTB4VWtOemQxSlZlSFZOUjBwNFlVZHdSbHBYV1hsVWVrSXhTekIwUW1SNlRtMVZSVEZKVTBab01GWnRlRVpSYmxwYVlXdFZNVk5UT1ZCVWJWazFWVE5zVlZKc1RuSlRSRTUwVkVVMVNXRXhUWGRPYTFJeFRtMW9VbEJUU1hOSmF6QnBUMmxLUTFKRVVtbFdWbGt4Wld0MGRsWkZkSFJPYTJSNldrVmFiR0pVYUZOYVJHUjBaVVpCZWx
-            ZeVduaFRXRUUxV1ROT2RXSllUa3hUYWxaVlpVTTVTbFZXUm05YU1HUk5Zek5TTUZKcmNESmliSEJGWlZWd1YwNHhjSEZQVlVaNVducEdSMU5WY0dwbGFrMTNXbFZrTW1Kc1RsUmFiazA1U1dsM2FWTkRTVFpKYTBwSlZERkNUMUZXWkZsVmJXc3dZMms1VDFKWVFqQlVNbXhOVkROQk5GUldUak5aTVdkM1pHdG9lVlpyVWxOWFNGbDRUbXR3ZFdJelpHcE5WMVpaVjBjNE1XVkZXa2RUTUd4UVUxUm
-            FkRlpZUVRSaGVtdDJXbGRPYUU1V1dscE5SR1JyVVcxb1FscFVhRkphYkVsMlVteE9VMWRVTUdsTVEwcGhTV3B2YVZGcmRFeFhWRnBIWVhwQ01tTXlOVUpTYTFvelpHMW5NVTR5VG10YVdFcHZaVWhCZUdRd2IzWk5NSGg2VWpGd05FNXVhSEpWVkUweVZsUktVbFpzVmxGU01GSnlaVmMxZUZkR1NuVlNhMHBwWTJsemNtVnRhSEJqVlZwSFRWTTRNMU51UVROWFZrNTZVakowVDJOSFpFcFdTRkpxV
-            UZOSmMwbHNTV2xQYVVvMVVsTjBiRTFYWkVWV2FrcHBUbGhhVEdORVFsZFdXR3cxVFVSb1RGUjZVVFJsUldoSFZteEtiMVZGVG0xaFZteDFWVmRPVW1NeU1XcFFVMGx6U1d0TmFVOXBTbGhsYWsxeVZtcHNjazVyVGpKalJUbGFZa1puTWs0elduVmpNbHBzVlZVMWNsZHJOVmhXU0VwWFUwUkJOVmRGU2xwVk0yaE1ZWHBDVmxCVFNqa2lMQ0phSWpwYklrSk1aazUwWm5wNGIzWkZkM0JtVGt0WlVH
-            OUdTVGQwYzBzMlRtc3lNMDFxV1c1U1NVUlVXRVowY1RCaWIzTnRZa2czV1hWc1JGaFlkV3QxVmlzckszRm5LMjFoVDFSWVFYaHhla1pJYzJSWGVuWjBTbVpCVFQwaUxDSkNSVWhyVUU5UFduZFNVaXRQUjAwck1sQk5RbWRGWld0MVNHaHRVbWxWU1VsSWJHSm9ZbW8yUTFJck5uWnVXbmRLVFVKTWVVMXNOSGhwUkc0NVZqaEpTRkEwVjBRMFZGcE5Ra1pDTkhSeEsxZDNSemxyTjFFOUlpd2lRa0V
-            yTXpnMlJrODJRMWM0Tmtsc1lqRjNOMFE1UmxZekszQkdjMUk0U21Ob0x5dHhZM1o1VkdsVk4wVXpkVTQyUlRGbFltWldTV2hTTkVOM2VqRXhZa2QyVW1FM05tRXdaRlppVVdGR00xbEJTak5IVkdaM1BTSmRmUT09Il0=`,
-        name: "old",
-    },
-    {
-        string: `signatures=ewogICAgInNpZ3MiOiBbCiAgICAgICAgIkJMZk50Znp4b3ZFd3BmTktZUG9GSTd0c0s2TmsyM01qWW5SSURUWEZ0cTBib3NtYkg3WXVsRFhYdWt1VisrK3FnK21hT1RYQXhxekZIc2RXenZ0SmZBTT0iLAogICAgICAgICJCRUhrUE9PWndSUitPR00rMlBNQmdFZWt1SGhtUmlVSUlIbGJoYmo2Q1IrNnZuWndKTUJMeU1sNHhpRG45VjhJSFA0V0Q0VFpNQkZCNHRxK1d3RzlrN1E
-            9IiwKICAgICAgICAiQkErMzg2Rk82Q1c4NklsYjF3N0Q5RlYzK3BGc1I4SmNoLytxY3Z5VGlVN0UzdU42RTFlYmZWSWhSNEN3ejExYkd2UmE3NmEwZFZiUWFGM1lBSjNHVGZ3PSIKICAgIF0sCiAgICAicHJvb2YiOiAiWW1GMFkyZ3RjSEp2YjJZOWV5SkRJanBiSWxCcmFVVTJUVzFxYjBoNFZtWTJiRTlzYlRGb1QzVkxZMUY0WVdSTGJUWnFNMGRTY1dWdGJITlhUMDA5SWl3aU1GVkRSMGQ0UWxGb2NGQn
-            NlVkJ2ZFdOSE5WZFNNbFpyTmtkU05WQjBUMWRtYVVsT2NubEZjVFZpVFQwaUxDSnVSakpFV1dsb1RtcDZia3N2VGsxb1lsTmtTMkp3YW5KRk5HczJWRWhFTUdoRFYyZHlRWEZaUTBwUlBTSmRMQ0pOSWpwYklrSk1Tak5KYkZKa1JuZG1MMGgxYVcxQ1dUVjFiV0pKWjNodVNXVmFiRm8xZHpGNlYydEdVMkpRWlhSbE5DdDBURWh6V21ONmRYSkZWbTF2UVZSM05FbzBWQzgxVDI5MGEwWllXRVI2VDBVeE1sa
-            3pZelJEVFQwaUxDSkNUekFyYW1WVVdGQlFRMEpJVTFGb00zTXhUVVpzYW5WTFpXOXVTRlozUkRCdmVTdDVRazFJWmtvdlZGWkpaRVVyUW5JdldXaHpZbEZNTm5CMlZUUmlNVEZSVVRCMk0wOUdjMHR2Y0ZseWEwUmtVRXh5V1UwOUlpd2lRa0ZJV2taMFVVTXhZWG8xTlVFNE5YVTVUR2RTWlVnclVUaE5iRlEzTTBaTGQwVTFNVlZLYTJSdVluWkxXa1pJYzJSU1ZFZFVaa2Q0YVdoMVNGcDFPVlZvUlV4dVFW
-            SnFVRXRwWkhSd2VUZHdhMlkzYzB3NFBTSmRMQ0pRSWpvaVpYbEtTRWxxYjJsUmF6bHdXa1ZXTVZSNmJFbFZNSEI2VkZad1dsSlRPVkZhYlUweFVrTnpkMUpWZUhWTlIwcDRZVWR3UmxwWFdYbFVla0l4U3pCMFFtUjZUbTFWUlRGSlUwWm9NRlp0ZUVaUmJscGFZV3RWTVZOVE9WQlViVmsxVlROc1ZWSnNUbkpUUkU1MFZFVTFTV0V4VFhkT2ExSXhUbTFvVWxCVFNYTkphekJwVDJsS1ExSkVVbWxXVmxreFp
-            XdDBkbFpGZEhST2EyUjZXa1ZhYkdKVWFGTmFSR1IwWlVaQmVsWXlXbmhUV0VFMVdUTk9kV0pZVGt4VGFsWlZaVU01U2xWV1JtOWFNR1JOWXpOU01GSnJjREppYkhCRlpWVndWMDR4Y0hGUFZVWjVXbnBHUjFOVmNHcGxhazEzV2xWa01tSnNUbFJhYmswNVNXbDNhVk5EU1RaSmEwcEpWREZDVDFGV1pGbFZiV3N3WTJrNVQxSllRakJVTW14TlZETkJORlJXVGpOWk1XZDNaR3RvZVZaclVsTlhTRmw0VG10d2
-            RXSXpaR3BOVjFaWlYwYzRNV1ZGV2tkVE1HeFFVMVJhZEZaWVFUUmhlbXQyV2xkT2FFNVdXbHBOUkdSclVXMW9RbHBVYUZKYWJFbDJVbXhPVTFkVU1HbE1RMHBoU1dwdmFWRnJkRXhYVkZwSFlYcENNbU15TlVKU2Exb3paRzFuTVU0eVRtdGFXRXB2WlVoQmVHUXdiM1pOTUhoNlVqRndORTV1YUhKVlZFMHlWbFJLVWxac1ZsRlNNRkp5WlZjMWVGZEdTblZTYTBwcFkybHpjbVZ0YUhCalZWcEhUVk00TTFOd
-            VFUTlhWazU2VWpKMFQyTkhaRXBXU0ZKcVVGTkpjMGxzU1dsUGFVbzFVbE4wYkUxWFpFVldha3BwVGxoYVRHTkVRbGRXV0d3MVRVUm9URlI2VVRSbFJXaEhWbXhLYjFWRlRtMWhWbXgxVlZkT1VtTXlNV3BRVTBselNXdE5hVTlwU2xobGFrMXlWbXBzY2s1clRqSmpSVGxhWWtabk1rNHpXblZqTWxwc1ZWVTFjbGRyTlZoV1NFcFhVMFJCTlZkRlNscFZNMmhNWVhwQ1ZsQlRTamtpTENKYUlqcGJJa0pNWms1
-            MFpucDRiM1pGZDNCbVRrdFpVRzlHU1RkMGMwczJUbXN5TTAxcVdXNVNTVVJVV0VaMGNUQmliM050WWtnM1dYVnNSRmhZZFd0MVZpc3JLM0ZuSzIxaFQxUllRWGh4ZWtaSWMyUlhlblowU21aQlRUMGlMQ0pDUlVoclVFOVBXbmRTVWl0UFIwMHJNbEJOUW1kRlpXdDFTR2h0VW1sVlNVbEliR0pvWW1vMlExSXJOblp1V25kS1RVSk1lVTFzTkhocFJHNDVWamhKU0ZBMFYwUTBWRnBOUWtaQ05IUnhLMWQzUnp
-            sck4xRTlJaXdpUWtFck16ZzJSazgyUTFjNE5rbHNZakYzTjBRNVJsWXpLM0JHYzFJNFNtTm9MeXR4WTNaNVZHbFZOMFV6ZFU0MlJURmxZbVpXU1doU05FTjNlakV4WWtkMlVtRTNObUV3WkZaaVVXRkdNMWxCU2pOSFZHWjNQU0pkZlE9PSIKfQ==`,
-        name: "json",
-    },
-    {
-        string: `signatures=eyJzaWdzIjpbIkJEcTF6TGFRMkVUY3Q0Q3kyZVdSSnRZcnlGTzZBYkxET2JvY0czakFQa3RxM0ZRQzkzbjhLZlk1N2NFNEFTOE9ZWllPRjRTWE96ZjRaT1RjaXJ2R2pncz0iLCJCR1IrR3JlVWF4REJ3Y2t0MHpQaS9KNlQ2Ri9lOVpPYjh2TjJyb1dTU0ZFK0ROa1JGZVNNYUZMWTNSYzVWcTdIcUJRQncvWTZFemswaVkwWGZ5b2pmdXM9Il0sInByb29mIjoiWW1GMFkyZ3RjSEp2YjJ
-            ZOWV5SlFJam9pWlhsS1JFbHFiMmxTV0VaUlZHcEpNRkZVU1hkUFIwWnlUbXBvUWxreWJIcFVSVFZPWld0YWMyVkhZelJpTTJSd1ZGaG9VMVpzVGt0Uk1FMHlUVWR3VUZsNk1HbE1RMHBUU1dwdmFWcFVSa1ZsUldneFRXMHhORk5yY0V0TlEzUkRUWHBvV2xWRWFHcFJNbFY2Vkdwc1NtSkViRWxTUkZaRllUSktlbGR0WkcxWlZtaERWMVF3YVdaUlBUMGlmUT09IiwidmVyc2lvbiI6ImhrZGYiLCJwcm5nIjoiaGtkZiJ9`,
-        name: "hkdf",
-    },
-];
 
 const PPConfigs = workflow.__get__("PPConfigs");
 
@@ -150,8 +117,8 @@ describe("commitments parsing and caching", () => {
     test("parse correctly (hkdf)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr, "hkdf");
-        expect(hkdfG == commitments.G).toBeTruthy();
-        expect(hkdfH == commitments.H).toBeTruthy();
+        expect(hkdfG === commitments.G).toBeTruthy();
+        expect(hkdfH === commitments.H).toBeTruthy();
     });
 
     test("caching commitments", () => {
@@ -352,9 +319,9 @@ describe("test validating response", () => {
                 version: "1.0",
             };
             const out = parseIssueResp(issueData);
-            expect(out.signatures[0] == "sig1").toBeTruthy();
-            expect(out.signatures[2] == "sig3").toBeTruthy();
-            expect(out.proof == "proof").toBeTruthy();
+            expect(out.signatures[0] === "sig1").toBeTruthy();
+            expect(out.signatures[2] === "sig3").toBeTruthy();
+            expect(out.proof === "proof").toBeTruthy();
             expect(out.prng === "shake");
             expect(out.version).toBeTruthy();
         });
@@ -369,21 +336,15 @@ describe("test validating response", () => {
             const out = parseIssueResp(issueData);
             expect(out.signatures[0] === "sig1").toBeTruthy();
             expect(out.signatures[2] === "sig3").toBeTruthy();
-            expect(out.proof == "proof").toBeTruthy();
+            expect(out.proof === "proof").toBeTruthy();
             expect(out.prng === "hkdf");
             expect(out.version).toBeTruthy();
         });
     });
 
     describe("test validation and storage", () => {
-        let consoleMock;
         beforeAll(() => {
             setXHR(mockXHRCommitments, workflow);
-            consoleMock = {
-                warn: jest.fn(),
-                error: jest.fn(),
-            };
-            workflow.__set__("console", consoleMock);
         });
         goodResponses.forEach((element) => {
             let commVersion;
@@ -391,7 +352,7 @@ describe("test validating response", () => {
             let G;
             let H;
             beforeEach(() => {
-                if (element.name == "hkdf") {
+                if (element.name === "hkdf") {
                     commVersion = "hkdf";
                     testTokenData = testTokensHkdf;
                     G = hkdfG;
@@ -428,7 +389,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after == before+testTokenData.length).toBeTruthy();
+                expect(after === before+testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -461,7 +422,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after == before+testTokenData.length).toBeTruthy();
+                expect(after === before+testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -499,7 +460,7 @@ describe("test validating response", () => {
                 expect(consoleMock.warn).toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after == before+testTokenData.length).toBeTruthy();
+                expect(after === before+testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -529,7 +490,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
-                expect(after == before+testTokenData.length).toBeTruthy();
+                expect(after === before+testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -561,7 +522,7 @@ describe("test validating response", () => {
                     expect(run).not.toThrow();
                     expect(updateIconMock).toBeCalledTimes(3);
                     expect(updateBrowserTabMock).not.toBeCalled();
-                    expect(after == before + testTokenData.length).toBeTruthy();
+                    expect(after === before + testTokenData.length).toBeTruthy();
                     expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
                 });
             });

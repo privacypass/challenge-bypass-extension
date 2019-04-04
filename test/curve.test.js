@@ -22,12 +22,6 @@ const compressPoint = workflow.__get__("compressPoint");
 const decompressPoint = workflow.__get__("decompressPoint");
 
 /**
- * Mocking
- */
-const consoleMock = {error: jest.fn()};
-workflow.__set__("console", consoleMock);
-
-/**
  * Configuration
  */
 let curve;
@@ -46,47 +40,34 @@ describe("check curve initialisation", () => {
         function run() {
             return initECSettings(activeCurveParams);
         }
-
         expect(run).not.toThrowError();
     });
-
     test("check with swu config", () => {
         activeCurveParams["method"] = "swu";
-
         function run() {
             return initECSettings(activeCurveParams);
         }
-
         expect(run).not.toThrowError();
     });
-
     test("with bad curve", () => {
         activeCurveParams["curve"] = "25519";
-
         function run() {
             return initECSettings(activeCurveParams);
         }
-
         expect(run).toThrowError();
     });
-
     test("with bad hash", () => {
         activeCurveParams["hash"] = "sha512";
-
         function run() {
             return initECSettings(activeCurveParams);
         }
-
         expect(run).toThrowError();
     });
-
     test("with bad method", () => {
         activeCurveParams["method"] = "elligator";
-
         function run() {
             return initECSettings(activeCurveParams);
         }
-
         expect(run).toThrowError();
     });
 });
@@ -94,23 +75,19 @@ describe("check curve initialisation", () => {
 describe("check curve parameters are correct", () => {
     test("p256", () => {
         const curveP256 = sjcl.ecc.curves.c256;
-
         function run() {
             return getCurveParams(curve);
         }
-
         const cParams = run();
         expect(curveP256.field.modulus === cParams.baseField.modulus).toBeTruthy();
         expect(curveP256.a === cParams.A).toBeTruthy();
         expect(curveP256.b === cParams.B).toBeTruthy();
     });
-
     test("bad curve", () => {
         function run() {
             curve = sjcl.ecc.curves.c192;
             return getCurveParams(curve);
         }
-
         expect(run).toThrowError();
     });
 });
@@ -128,7 +105,6 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("jacobian", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
@@ -139,7 +115,6 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("hash-and-increment no errors", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
@@ -150,7 +125,6 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("h2c with increment settings", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
@@ -161,7 +135,6 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("h2c with swu settings", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
@@ -173,30 +146,6 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
-    test("h2c with increment settings", () => {
-        for (let i = 0; i < 10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                h2Curve(rndBits, getActiveECSettings());
-            };
-            expect(runH2C).not.toThrowError();
-        }
-    });
-
-    test("h2c with swu settings", () => {
-        for (let i = 0; i < 10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                activeConfig()["method"] = "swu";
-                h2Curve(rndBits, getActiveECSettings());
-            };
-            expect(runH2C).not.toThrowError();
-        }
-    });
-
     describe("point at infinity", () => {
         test("t=0", () => {
             const params = getInputParams(0);
