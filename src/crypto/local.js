@@ -198,7 +198,7 @@ function sec1DecodeFromBytes(sec1Bytes) {
  */
 function decompressPoint(bytes) {
     const yTag = bytes[0];
-    const expLength = Math.ceil(CURVE.r.bitLength()/8)+1;
+    const expLength = CURVE.r.bitLength()/8+1; // bitLength rounds up
     if (yTag != 2 && yTag != 3) {
         throw new Error("[privacy-pass]: compressed point is invalid, bytes[0] = " + yTag);
     } else if (bytes.length !== expLength) {
@@ -401,7 +401,7 @@ function computePRNGScalar(prng, seed, salt) {
             out = prng.func.squeeze(32, "hex");
             break;
         case "hkdf":
-            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), Math.ceil(bitLen/8), sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
+            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), bitLen/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
             break;
         default:
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
