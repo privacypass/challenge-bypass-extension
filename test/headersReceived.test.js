@@ -36,197 +36,305 @@ const setNoTokens = (configId) => {
  */
 
 each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
-    .describe("CONFIG_ID = %i", (configId) => {
+.describe("CONFIG_ID = %i", (configId) => {
+    beforeEach(() => {
+        clearLocalStorage();
+        // Override global setting
+        workflow.__set__("attemptRedeem", () => true);
+        workflow.__set__("CONFIG_ID", configId);
+        workflow.__set__("spendActionUrls", () => [LISTENER_URLS]);
+        workflow.__set__("issueActionUrls", () => [LISTENER_URLS]);
+        setMock(bypassTokens(configId), storedTokens);
+        setMock(bypassTokensCount(configId), 2);
+    });
+
+    describe("ensure that errors are handled properly", () => {
+        const url = new URL(EXAMPLE_HREF);
+        test("connection error", () => {
+            localStorage.setItem("data", "some token");
+
+            function processConnError() {
+                const details = {
+                    responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlConnectionError()}],
+                };
+                processHeaders(details, url);
+            }
+
+            expect(processConnError).toThrowError(`error code: ${chlConnectionError()}`);
+            expect(localStorage.getItem("data")).toBeTruthy();
+        });
+        test("verification error", () => {
+            function processVerifyError() {
+                const details = {
+                    responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlVerificationError()}],
+                };
+                processHeaders(details, url);
+            }
+
+            expect(processVerifyError).toThrowError(`error code: ${chlVerificationError()}`);
+            expect(localStorage.getItem("data")).toBeFalsy();
+        });
+    });
+
+    describe("check bypass header is working", () => {
+        let found;
         beforeEach(() => {
-            clearLocalStorage();
-            // Override global setting
-            workflow.__set__("attemptRedeem", () => true);
-            workflow.__set__("CONFIG_ID", configId);
-            workflow.__set__("spendActionUrls", () => [LISTENER_URLS]);
-            workflow.__set__("issueActionUrls", () => [LISTENER_URLS]);
-            setMock(bypassTokens(configId), storedTokens);
-            setMock(bypassTokensCount(configId), 2);
+            found = false;
         });
 
-        describe("ensure that errors are handled properly", () => {
-            const url = new URL(EXAMPLE_HREF);
-            test("connection error", () => {
-                localStorage.setItem("data", "some token");
-
-                function processConnError() {
-                    const details = {
-                        responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlConnectionError()}],
-                    };
-                    processHeaders(details, url);
-                }
-
-                expect(processConnError).toThrowError(`error code: ${chlConnectionError()}`);
-                expect(localStorage.getItem("data")).toBeTruthy();
-            });
-            test("verification error", () => {
-                function processVerifyError() {
-                    const details = {
-                        responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlVerificationError()}],
-                    };
-                    processHeaders(details, url);
-                }
-
-                expect(processVerifyError).toThrowError(`error code: ${chlVerificationError()}`);
-                expect(localStorage.getItem("data")).toBeFalsy();
-            });
+        test("header is valid", () => {
+            const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
+            found = isBypassHeader(header);
+            expect(found).toBeTruthy();
         });
-        describe("check bypass header is working", () => {
-            let found;
-            beforeEach(() => {
-                found = false;
-            });
-
-            test("header is valid", () => {
+        test("header is invalid value", () => {
+            const header = {name: CHL_BYPASS_SUPPORT, value: "0"};
+            found = isBypassHeader(header);
+            expect(found).toBeFalsy();
+        });
+        test("header is invalid name", () => {
+            const header = {name: "Different-header-name", value: `${configId}`};
+            found = isBypassHeader(header);
+            expect(found).toBeFalsy();
+        });
+        test("config is reset if ID changes", () => {
+            const oldConfigId = configId + 1;
+            workflow.__with__({CONFIG_ID: oldConfigId})(() => {
+                setMock(bypassTokensCount(oldConfigId), 10);
                 const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
+                const oldCount = getMock(bypassTokensCount(oldConfigId));
                 found = isBypassHeader(header);
                 expect(found).toBeTruthy();
-            });
-            test("header is invalid value", () => {
-                const header = {name: CHL_BYPASS_SUPPORT, value: "0"};
-                found = isBypassHeader(header);
-                expect(found).toBeFalsy();
-            });
-            test("header is invalid name", () => {
-                const header = {name: "Different-header-name", value: `${configId}`};
-                found = isBypassHeader(header);
-                expect(found).toBeFalsy();
-            });
-            test("config is reset if ID changes", () => {
-                const oldConfigId = configId + 1;
-                workflow.__with__({CONFIG_ID: oldConfigId})(() => {
-                    setMock(bypassTokensCount(oldConfigId), 10);
-                    const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
-                    const oldCount = getMock(bypassTokensCount(oldConfigId));
-                    found = isBypassHeader(header);
-                    expect(found).toBeTruthy();
-                    expect(oldCount === getMock(bypassTokensCount(configId))).toBeFalsy();
-                    expect(updateIconMock).toHaveBeenCalledTimes(1);
-                });
-            });
-            test("config is not reset if ID does not change", () => {
-                const oldConfigId = configId;
-                workflow.__with__({CONFIG_ID: oldConfigId})(() => {
-                    setMock(bypassTokensCount(oldConfigId), 10);
-                    const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
-                    const oldCount = getMock(bypassTokensCount(oldConfigId));
-                    found = isBypassHeader(header);
-                    expect(found).toBeTruthy();
-                    expect(oldCount === getMock(bypassTokensCount(configId))).toBeTruthy();
-                    expect(updateIconMock).toHaveBeenCalledTimes(0);
-                });
+                expect(oldCount === getMock(bypassTokensCount(configId))).toBeFalsy();
+                expect(updateIconMock).toHaveBeenCalledTimes(1);
             });
         });
-        describe("check redemption attempt conditions", () => {
-            let url;
-            let details;
-            let header;
-            beforeEach(() => {
-                header = {name: CHL_BYPASS_SUPPORT, value: configId};
-                details = {
-                    statusCode: spendStatusCode()[0],
-                    responseHeaders: [header],
-                };
-                url = new URL("http://www.example.com");
+        test("config is not reset if ID does not change", () => {
+            const oldConfigId = configId;
+            workflow.__with__({CONFIG_ID: oldConfigId})(() => {
+                setMock(bypassTokensCount(oldConfigId), 10);
+                const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
+                const oldCount = getMock(bypassTokensCount(oldConfigId));
+                found = isBypassHeader(header);
+                expect(found).toBeTruthy();
+                expect(oldCount === getMock(bypassTokensCount(configId))).toBeTruthy();
+                expect(updateIconMock).toHaveBeenCalledTimes(0);
             });
+        });
+    });
 
-            test("check that favicon urls are ignored", () => {
-                url = new URL("https://example.com/favicon.ico");
-                expect(isFaviconUrl(url.href)).toBeTruthy();
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
-                expect(updateIconMock).toBeCalledTimes(0);
-            });
+    describe("check redemption attempt conditions", () => {
+        let url;
+        let details;
+        let header;
+        beforeEach(() => {
+            header = {name: CHL_BYPASS_SUPPORT, value: configId};
+            details = {
+                statusCode: spendStatusCode()[0],
+                responseHeaders: [header],
+            };
+            url = new URL("http://www.example.com");
+        });
 
-            test("check that redemption is not fired on CAPTCHA domain", () => {
-                url = new URL(`https://${chlCaptchaDomain()}`);
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
-            });
+        test("check that favicon urls are ignored", () => {
+            url = new URL("https://example.com/favicon.ico");
+            expect(isFaviconUrl(url.href)).toBeTruthy();
+            const ret = processHeaders(details, url);
+            expect(ret.attempted).toBeFalsy();
+            expect(ret.xhr).toBeFalsy();
+            expect(ret.favicon).toBeTruthy();
+            expect(updateIconMock).toBeCalledTimes(0);
+        });
 
-            test("redemption is attempted on general domains", () => {
-                const fired = processHeaders(details, url);
-                expect(fired).toBeTruthy;
-                expect(updateIconMock).toBeCalledTimes(1);
-            });
+        test("check that redemption is not fired on CAPTCHA domain", () => {
+            url = new URL(`https://${chlCaptchaDomain()}`);
+            const ret = processHeaders(details, url);
+            expect(ret.attempted).toBeFalsy();
+            expect(ret.xhr).toBeFalsy();
+            expect(ret.favicon).toBeFalsy();
+        });
 
-            test("not fired if status code != spendStatusCode()[0]", () => {
-                details.statusCode = 418;
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
-            });
+        test("redemption is attempted on general domains", () => {
+            const ret = processHeaders(details, url);
+            expect(ret.attempted).toBeTruthy();
+            expect(ret.xhr).toBeFalsy();
+            expect(ret.favicon).toBeFalsy();
+            expect(updateIconMock).toBeCalledTimes(1);
+        });
 
-            test("if count is 0 update icon", () => {
-                setNoTokens(configId);
-                processHeaders(details, url);
-                expect(updateIconMock).toBeCalledTimes(2);
-            });
+        test("not fired if status code != spendStatusCode()[0]", () => {
+            details.statusCode = 418;
+            const ret = processHeaders(details, url);
+            expect(ret.attempted).toBeFalsy();
+            expect(ret.xhr).toBeFalsy();
+            expect(ret.favicon).toBeFalsy();
+        });
 
-            describe("setting of readySign", () => {
-                describe("signing enabled", () => {
-                    beforeEach(() => {
-                        workflow.__set__("doSign", () => true);
-                        workflow.__set__("readySign", false);
-                    });
+        test("if count is 0 update icon", () => {
+            setNoTokens(configId);
+            processHeaders(details, url);
+            expect(updateIconMock).toBeCalledTimes(2);
+        });
 
-                    test("no tokens", () => {
-                        setNoTokens(configId);
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeTruthy();
-                        expect(updateIconMock).toBeCalledWith("!");
-                    });
-
-                    test("not activated", () => {
-                        header = {name: "Different-header-name", value: configId};
-                        details.responseHeaders = [header];
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeFalsy();
-                    });
-
-                    test("tokens > 0", () => {
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeTruthy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeFalsy();
-                    });
-
-                    test("tokens > 0 but captcha.website", () => {
-                        url = new URL(`https://${chlCaptchaDomain()}`);
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeTruthy();
-                    });
-
-                    test("redemption off", () => {
-                        workflow.__with__({doRedeem: () => false})(() => {
-                            const fired = processHeaders(details, url);
-                            expect(fired).toBeFalsy();
-                            const readySign = workflow.__get__("readySign");
-                            expect(readySign).toBeTruthy();
-                        });
-                    });
+        describe("setting of readySign", () => {
+            describe("signing enabled", () => {
+                beforeEach(() => {
+                    workflow.__set__("doSign", () => true);
+                    workflow.__set__("readySign", false);
                 });
 
-                describe("signing disabled", () => {
-                    test("signing is not activated", () => {
-                        workflow.__with__({readySign: false, doSign: () => false})(() => {
-                            header = {name: "Different-header-name", value: configId};
-                            details.responseHeaders = [header];
-                            const fired = processHeaders(details, url);
-                            expect(workflow.__get__("readySign")).toBeFalsy();
-                            expect(fired).toBeFalsy();
-                        });
+                test("no tokens", () => {
+                    setNoTokens(configId);
+                    const ret = processHeaders(details, url);
+                    expect(ret.attempted).toBeFalsy();
+                    expect(ret.xhr).toBeFalsy();
+                    expect(ret.favicon).toBeFalsy();
+                    const readySign = workflow.__get__("readySign");
+                    expect(readySign).toBeTruthy();
+                    expect(updateIconMock).toBeCalledWith("!");
+                });
+
+                test("not activated", () => {
+                    header = {name: "Different-header-name", value: configId};
+                    details.responseHeaders = [header];
+                    const ret = processHeaders(details, url);
+                    expect(ret.attempted).toBeFalsy();
+                    expect(ret.xhr).toBeFalsy();
+                    expect(ret.favicon).toBeFalsy();
+                    const readySign = workflow.__get__("readySign");
+                    expect(readySign).toBeFalsy();
+                });
+
+                test("tokens > 0", () => {
+                    const ret = processHeaders(details, url);
+                    expect(ret.attempted).toBeTruthy();
+                    expect(ret.xhr).toBeFalsy();
+                    expect(ret.favicon).toBeFalsy();
+                    const readySign = workflow.__get__("readySign");
+                    expect(readySign).toBeFalsy();
+                });
+
+                test("tokens > 0 but captcha.website", () => {
+                    url = new URL(`https://${chlCaptchaDomain()}`);
+                    const ret = processHeaders(details, url);
+                    expect(ret.attempted).toBeFalsy();
+                    expect(ret.xhr).toBeFalsy();
+                    expect(ret.favicon).toBeFalsy();
+                    const readySign = workflow.__get__("readySign");
+                    expect(readySign).toBeTruthy();
+                });
+
+                test("redemption off", () => {
+                    workflow.__with__({doRedeem: () => false})(() => {
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeFalsy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
+                        const readySign = workflow.__get__("readySign");
+                        expect(readySign).toBeTruthy();
+                    });
+                });
+            });
+
+            describe("signing disabled", () => {
+                test("signing is not activated", () => {
+                    workflow.__with__({readySign: false, doSign: () => false})(() => {
+                        header = {name: "Different-header-name", value: configId};
+                        details.responseHeaders = [header];
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeFalsy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
+                        expect(workflow.__get__("readySign")).toBeFalsy();
                     });
                 });
             });
         });
     });
+});
+
+describe("xhr for empty response headers", () => {
+    const details = {
+        statusCode: 403,
+    };
+    const url = new URL("https://example.com");
+
+    beforeEach(() => {
+        setXHR(mockXHRDirectRequest, workflow);
+        // empty response headers
+        details.responseHeaders = [];
+        // set config values (tests currently are CF specific)
+        workflow.__set__("CONFIG_ID", 1);
+        workflow.__set__("emptyRespHeaders", () => ["direct-request"]);
+        workflow.__set__("spendStatusCode", () => [403]);
+    });
+
+    test("direct request is not used if direct-request isn't included in empty-resp-headers", () => {
+        workflow.__set__("emptyRespHeaders", () => ["something-else"]);
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeFalsy();
+        expect(ret.favicon).toBeFalsy();
+    });
+
+    test("direct request is not used if response headers are not empty", () => {
+        const someHeader = {name: "some-name", value: "some-value"};
+        details.responseHeaders = [someHeader];
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeFalsy();
+        expect(ret.favicon).toBeFalsy();
+    });
+
+    test("direct request does nothing if xhr status code != specified value", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 200;
+        xhr.setResponseHeader("cf-chl-bypass", 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request does nothing if CHL_BYPASS_SUPPORT header not received", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader("some-header", 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request does nothing if CHL_BYPASS_SUPPORT header has wrong value", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader(CHL_BYPASS_SUPPORT, 2);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request results in possible spend if CHL_BYPASS_SUPPORT header received", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader(CHL_BYPASS_SUPPORT, 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeTruthy();
+        expect(xhr.abort).toBeCalled();
+    });
+});

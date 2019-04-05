@@ -224,6 +224,23 @@ function mockXHRCommitments() {
 
 window.mockXHRCommitments = mockXHRCommitments;
 
+function mockXHRDirectRequest() {
+    mockXHR(this);
+    this.status = 403;
+    this.readyState = 2;
+    this.HEADERS_RECEIVED = new window.XMLHttpRequest().HEADERS_RECEIVED;
+    this.abort = jest.fn();
+    this.responseHeaders = new Map();
+    this.getResponseHeader = function(name) {
+        return this.responseHeaders[name];
+    };
+    this.setResponseHeader = function(name, value) {
+        this.responseHeaders[name] = value;
+    };
+};
+
+window.mockXHRDirectRequest = mockXHRDirectRequest;
+
 window.setTimeSinceLastResp = (value) => timeSinceLastResp = value;
 
 window.storedTokens = `[{

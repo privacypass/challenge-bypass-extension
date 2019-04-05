@@ -211,7 +211,10 @@ function updateBrowserTab(id, targetUrl) {
  * @param {Number} id
  */
 function reloadBrowserTab(id) {
-    chrome.tabs.reload(id);
+    if (id >= 0) {
+        // if id < 0 this caused error messages
+        chrome.tabs.reload(id);
+    }
 }
 
 /**
