@@ -270,7 +270,6 @@ function tryRequestChallenge(details, url) {
             if (spendStatusCode().includes(xhr.status) && xhr.getResponseHeader(CHL_BYPASS_SUPPORT) === CONFIG_ID) {
                 // don't return anything here because it is async
                 decideRedeem(details, url);
-                xhr.abort();
                 xhrRet = true;
             }
             xhr.abort();
