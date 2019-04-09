@@ -242,7 +242,7 @@ function isFaviconUrl(url) {
  * @param {string} method Config string indicating how redemptions are handled
  * @return {boolean}
  */
-const isValidRedeemMethod = (method) => validMethods().includes(method);
+const isValidRedeemMethod = (method) => validRedemptionMethods().includes(method);
 
 
 /**

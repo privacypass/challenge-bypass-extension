@@ -8,12 +8,10 @@
 import each from "jest-each";
 
 const workflow = workflowSet();
-const sjcl = workflow.__get__("sjcl");
 
 /**
  * Functions/variables
  */
-const LISTENER_URLS = workflow.__get__("LISTENER_URLS");
 const EXAMPLE_HREF = "https://example.com";
 const CAPTCHA_HREF = "https://captcha.website";
 const EXAMPLE_SUFFIX = "/cdn-cgi/l/chk_captcha?id=4716480f5bb534e8&g-recaptcha-response=03AMGVjXh24S6n8-HMQadfr8AmSr-2i87s1TTWUrhfnrIcti9hw1DigphUtiZzhU5R44VlJ3CmoH1W6wZaqde7iJads2bFaErY2bok29QfgZrbhO8q6UBbwLMkVlZ803M1UyDYhA9xYJqLR4kVtKhrHkDsUEKN4vXKc3CNxQpysmvdTqdt31Lz088ptkkksGLzRluDu-Np11ER6NX8XaH2S4iwIR823r3txm4eaMoEeoLfOD5S_6WHD5RhH0B7LRa_l7Vp5ksEB-0vyHQPLQQLOYixrC_peP3dG3dnaTY5UcUAUxZK4E74glzCu2PyRpKNnQ9akFz-niWiFCY0z-cuJeOArMvGOQCC9Q";
@@ -21,7 +19,6 @@ const CAPTCHA_BYPASS_SUFFIX = "&captcha-bypass=true";
 const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
 const getBigNumFromBytes = workflow.__get__("getBigNumFromBytes");
-const sec1DecodePointFromBytes = workflow.__get__("sec1DecodePointFromBytes");
 const createVerificationXHR = workflow.__get__("createVerificationXHR");
 const retrieveCommitments = workflow.__get__("retrieveCommitments");
 const validateResponse = workflow.__get__("validateResponse");
@@ -31,30 +28,12 @@ const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
-const _scalarMult = workflow.__get__("_scalarMult");
-const sec1EncodePoint = workflow.__get__("sec1EncodePoint");
 
 const PPConfigs = workflow.__get__("PPConfigs");
 
 let details;
 let url;
 let configId;
-
-// different test data for where HKDF is used for proof verification
-const hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
-const genBytes = [4, 107, 23, 209, 242, 225, 44, 66, 71, 248, 188, 230, 229, 99, 164, 64, 242, 119, 3, 125, 129, 45, 235, 51, 160, 244, 161, 57, 69, 216, 152, 194, 150, 79, 227, 66, 226, 254, 26, 127, 155, 142, 231, 235, 74, 124, 15, 158, 22, 43, 206, 51, 87, 107, 49, 94, 206, 203, 182, 64, 104, 55, 191, 81, 245];
-const hkdfG = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(genBytes));
-const hkdfH = sjcl.codec.base64.fromBits(sjcl.codec.bytes.toBits(sec1EncodePoint(_scalarMult(hkdfTestKey, sec1DecodePointFromBytes(genBytes)))));
-// we only need token.point (so token.data and token.blind are mocked and do match the point data)
-const testTokensHkdf = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112,80,67,186,92,112,0,18,62,31,208,88,21,10,77,55,151,0,143,87,168,178,83,119,102,217,65,156,115,150,186,82,121],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252,160,47,15,9,200,58,130,65,180,69,114,160,89,171,73,192,128,163,157,11,206,45,93,11,68,255,93,1,43,81,132,231],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
-
-function mockXHRCommitments() {
-    mockXHR(this);
-    this.status = 200;
-    this.readyState = 4;
-    this.responseText = `{"CF":{"dev":{"G": "${testDevG}","H": "${testDevH}"},"1.0":{"G":"${testG}","H":"${testH}"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"},"hkdf":{"G":"${hkdfG}","H":"${hkdfH}"}}}`;
-}
-
 
 beforeEach(() => {
     clearLocalStorage();
@@ -192,7 +171,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 });
             }
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-            expect(tryRun).toThrowError("Cannot read property 'var-reset'");
+            expect(tryRun).toThrowError("Incorrect config ID specified");
         });
 
         test("test that true is returned", () => {

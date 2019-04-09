@@ -35,7 +35,6 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 tabId: "101",
             };
             url = new URL(EXAMPLE_HREF);
-            clearSpentTabMock();
             resetVars();
             resetSpendVars();
             workflow.__set__("CONFIG_ID", configId);
@@ -84,7 +83,6 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         break;
                     case 2:
                         // hCaptcha has no spendMax
-                        expect(workflow.__get__("CONFIG_ID")).toBe(2);
                         expect(workflow.__get__("spendMax")()).toBeUndefined();
                         expect(redeemHdrs.requestHeaders).toBeTruthy();
                         break;

@@ -55,7 +55,12 @@
         "mockXHR": true,
         "goodResponses": true,
         "appendSpentTabMock": true,
-        "consoleMock": true
+        "consoleMock": true,
+        "sjcl": true,
+        "hkdfG": true,
+        "hkdfH": true,
+        "testTokensHkdf": true,
+        "sec1DecodePointFromBytes": true
     },
     "rules": {
         "no-func-assign": 0,

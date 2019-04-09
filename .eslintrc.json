@@ -89,7 +89,7 @@
         "getTarget": true,
         "setFutureReload": true,
         "commitmentsKey": true,
-        "validMethods": true,
+        "validRedemptionMethods": true,
         "appendSpentTab": true
     },
     "rules": {

@@ -8,11 +8,11 @@
 /* exported CHL_BYPASS_RESPONSE */
 /* exported activeConfig */
 /* exported PPConfigs */
-/* exported validMethods */
+/* exported validRedemptionMethods */
 
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
-const validMethods = () => ["reload", "no-reload"];
+const validRedemptionMethods = () => ["reload", "no-reload"]; // specifies valid token redemption methods
 
 /**
  * Generates exampleConfig configuration object

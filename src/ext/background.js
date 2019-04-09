@@ -39,6 +39,8 @@ let CONFIG_ID = 1;
 const getConfigId = () => CONFIG_ID;
 const setConfigId = (val) => CONFIG_ID = val;
 
+const checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
+
 const STORAGE_STR = "bypass-tokens-";
 const COUNT_STR = STORAGE_STR + "count-";
 const activeConfig = () => PPConfigs()[getConfigId()];
@@ -346,6 +348,10 @@ function getReloadHeaders(request, url) {
  * @return {Object} contains XHR details for sending tokens
  */
 function beforeRequest(details, url) {
+    if (!checkConfigId(getConfigId())) {
+        throw new Error("Incorrect config ID specified");
+    }
+
     // Clear vars if they haven't been used for a while
     if (varReset() && Date.now() - varResetMs() > timeSinceLastResp) {
         resetVars();
@@ -358,7 +364,7 @@ function beforeRequest(details, url) {
 
     // Different signing methods based on configs
     let xhrInfo;
-    switch (CONFIG_ID) {
+    switch (getConfigId()) {
         case 1:
             xhrInfo = signReqCF(url);
             break;
