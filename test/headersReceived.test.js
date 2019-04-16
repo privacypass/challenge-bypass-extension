@@ -105,6 +105,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     found = isBypassHeader(header);
                     expect(found).toBeTruthy();
                     expect(oldCount === getMock(bypassTokensCount(configId))).toBeFalsy();
+                    expect(updateIconMock).toHaveBeenCalledTimes(1);
                 });
             });
             test("config is not reset if ID does not change", () => {
@@ -116,6 +117,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     found = isBypassHeader(header);
                     expect(found).toBeTruthy();
                     expect(oldCount === getMock(bypassTokensCount(configId))).toBeTruthy();
+                    expect(updateIconMock).toHaveBeenCalledTimes(0);
                 });
             });
         });

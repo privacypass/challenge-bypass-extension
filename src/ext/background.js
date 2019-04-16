@@ -121,11 +121,9 @@ const setSpentUrl = (key, value) => spentUrl[key] = value;
 const getSpendId = (key) => spendId[key];
 const setSpendId = (key, value) => spendId[key] = value;
 
-const getSpentTab = (key) => spentTab[key];
-const setSpentTab = (key, value) => spentTab[key] = value;
 const pushSpentTab = (key, value) => {
-    if (!Array.isArray(getSpentTab(key))) {
-        setSpentTab(key, []);
+    if (!Array.isArray(spentTab[key])) {
+        spentTab[key] = [];
     }
     spentTab[key].push(value);
 };

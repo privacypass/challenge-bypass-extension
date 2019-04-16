@@ -141,8 +141,8 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     expect(getSpentUrlMock(url.href)).toBeTruthy();
                     expect(getSpentTabMock([details.tabId]).includes(url.href)).toBeTruthy();
                     expect(reqHeaders).toBeTruthy();
-                    const headerName = workflow.__get__("headerName")();
-                    expect(reqHeaders[0].name === headerName).toBeTruthy();
+                    const headerName = workflow.__get__("headerName");
+                    expect(reqHeaders[0].name === headerName()).toBeTruthy();
                     expect(reqHeaders[0].value === b64EncodedTokenNoH2CParams).toBeTruthy();
                 });
             });
@@ -157,8 +157,8 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     expect(getSpentUrlMock([url.href])).toBeTruthy();
                     expect(getSpentTabMock([details.tabId]).includes(url.href)).toBeTruthy();
                     expect(reqHeaders).toBeTruthy();
-                    const headerName = workflow.__get__("headerName")();
-                    expect(reqHeaders[0].name === headerName).toBeTruthy();
+                    const headerName = workflow.__get__("headerName");
+                    expect(reqHeaders[0].name === headerName()).toBeTruthy();
                     expect(reqHeaders[0].value === b64EncodedToken).toBeTruthy();
                 });
             });

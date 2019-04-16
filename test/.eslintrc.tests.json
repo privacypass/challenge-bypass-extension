@@ -46,7 +46,6 @@
         "testDevG": true,
         "testDevH": true,
         "getSpentTabMock": true,
-        "setSpentTabMock": true,
         "setSpentUrlMock": true,
         "getSpentUrlMock": true,
         "setSpendFlagMock": true,

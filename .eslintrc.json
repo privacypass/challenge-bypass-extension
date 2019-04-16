@@ -89,8 +89,7 @@
         "getTarget": true,
         "setFutureReload": true,
         "commitmentsKey": true,
-        "validRedemptionMethods": true,
-        "appendSpentTab": true
+        "validRedemptionMethods": true
     },
     "rules": {
         "new-cap": 0,

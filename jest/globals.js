@@ -82,8 +82,6 @@ window.workflowSet = () => {
     workflow.__set__("getSpendId", getSpendIdMock);
 
     workflow.__set__("spentTabMock", spentTabMock);
-    workflow.__set__("setSpentTab", setSpentTabMock);
-    workflow.__set__("getSpentTab", getSpentTabMock);
     workflow.__set__("pushSpentTab", pushSpentTabMock);
 
     workflow.__set__("spentHostsMock", spentHostsMock);
@@ -197,11 +195,11 @@ window.setTargetMock = (key, value) => targetMock[key] = value;
 window.clearTargetMock = () => targetMock = new Map();
 
 window.getSpentTabMock = (key) => spentTabMock[key];
-window.setSpentTabMock = (key, value) => spentTabMock[key] = value;
+// window.setSpentTabMock = (key, value) => spentTabMock[key] = value;
 window.clearSpentTabMock = () => spentTabMock = new Map();
 window.pushSpentTabMock = (key, value) => {
-    if (!Array.isArray(getSpentTabMock(key))) {
-        setSpentTabMock(key, []);
+    if (!Array.isArray(spentTabMock[key])) {
+        spentTabMock[key] = [];
     }
     spentTabMock[key].push(value);
 };
