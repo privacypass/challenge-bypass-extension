@@ -11,6 +11,36 @@
 
 const SWU_POINT_REPRESENTATION = 0; // 0 = affine, 1 = jacobian
 const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
+const p256Curve = sjcl.ecc.curves.c256;
+const precomputedP256 = {
+    // a=-3, but must be reduced mod p for P256; otherwise,
+    // inverseMod function loops forever.
+    A: p256Curve.a.fullReduce(),
+    B: p256Curve.b,
+    baseField: p256Curve.field,
+    c1: p256Curve.b.mul(-1).mul(p256Curve.a.inverseMod(p256Curve.field.modulus)),
+    c2: p256Curve.field.modulus.sub(1).cnormalize().halveM(),
+    sqrt: p256Curve.field.modulus.add(1).cnormalize().halveM().halveM(),
+};
+
+/**
+ * Converts the number x into a byte array of length n
+ * @param {Number} x
+ * @param {Number} n
+ * @return {sjcl.codec.bytes}
+ */
+function i2osp(x, n) {
+    const bytes = [];
+    for (let i=n-1; i>-1; i--) {
+        bytes[i] = x & 0xff;
+        x = x >> 8;
+    }
+
+    if (x > 0) {
+        throw new Error(`[privacy-pass]: number to convert (${x}) is too long for ${n} bytes.`);
+    }
+    return bytes;
+}
 
 /**
  * hashes bits to the base field (as described in
@@ -22,8 +52,11 @@ const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720
  * @return {int} integer in the base field of curve
  */
 function h2Base(x, curve, hash, label) {
+    const dataLen = sjcl.codec.bytes.fromBits(x).length;
     const h = new hash();
+    h.update("h2b");
     h.update(label);
+    h.update(sjcl.codec.bytes.toBits(i2osp(dataLen, 4)));
     h.update(x);
     const t = h.finalize();
     const y = curve.field.fromBits(t).cnormalize();
@@ -52,135 +85,55 @@ function h2Curve(alpha, ecSettings) {
 }
 
 /**
- * hashes bits onto affine P256 point using simplified SWU encoding algorithm
+ * hashes bits onto affine curve point using simplified SWU encoding algorithm
+ * Not constant-time due to conditional check
  * @param {sjcl.bitArray} alpha bits to be encoded
  * @param {sjcl.ecc.curve} activeCurve elliptic curve
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
- * @param {int} mode 0 = affine, 1 = projective
- * @return {sjcl.ecc.point} point on P256
+ * @return {sjcl.ecc.point} curve point
  */
-function simplifiedSWU(alpha, activeCurve, hash, mode) {
-    const params = getCurveParams(activeCurve);
-    const t = h2Base(alpha, activeCurve, hash, H2C_SEED);
+function simplifiedSWU(alpha, activeCurve, hash) {
+    const {A, B, baseField, c1, c2, sqrt} = getCurveParams(activeCurve);
+    const p = baseField.modulus;
+    const u = h2Base(alpha, activeCurve, hash, H2C_SEED); // step 1
 
-    let point;
-    switch (mode) {
-        case 0:
-            point = affineSWUP256(activeCurve, params.baseField, params.A, params.B, t);
-            break;
-        case 1:
-            point = jacobianSWUP256(activeCurve, params.baseField, params.A, params.B, t);
-            break;
-        default:
-            throw new Error("[privacy-pass]: Incompatible mode type chosen for SWU");
+    const t1 = u.square().mul(-1); // step 2
+    const t2 = t1.square(); // step 3
+    let x1 = t2.add(t1); // step 4
+    x1 = x1.inverseMod(p); // step 5
+    x1 = x1.add(1); // step 6
+    x1 = x1.mul(c1); // step 7
+
+    let gx1 = x1.square().mod(p); // step 8
+    gx1 = gx1.add(A); // step 9
+    gx1 = gx1.mul(x1); // step 10
+    gx1 = gx1.add(B); // step 11
+    gx1 = gx1.mod(p);
+
+    const x2 = t1.mul(x1); // step 12
+    let gx2 = x2.square().mod(p); // step 13
+    gx2 = gx2.add(A); // step 14
+    gx2 = gx2.mul(x2); // step 15
+    gx2 = gx2.add(B); // step 16
+    gx2 = gx2.mod(p);
+
+    const e = new baseField(gx1.powermod(c2, p)).equals(new sjcl.bn(1)); // step 17
+    let X;
+    let gx;
+    if (e) { // step 18/19
+        X = x1.mod(p);
+        gx = gx1;
+    } else {
+        X = x2.mod(p);
+        gx = gx2;
     }
+    const Y = gx.montpowermod(sqrt, p); // step 21
 
+    const point = new sjcl.ecc.point(activeCurve, X, Y);
     if (!point.isValid()) {
-        throw new Error("[privacy-pass]: Generated point is not on curve");
+        throw new Error(`[privacy-pass]: Generated point is not on curve, X: ${X}, Y: ${Y}`);
     }
-
     return point;
-}
-
-/**
- * Converts field elements into an affine pair of coordinates on P256
- * This is an optimised version of the algorithm found here:
- * https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-02#section-5.2.3
- * @param {sjcl.ecc.curve} activeCurve elliptic curve
- * @param {sjcl.ecc.curve.field} FFp base field for curve
- * @param {sjcl.bn} A Weierstrass coefficient for P256 curve
- * @param {sjcl.bn} B Weierstrass coefficient for P256 curve
- * @param {sjcl.bn} t FF_p field element
- * @return {sjcl.ecc.point} point on P256
- */
-function affineSWUP256(activeCurve, FFp, A, B, t) {
-    // step 1
-    let u = t.square();
-    u = u.mul(-1);
-
-    // step 2
-    let t0 = u.square().add(u);
-
-    // step 3
-    t0 = t0.inverseMod(FFp.modulus);
-
-    // step 4
-    t0 = t0.add(1);
-    const invA = A.inverseMod(FFp.modulus);
-    const minusBinvA = B.mul(invA).mul(-1);
-    let X = new FFp(minusBinvA.mul(t0));
-
-    // steps 5-8
-    const g = X.mul(X.square().add(A)).add(B);
-
-    // step 9
-    const expo = FFp.modulus.add(1).cnormalize().halveM().halveM();
-    let Y = new FFp(g.power(expo));
-
-    // step 10
-    const d0 = Y.square();
-
-    // steps 11 - 14
-    const b = g.equals(d0);
-    const uX = u.mul(X);
-    const t3Y = t.power(3).mul(Y); // p+1/4 is even for P256
-    X = b ? X : uX;
-    Y = b ? Y : t3Y;
-
-    // step 15
-    return new sjcl.ecc.point(activeCurve, X, Y);
-}
-
-/**
- * Converts field elements into jacobian coordinates on P256 (this is not
- * currently contained in the IETF draft but should be available soon)
- * @param {sjcl.ecc.curve} activeCurve elliptic curve
- * @param {sjcl.ecc.curve.field} FFp base field for curve
- * @param {sjcl.bn} A Weierstrass coefficient for P256 curve
- * @param {sjcl.bn} B (see above)
- * @param {sjcl.bn} t FF_p field element
- * @return {sjcl.ecc.pointJac} Jacobian coordinates of a curve point
- */
-function jacobianSWUP256(activeCurve, FFp, A, B, t) {
-    // calculate X/Z
-    let u = t.square();
-    u = u.mul(-1);
-    let Z = new FFp(u.square().add(u));
-    let X = new FFp(B.mul(Z.add(1)));
-    Z = A.mul(Z).mul(-1);
-
-    // calculate g0/g1
-    const t0 = X.square();
-    const t1 = Z.square();
-    const g1 = t1.mul(Z);
-    const t2 = g1.mul(B);
-    let g0 = t1.mul(A);
-    g0 = g0.add(t0);
-    g0 = g0.mul(X);
-    g0 = g0.add(t2);
-
-    // calculate Y = \sqrt(g0/g1)
-    let d0 = g0.mul(g1);
-    const d1 = g1.square();
-    const d2 = d0.mul(d1);
-    let Y = new FFp(d2);
-    Y = Y.power(FFp.modulus.sub(3).cnormalize().halveM().halveM());
-    Y = Y.mul(d0);
-    d0 = Y.square().mul(g1);
-
-    // Verify value of Y^2
-    const b = d0.equals(new FFp(g0)); // need this FFp for check
-    const uX = u.mul(X);
-    const tuY = t.mul(u).mul(Y); // (p+1)/4 is always even for P256
-    X = b ? X : uX;
-    Y = b ? Y : tuY;
-
-    // Jac coordinates
-    X = X.mul(Z);
-    Y = g1.mul(Y);
-
-    // Curve point
-    return new sjcl.ecc.pointJac(activeCurve, X, Y, Z);
 }
 
 /**
@@ -189,17 +142,15 @@ function jacobianSWUP256(activeCurve, FFp, A, B, t) {
  * @return {p;A;B}
  */
 function getCurveParams(curve) {
-    if (sjcl.ecc.curveName(curve) !== "c256") {
-        throw new Error("[privacy-pass]: Incompatible curve chosen for H2C: " + sjcl.ecc.curveName(curve));
+    let curveParams;
+    switch (sjcl.ecc.curveName(curve)) {
+        case "c256":
+            curveParams = precomputedP256;
+            break;
+        default:
+            throw new Error("[privacy-pass]: Incompatible curve chosen for H2C: " + sjcl.ecc.curveName(curve));
     }
-
-    const FFp = curve.field;
-    const a = curve.a;
-    // a=-3, but must be reduced mod p; otherwise,
-    // inverseMod function loops forever.
-    a.fullReduce();
-    const b = curve.b;
-    return {baseField: FFp, A: a, B: b};
+    return curveParams;
 }
 
 /**
