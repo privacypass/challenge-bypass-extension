@@ -45,9 +45,9 @@ CAPTCHA solution.
 __Description__: A (JSON) struct returning signed blinded tokens to the client
 along with a batched DLEQ proof evaluated over all the tokens.
 
-- `PointData`: Is an array of elliptic curve points stored as
-  uncompressed byte arrays. This array contains the signed, blinded tokens
-  produced by the server.
+- `PointData`: Is an array of elliptic curve points stored as byte arrays (both
+  uncompressed and compressed encodings are supported). This array contains the
+  signed, blinded tokens produced by the server.
 
 - `DLEQProof`: A struct of the following form:
 
@@ -124,7 +124,7 @@ handling redemptions in the future.
     ```
     where `Token.Token` is an array of bytes, `Token.Blind` is a hex-encoded
     `BitInteger` and `Token.Point` is a base64-encoded octet-string that is the
-    result of an elliptic point to octet-string conversion.
+    result of an elliptic point to octet-string conversion (uncompressed).
 
 ## RedemptionRequest
 

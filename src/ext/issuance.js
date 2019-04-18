@@ -217,7 +217,7 @@ function parseIssueResp(issueResp) {
 function BuildIssueRequest(tokens) {
     const contents = [];
     for (let i = 0; i < tokens.length; i++) {
-        const encodedPoint = compressPoint(tokens[i].point);
+        const encodedPoint = sec1EncodeToBase64(tokens[i].point, true);
         contents.push(encodedPoint);
     }
     return btoa(JSON.stringify({type: "Issue", contents: contents}));
@@ -285,15 +285,15 @@ function createVerificationXHR(url, tabId, tokens, issueResp) {
  * @param {string} commitments base64-encoded curve points
  */
 function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
-    const sigPoints = getCurvePoints(issueResp.signatures);
+    const ret = getCurvePoints(issueResp.signatures);
 
     // Verify the DLEQ batch proof before handing back the usable points
-    if (!verifyProof(issueResp.proof, tokens, sigPoints, commitments, issueResp.prng)) {
+    if (!verifyProof(issueResp.proof, tokens, ret, commitments, issueResp.prng)) {
         throw new Error("[privacy-pass]: Unable to verify DLEQ proof.");
     }
 
-    // Store the tokens for future usage
-    storeNewTokens(tokens, sigPoints);
+    // Store the tokens for future usage (we don't store compressed for now)
+    storeNewTokens(tokens, ret.points);
 
     // Reload the page for the originally intended url
     if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {

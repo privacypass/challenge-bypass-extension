@@ -59,7 +59,8 @@
         "hkdfG": true,
         "hkdfH": true,
         "testTokensHkdf": true,
-        "sec1DecodePointFromBytes": true
+        "sec1DecodePointFromBytes": true,
+        "testTokensHkdfCompressed": true
     },
     "rules": {
         "no-func-assign": 0,

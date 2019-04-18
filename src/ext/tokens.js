@@ -99,13 +99,14 @@ function storeTokens(tokens) {
 }
 
 /**
- * Encodes the token object for storage (flattens sjcl.ecc.point object)
+ * Encodes the token object for storage, stores in uncompressed encoding to save
+ * on computation
  * @param {Object} t token object for curvePoint
  * @param {sjcl.ecc.point} curvePoint
  * @return {Object}
  */
 function getTokenEncoding(t, curvePoint) {
-    const storablePoint = encodeStorablePoint(curvePoint);
+    const storablePoint = sec1EncodeToBase64(curvePoint, false);
     const storableBlind = t.blind.toString();
     return {data: t.data, point: storablePoint, blind: storableBlind};
 }
@@ -124,7 +125,7 @@ function loadTokens() {
     const storedTokens = JSON.parse(storedJSON);
     for (let i = 0; i < storedTokens.length; i++) {
         const t = storedTokens[i];
-        const usablePoint = decodeStorablePoint(t.point);
+        const usablePoint = sec1DecodeFromBase64(t.point);
         const usableBlind = new sjcl.bn(t.blind);
         usableTokens[i] = {data: t.data, point: usablePoint, blind: usableBlind};
     }
