@@ -9,7 +9,6 @@
 /* global sjcl */
 /* exported h2Curve */
 
-const SWU_POINT_REPRESENTATION = 0; // 0 = affine, 1 = jacobian
 const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
 const p256Curve = sjcl.ecc.curves.c256;
 const precomputedP256 = {
@@ -73,7 +72,7 @@ function h2Curve(alpha, ecSettings) {
     let point;
     switch (ecSettings.method) {
         case "swu":
-            point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, SWU_POINT_REPRESENTATION);
+            point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash);
             break;
         case "increment":
             point = hashAndInc(alpha, ecSettings.hash);
@@ -93,14 +92,31 @@ function h2Curve(alpha, ecSettings) {
  * @return {sjcl.ecc.point} curve point
  */
 function simplifiedSWU(alpha, activeCurve, hash) {
-    const {A, B, baseField, c1, c2, sqrt} = getCurveParams(activeCurve);
-    const p = baseField.modulus;
-    const u = h2Base(alpha, activeCurve, hash, H2C_SEED); // step 1
+    const params = getCurveParams(activeCurve);
+    const u = h2Base(alpha, activeCurve, hash, H2C_SEED);
+    const {X, Y} = computeSWUCoordinates(u, params);
+    const point = new sjcl.ecc.point(activeCurve, X, Y);
+    if (!point.isValid()) {
+        throw new Error(`[privacy-pass]: Generated point is not on curve, X: ${X}, Y: ${Y}`);
+    }
+    return point;
+}
 
+/**
+ * Compute (X,Y) coordinates from integer u
+ * Operations taken from draft-irtf-cfrg-hash-to-curve.txt at commit
+ * cea8485220812a5d371deda25b5eca96bd7e6c0e
+ * @param {sjcl.bn} u integer to map
+ * @param {Object} params curve parameters
+ * @return {Object} curve coordinates
+ */
+function computeSWUCoordinates(u, params) {
+    const {A, B, baseField, c1, c2, sqrt} = params;
+    const p = baseField.modulus;
     const t1 = u.square().mul(-1); // step 2
     const t2 = t1.square(); // step 3
     let x1 = t2.add(t1); // step 4
-    x1 = x1.inverseMod(p); // step 5
+    x1 = x1.inverse(); // step 5
     x1 = x1.add(1); // step 6
     x1 = x1.mul(c1); // step 7
 
@@ -117,23 +133,17 @@ function simplifiedSWU(alpha, activeCurve, hash) {
     gx2 = gx2.add(B); // step 16
     gx2 = gx2.mod(p);
 
-    const e = new baseField(gx1.powermod(c2, p)).equals(new sjcl.bn(1)); // step 17
-    let X;
-    let gx;
-    if (e) { // step 18/19
-        X = x1.mod(p);
-        gx = gx1;
-    } else {
-        X = x2.mod(p);
+    const e = new baseField(gx1.montpowermod(c2, p)).equals(new sjcl.bn(1)); // step 17
+    let X = x1; // step 18
+    let gx = gx1;
+    if (!e) {
+        X = x2; // step 19
         gx = gx2;
     }
+    X = X.mod(p);
     const Y = gx.montpowermod(sqrt, p); // step 21
 
-    const point = new sjcl.ecc.point(activeCurve, X, Y);
-    if (!point.isValid()) {
-        throw new Error(`[privacy-pass]: Generated point is not on curve, X: ${X}, Y: ${Y}`);
-    }
-    return point;
+    return {X: X, Y: Y};
 }
 
 /**

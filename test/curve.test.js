@@ -9,6 +9,7 @@ const sjcl = workflow.__get__("sjcl");
 const h2Curve = workflow.__get__("h2Curve");
 const h2Base = workflow.__get__("h2Base");
 const simplifiedSWU = workflow.__get__("simplifiedSWU");
+const computeSWUCoordinates = workflow.__get__("computeSWUCoordinates");
 const hashAndInc = workflow.__get__("hashAndInc");
 const ACTIVE_CONFIG = workflow.__get__("ACTIVE_CONFIG");
 const setConfig = workflow.__get__("setConfig");
@@ -109,6 +110,9 @@ describe("check curve parameters are correct", () => {
     });
 });
 
+// Test vectors taken from poc at
+// https://github.com/chris-wood/draft-sullivan-cfrg-hash-to-curve
+// (commit: cea8485220812a5d371deda25b5eca96bd7e6c0e)
 describe("hashing to p256", () => {
     const byteLength = 32;
     const wordLength = byteLength / 4;
@@ -172,6 +176,34 @@ describe("hashing to p256", () => {
             };
             expect(runH2C).not.toThrowError();
         }
+    });
+
+    describe("point at infinity", () => {
+        const params = getCurveParams(sjcl.ecc.curves.c256);
+        const testVectors = [
+            {
+                u: new params.baseField(0),
+                X: "000000", // sjcl truncates the length of X
+                Y: "66485c780e2f83d72433bd5d84a06bb6541c2af31dae871728bf856a174f93f4",
+            },
+            {
+                u: new params.baseField(1),
+                X: "8c6898b71c972408c406c0e383227dc133a0fdc5bbe41a5896bb41409d648a91",
+                Y: "022f57c5880ec13780670c6874cc9ccd7096fa95c841e7592bf4e95162aa89cd",
+            },
+            {
+                u: new params.baseField(-1),
+                X: "8c6898b71c972408c406c0e383227dc133a0fdc5bbe41a5896bb41409d648a91",
+                Y: "022f57c5880ec13780670c6874cc9ccd7096fa95c841e7592bf4e95162aa89cd",
+            },
+        ];
+        testVectors.forEach((vector) => {
+            test(`u=${vector.u}`, () => {
+                const {X, Y} = computeSWUCoordinates(vector.u, params);
+                expect(sjcl.codec.hex.fromBits(X.toBits())).toEqual(vector.X);
+                expect(sjcl.codec.hex.fromBits(Y.toBits())).toEqual(vector.Y);
+            });
+        });
     });
 
     test("hash-and-increment no errors", () => {
