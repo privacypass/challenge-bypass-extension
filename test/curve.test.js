@@ -178,7 +178,7 @@ describe("hashing to p256", () => {
         }
     });
 
-    describe("point at infinity", () => {
+    describe("exceptional cases", () => {
         const params = getCurveParams(sjcl.ecc.curves.c256);
         const testVectors = [
             {
