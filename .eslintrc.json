@@ -88,7 +88,8 @@
         "getTarget": true,
         "setFutureReload": true,
         "commitmentsKey": true,
-        "validRedemptionMethods": true
+        "validRedemptionMethods": true,
+        "getConfigId": true
     },
     "rules": {
         "new-cap": 0,

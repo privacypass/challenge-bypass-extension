@@ -30,6 +30,7 @@
 /* exported LISTENER_URLS */
 /* exported getTarget */
 /* exported setFutureReload */
+/* getConfigId */
 
 "use strict";
 
@@ -541,7 +542,7 @@ function resetSpendVars() {
 function isBypassHeader(header) {
     const newConfigVal = parseInt(header.value);
     if (header.name.toLowerCase() === CHL_BYPASS_SUPPORT && newConfigVal !== 0) {
-        if (newConfigVal !== CONFIG_ID) {
+        if (checkConfigId(newConfigVal) && newConfigVal !== getConfigId()) {
             setConfig(newConfigVal);
         }
         return true;

@@ -108,7 +108,7 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     };
     xhr.open("POST", newUrl, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, CONFIG_ID);
+    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, getConfigId());
     // We seem to get back some odd mime types that cause problems...
     xhr.overrideMimeType("text/plain");
     xhr.send(requestBody);
