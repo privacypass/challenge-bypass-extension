@@ -257,8 +257,8 @@ function processHeaders(details, url) {
 /**
  * Try a direct request against a challenge endpoint if the response headers are
  * empty. This fixes some strange behaviour with CF sites and Chrome.
- * @param {Object} details
- * @param {URL} url
+ * @param {Object} details Original request details
+ * @param {URL} url Origin URL
  * @return {boolean} indicates whether an XHR was launched
  */
 function tryRequestChallenge(details, url) {
