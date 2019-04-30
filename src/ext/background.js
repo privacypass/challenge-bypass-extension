@@ -330,7 +330,7 @@ function beforeSendHeaders(request, url) {
                 .map((redeemUrl) => patternToRegExp(redeemUrl))
                 .some((re) => reqUrl.match(re));
 
-            setSpendFlag(url.host, null);
+            setSpendFlag(host, null);
 
             if (countStoredTokens() > 0 && isRedeemUrl) {
                 const tokenToSpend = GetTokenForSpend();
@@ -481,10 +481,11 @@ function handleMessage(request, sender, sendResponse) {
  * @param {string} host String corresponding to host
  */
 function incrementSpentHost(host) {
-    if (getSpentHosts(host) === undefined) {
-        setSpentHosts(host, 0);
+    let n = getSpentHosts(host);
+    if (n === undefined) {
+        n = 0;
     }
-    setSpentHosts(host, getSpentHosts(host) + 1);
+    setSpentHosts(host, n + 1);
 }
 
 /**
@@ -493,7 +494,8 @@ function incrementSpentHost(host) {
  * @return {boolean}
  */
 function checkMaxSpend(host) {
-    if (getSpentHosts(host) === undefined || getSpentHosts(host) < spendMax() || spendMax() === undefined) {
+    const n = getSpentHosts(host);
+    if (n === undefined || n < spendMax() || spendMax() === undefined) {
         return false;
     }
     return true;

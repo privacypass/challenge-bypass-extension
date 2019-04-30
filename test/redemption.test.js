@@ -37,6 +37,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             url = new URL(EXAMPLE_HREF);
             resetVars();
             resetSpendVars();
+            setSpendFlagMock(url.host, null);
             workflow.__set__("CONFIG_ID", configId);
             workflow.__set__("spendActionUrls", () => [LISTENER_URLS]);
         });
@@ -129,13 +130,18 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 expect(getSpendFlagMock(url.host)).toBeNull();
             });
         });
+
         describe("redemption attempted", () => {
             test(`redemption header added (SEND_H2C_PARAMS = false)`, () => {
                 workflow.__with__({sendH2CParams: () => false})(() => {
+                    setSpentHostsMock(url.host, 0);
                     setSpendFlagMock(url.host, true);
                     setSpentUrlMock(url.href, false);
-                    const redeemHdrs = beforeSendHeaders(details, url);
-                    const reqHeaders = redeemHdrs.requestHeaders;
+                    let reqHeaders;
+                    expect(() => {
+                        const redeemHdrs = beforeSendHeaders(details, url);
+                        reqHeaders = redeemHdrs.requestHeaders;
+                    }).not.toThrow();
                     expect(getSpendFlagMock(url.host)).toBeNull();
                     expect(getSpendIdMock([details.requestId])).toBeTruthy();
                     expect(getSpentUrlMock(url.href)).toBeTruthy();
@@ -148,10 +154,14 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             });
             test(`redemption header added (SEND_H2C_PARAMS = true)`, () => {
                 workflow.__with__({sendH2CParams: () => true})(() => {
+                    setSpentHostsMock(url.host, 0);
                     setSpendFlagMock(url.host, true);
                     setSpentUrlMock(url.href, false);
-                    const redeemHdrs = beforeSendHeaders(details, url);
-                    const reqHeaders = redeemHdrs.requestHeaders;
+                    let reqHeaders;
+                    expect(() => {
+                        const redeemHdrs = beforeSendHeaders(details, url);
+                        reqHeaders = redeemHdrs.requestHeaders;
+                    }).not.toThrow();
                     expect(getSpendFlagMock(url.host)).toBeNull();
                     expect(getSpendIdMock([details.requestId])).toBeTruthy();
                     expect(getSpentUrlMock([url.href])).toBeTruthy();

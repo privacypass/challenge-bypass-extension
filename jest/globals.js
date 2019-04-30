@@ -55,7 +55,7 @@ window.workflowSet = () => {
     workflow.__set__("setSpendFlag", setSpendFlagMock);
     workflow.__set__("getSpendFlag", getSpendFlagMock);
 
-    workflow.__set__("spentUrlMock", spentUrlMock);
+    workflow.__set__("spentUrl", spentUrlMock);
     workflow.__set__("setSpentUrl", setSpentUrlMock);
     workflow.__set__("getSpentUrl", getSpentUrlMock);
 
@@ -77,14 +77,14 @@ window.workflowSet = () => {
     workflow.__set__("getTarget", getTargetMock);
 
 
-    workflow.__set__("spendIdMock", spendIdMock);
+    workflow.__set__("spendId", spendIdMock);
     workflow.__set__("setSpendId", setSpendIdMock);
     workflow.__set__("getSpendId", getSpendIdMock);
 
-    workflow.__set__("spentTabMock", spentTabMock);
+    workflow.__set__("spentTab", spentTabMock);
     workflow.__set__("pushSpentTab", pushSpentTabMock);
 
-    workflow.__set__("spentHostsMock", spentHostsMock);
+    workflow.__set__("spentHosts", spentHostsMock);
     workflow.__set__("setSpentHosts", setSpentHostsMock);
     workflow.__set__("getSpentHosts", getSpentHostsMock);
 
@@ -122,13 +122,23 @@ window.reloadBrowserTabMock = jest.fn();
 window.validateRespMock = jest.fn();
 
 window.CACHED_COMMITMENTS_STRING = "cached-commitments";
-window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
-
-window.setSpendFlagMock = (key, value) => setMock(key, value);
-window.getSpendFlagMock = (key) => getMock(key)
-
 window.getMock = (key) => JSON.parse(localStorage.getItem(key));
 window.setMock = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
+
+// window.setSpendFlagMock = (key, value) => {
+//     if (value) {
+//         localStorage.setItem(key, "true");
+//     } else {
+//         localStorage.removeItem(key);
+//     }
+// };
+// window.getSpendFlagMock = (key) => {
+//     localStorage.getItem(key);
+// }
+window.setSpendFlagMock = (key, value) => setMock(key, value)
+window.getSpendFlagMock = (key) => getMock(key);
+
 window.clearLocalStorage = () => localStorage.clear()
 
 window.bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
