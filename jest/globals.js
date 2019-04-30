@@ -121,21 +121,12 @@ window.updateBrowserTabMock = jest.fn();
 window.reloadBrowserTabMock = jest.fn();
 window.validateRespMock = jest.fn();
 
-window.CACHED_COMMITMENTS_STRING = "cached-commitments";
 window.getMock = (key) => JSON.parse(localStorage.getItem(key));
 window.setMock = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+window.CACHED_COMMITMENTS_STRING = "cached-commitments";
 window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
 
-// window.setSpendFlagMock = (key, value) => {
-//     if (value) {
-//         localStorage.setItem(key, "true");
-//     } else {
-//         localStorage.removeItem(key);
-//     }
-// };
-// window.getSpendFlagMock = (key) => {
-//     localStorage.getItem(key);
-// }
 window.setSpendFlagMock = (key, value) => setMock(key, value)
 window.getSpendFlagMock = (key) => getMock(key);
 
