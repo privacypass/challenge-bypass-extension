@@ -3,15 +3,16 @@
  * @author Alex Davidson
  */
 
-import rewire from "rewire";
-const workflow = rewire("../addon/compiled/test_compiled.js");
+
+const workflow = workflowSet();
+
 const sjcl = workflow.__get__("sjcl");
 const h2Curve = workflow.__get__("h2Curve");
 const h2Base = workflow.__get__("h2Base");
 const simplifiedSWU = workflow.__get__("simplifiedSWU");
 const computeSWUCoordinates = workflow.__get__("computeSWUCoordinates");
 const hashAndInc = workflow.__get__("hashAndInc");
-const ACTIVE_CONFIG = workflow.__get__("ACTIVE_CONFIG");
+const activeConfig = workflow.__get__("activeConfig");
 const setConfig = workflow.__get__("setConfig");
 const getActiveECSettings = workflow.__get__("getActiveECSettings");
 const initECSettings = workflow.__get__("initECSettings");
@@ -21,18 +22,6 @@ const sec1Encode = workflow.__get__("sec1Encode");
 const sec1EncodeToBase64 = workflow.__get__("sec1EncodeToBase64");
 const sec1DecodeFromBytes = workflow.__get__("sec1DecodeFromBytes");
 const sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
-
-/**
- * Mocking
- */
-const getMock = jest.fn();
-const updateIconMock = jest.fn();
-const clearCachedCommitmentsMock = jest.fn();
-workflow.__set__("get", getMock);
-workflow.__set__("updateIcon", updateIconMock);
-workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
-const consoleMock = {error: jest.fn()};
-workflow.__set__("console", consoleMock);
 
 /**
  * Configuration
@@ -55,7 +44,6 @@ describe("check curve initialisation", () => {
         }
         expect(run).not.toThrowError();
     });
-
     test("check with swu config", () => {
         activeCurveParams["method"] = "swu";
         function run() {
@@ -63,7 +51,6 @@ describe("check curve initialisation", () => {
         }
         expect(run).not.toThrowError();
     });
-
     test("with bad curve", () => {
         activeCurveParams["curve"] = "25519";
         function run() {
@@ -71,7 +58,6 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-
     test("with bad hash", () => {
         activeCurveParams["hash"] = "sha512";
         function run() {
@@ -79,7 +65,6 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-
     test("with bad method", () => {
         activeCurveParams["method"] = "elligator";
         function run() {
@@ -100,7 +85,6 @@ describe("check curve parameters are correct", () => {
         expect(curveP256.a === cParams.A).toBeTruthy();
         expect(curveP256.b === cParams.B).toBeTruthy();
     });
-
     test("bad curve", () => {
         function run() {
             curve = sjcl.ecc.curves.c192;
@@ -207,7 +191,7 @@ describe("hashing to p256", () => {
     });
 
     test("hash-and-increment no errors", () => {
-        for (let i=0; i<10; i++) {
+        for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
@@ -216,9 +200,8 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("h2c with increment settings", () => {
-        for (let i=0; i<10; i++) {
+        for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
@@ -227,13 +210,12 @@ describe("hashing to p256", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-
     test("h2c with swu settings", () => {
-        for (let i=0; i<10; i++) {
+        for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
-                ACTIVE_CONFIG["method"] = "swu";
+                activeConfig()["method"] = "swu";
                 h2Curve(rndBits, getActiveECSettings());
             };
             expect(runH2C).not.toThrowError();

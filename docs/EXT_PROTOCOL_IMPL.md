@@ -169,7 +169,7 @@ from the server.
 	```
 	BlindTokenRequest{Type:"Redeem", Contents:[base64.encode(Token), RequestBinding]}
 	```
-    where `Token` is some `[]byte` object. If `ACTIVE_CONFIG["send-h2c-params"]`
+    where `Token` is some `[]byte` object. If `activeConfig()["send-h2c-params"]`
     is set to `true`, then we append `H2CParams` to the array stored in
     `BlindTokenRequest.Contents`.
 
@@ -287,7 +287,7 @@ redemption request enables the client to bypass the challenge.
     ```
     RedemptionRequest{Type:"Redeem", Contents: [c.Token,rb]}
     ```
-    optionally appending `H2CParams` if `ACTIVE_CONFIG["send-h2c-params"] =
+    optionally appending `H2CParams` if `activeConfig()["send-h2c-params"] =
     true`.
 
 10. Sends the HTTP request with the header:

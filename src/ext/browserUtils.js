@@ -25,18 +25,16 @@
 /* exported set */
 /* exported UpdateCallback */
 "use strict";
-
-let CHECK_COOKIES = ACTIVE_CONFIG["cookies"]["check-cookies"];
+const checkCookies = () => activeConfig()["cookies"]["check-cookies"];
 
 /**
  * Attempts to redeem a token if the series of checks passes
  * @param {URL} url URL of request
  * @param {Number} respTabId ID of the tab where the request originated
- * @param {Array<string>} target Array of possible targets for redemption
  */
-function attemptRedeem(url, respTabId, target) {
+function attemptRedeem(url, respTabId) {
     // Check all cookie stores to see if a clearance cookie is held
-    if (CHECK_COOKIES) {
+    if (checkCookies()) {
         chrome.cookies.getAllCookieStores(function(stores) {
             let clearanceHeld = false;
             stores.forEach(function(store, index) {
@@ -49,7 +47,7 @@ function attemptRedeem(url, respTabId, target) {
                 if (tabIds.includes(respTabId)) {
                     chrome.cookies.get({
                         "url": url.href,
-                        "name": CHL_CLEARANCE_COOKIE,
+                        "name": chlClearanceCookie(),
                         "storeId": store.id,
                     }, function(cookie) {
                         // Require an existing, non-expired cookie.
@@ -62,12 +60,12 @@ function attemptRedeem(url, respTabId, target) {
 
             // If a clearance cookie is not held then set the spend flag
             if (!clearanceHeld) {
-                fireRedeem(url, respTabId, target);
+                fireRedeem(url, respTabId);
             }
         });
     } else {
         // If cookies aren't checked then we always attempt to redeem.
-        fireRedeem(url, respTabId, target);
+        fireRedeem(url, respTabId);
     }
 }
 
@@ -76,21 +74,20 @@ function attemptRedeem(url, respTabId, target) {
  * Sets a reload to occur for the targeted URL string that is provided
  * @param {URL} url URL of request
  * @param {Number} respTabId ID of the tab where the request originated
- * @param {Array<string>} target Array of possible targets for redemption
  */
-function fireRedeem(url, respTabId, target) {
-    if (!isValidRedeemMethod(REDEEM_METHOD)) {
+function fireRedeem(url, respTabId) {
+    if (!isValidRedeemMethod(redeemMethod())) {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
-    if (REDEEM_METHOD === "reload") {
+    if (redeemMethod() === "reload") {
         setSpendFlag(url.host, true);
-        const targetUrl = target[respTabId];
+        const targetUrl = getTarget(respTabId);
         if (url.href === targetUrl) {
             chrome.tabs.update(respTabId, {url: targetUrl});
         } else {
             // set a reload in the future when the target has been inited, also
             // reset timer for resetting vars
-            futureReload[respTabId] = url.href;
+            setFutureReload(respTabId, url.href);
             timeSinceLastResp = Date.now();
         }
     }
@@ -245,12 +242,8 @@ function isFaviconUrl(url) {
  * @param {string} method Config string indicating how redemptions are handled
  * @return {boolean}
  */
-function isValidRedeemMethod(method) {
-    return PPConfigs
-        .filter((config) => config.id > 0)
-        .map((config) => config["spend-action"]["redeem-method"])
-        .some((configMethod) => configMethod === method);
-}
+const isValidRedeemMethod = (method) => validRedemptionMethods().includes(method);
+
 
 /**
  * Clears the commitments that are cached for the active configuration
@@ -260,7 +253,7 @@ function clearCachedCommitments() {
 }
 
 /**
- * localStorage API function for getting values for keys
+ * localStorage API function for getting string values for the key provided
  * @param {string} key
  * @return {string}
  */
