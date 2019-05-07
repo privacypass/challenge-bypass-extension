@@ -131,7 +131,20 @@ The name of the header that contains a hostname that is sending the redemption r
 
 #### config["spend-action"]["header-path-name"]
 
-The name of the header that contains a path thatis sending the redemption request.
+The name of the header that contains a path that is sending the redemption
+request.
+
+#### config["spend-action"]["empty-resp-headers"]
+
+If an empty set of response headers is received with the correct status code (as
+defined in `config["spending-restrictions"]["status-code"]`) then this object
+contains an array of strings that correspond to possible ways of acquiring the
+headers. Currently we only support `"direct-request"`, which sends a direct
+request to the same URL with a specific endpoint attached as defined in
+`config["opt-endpoints"]["challenge"]`.
+
+This option was introduced to mitigate problems with Chrome in conjunction with
+sub-resources hosted on separate Cloudflare domains.
 
 ### config["issue-action"]
 
@@ -183,6 +196,10 @@ by the provider. In the case of Cloudflare, this is `"cf_clearance"`.
 A string specifying a domain where users can obtain signed tokens by solving a
 challenge/CAPTCHA. This is helpful to allow users to build up initial stockpiles
 of tokens before they browse.
+
+### config["opt-endpoints"]
+
+Optional endpoints for use by the particular configuration.
 
 ### config["error-codes"]
 

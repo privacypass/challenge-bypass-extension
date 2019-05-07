@@ -77,6 +77,8 @@ const issueActionUrls = () => activeConfig()["issue-action"]["urls"];
 const reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
 const signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
 const tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
+const optEndpoints = () => activeConfig()["opt-endpoints"];
+const emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
 
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 initECSettings(h2cParams());
@@ -210,12 +212,13 @@ function validRedirect(oldUrl, redirectUrl) {
  * @return {boolean}
  */
 function processHeaders(details, url) {
+    const ret = {attempted: false, xhr: false, favicon: false};
     // We're not interested in running this logic for favicons
     if (isFaviconUrl(url.href)) {
-        return false;
+        ret.favicon = true;
+        return ret;
     }
 
-    let activated = false;
     for (let i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() === CHL_BYPASS_RESPONSE) {
@@ -233,13 +236,61 @@ function processHeaders(details, url) {
 
         // correct status code with the right header indicates a bypassable Cloudflare CAPTCHA
         if (isBypassHeader(header) && spendStatusCode().includes(details.statusCode)) {
-            activated = true;
+            ret.attempted = decideRedeem(details, url);
+            break;
         }
     }
 
-    // If we have tokens to spend, cancel the request and pass execution over to the token handler.
+    if (details.responseHeaders.length === 0
+        && spendStatusCode().includes(details.statusCode)
+        && emptyRespHeaders().includes("direct-request")) {
+        // There is some weirdness with Chrome whereby some resources return empty
+        // responseHeaders but where a spend *should* occur. If this happens then we
+        // send a direct request to an endpoint that determines whether a CAPTCHA
+        // page is shown via XHR.
+        ret.xhr = tryRequestChallenge(details, url, ret);
+    }
+
+    return ret;
+}
+
+/**
+ * Try a direct request against a challenge endpoint if the response headers are
+ * empty. This fixes some strange behaviour with CF sites and Chrome.
+ * @param {Object} details Original request details
+ * @param {URL} url Origin URL
+ * @return {boolean} indicates whether an XHR was launched
+ */
+function tryRequestChallenge(details, url) {
+    const xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        // We return a boolean for testing purposes
+        let xhrRet = false;
+        if (this.readyState === this.HEADERS_RECEIVED) {
+            if (spendStatusCode().includes(xhr.status) && xhr.getResponseHeader(CHL_BYPASS_SUPPORT) === CONFIG_ID) {
+                // don't return anything here because it is async
+                decideRedeem(details, url);
+                xhrRet = true;
+            }
+            xhr.abort();
+        }
+        return xhrRet;
+    };
+    const challengePath = optEndpoints().challenge || "";
+    xhr.open("GET", url.origin + challengePath, true);
+    xhr.send();
+    return xhr;
+}
+
+/**
+ * Decides whether to redeem a token for the given URL
+ * @param {Object} details Response details
+ * @param {URL} url URL object for possible redemption
+ * @return {boolean}
+ */
+function decideRedeem(details, url) {
     let attempted = false;
-    if (activated && !getSpentUrl(url.href)) {
+    if (!spentUrl[url.href]) {
         const count = countStoredTokens();
         if (doRedeem()) {
             if (count > 0 && !url.host.includes(chlCaptchaDomain())) {
@@ -268,7 +319,6 @@ function processHeaders(details, url) {
  */
 function beforeSendHeaders(request, url) {
     // Cancel if we don't have a token to spend
-
     const reqUrl = url.href;
     const host = url.host;
 
@@ -280,7 +330,7 @@ function beforeSendHeaders(request, url) {
                 .map((redeemUrl) => patternToRegExp(redeemUrl))
                 .some((re) => reqUrl.match(re));
 
-            setSpendFlag(url.host, null);
+            setSpendFlag(host, null);
 
             if (countStoredTokens() > 0 && isRedeemUrl) {
                 const tokenToSpend = GetTokenForSpend();
@@ -431,10 +481,11 @@ function handleMessage(request, sender, sendResponse) {
  * @param {string} host String corresponding to host
  */
 function incrementSpentHost(host) {
-    if (getSpentHosts(host) === undefined) {
-        setSpentHosts(host, 0);
+    let n = getSpentHosts(host);
+    if (n === undefined) {
+        n = 0;
     }
-    setSpentHosts(host, getSpentHosts(host) + 1);
+    setSpentHosts(host, n + 1);
 }
 
 /**
@@ -443,7 +494,8 @@ function incrementSpentHost(host) {
  * @return {boolean}
  */
 function checkMaxSpend(host) {
-    if (getSpentHosts(host) === undefined || getSpentHosts(host) < spendMax() || spendMax() === undefined) {
+    const n = getSpentHosts(host);
+    if (n === undefined || n < spendMax() || spendMax() === undefined) {
         return false;
     }
     return true;

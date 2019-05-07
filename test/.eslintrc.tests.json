@@ -41,6 +41,7 @@
         "mockXHRGood": true,
         "mockXHRBadReadyState": true,
         "mockXHRBadStatus": true,
+        "mockXHRDirectRequest": true,
         "setSpentHostsMock": true,
         "clearCachedCommitmentsMock": true,
         "testDevG": true,

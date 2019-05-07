@@ -75,6 +75,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 expect(localStorage.getItem("data")).toBeFalsy();
             });
         });
+
         describe("check bypass header is working", () => {
             let found;
             beforeEach(() => {
@@ -121,6 +122,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 });
             });
         });
+
         describe("check redemption attempt conditions", () => {
             let url;
             let details;
@@ -137,27 +139,35 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             test("check that favicon urls are ignored", () => {
                 url = new URL("https://example.com/favicon.ico");
                 expect(isFaviconUrl(url.href)).toBeTruthy();
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
+                const ret = processHeaders(details, url);
+                expect(ret.attempted).toBeFalsy();
+                expect(ret.xhr).toBeFalsy();
+                expect(ret.favicon).toBeTruthy();
                 expect(updateIconMock).toBeCalledTimes(0);
             });
 
             test("check that redemption is not fired on CAPTCHA domain", () => {
                 url = new URL(`https://${chlCaptchaDomain()}`);
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
+                const ret = processHeaders(details, url);
+                expect(ret.attempted).toBeFalsy();
+                expect(ret.xhr).toBeFalsy();
+                expect(ret.favicon).toBeFalsy();
             });
 
             test("redemption is attempted on general domains", () => {
-                const fired = processHeaders(details, url);
-                expect(fired).toBeTruthy;
+                const ret = processHeaders(details, url);
+                expect(ret.attempted).toBeTruthy();
+                expect(ret.xhr).toBeFalsy();
+                expect(ret.favicon).toBeFalsy();
                 expect(updateIconMock).toBeCalledTimes(1);
             });
 
             test("not fired if status code != spendStatusCode()[0]", () => {
                 details.statusCode = 418;
-                const fired = processHeaders(details, url);
-                expect(fired).toBeFalsy();
+                const ret = processHeaders(details, url);
+                expect(ret.attempted).toBeFalsy();
+                expect(ret.xhr).toBeFalsy();
+                expect(ret.favicon).toBeFalsy();
             });
 
             test("if count is 0 update icon", () => {
@@ -175,8 +185,10 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
 
                     test("no tokens", () => {
                         setNoTokens(configId);
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeFalsy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
                         const readySign = workflow.__get__("readySign");
                         expect(readySign).toBeTruthy();
                         expect(updateIconMock).toBeCalledWith("!");
@@ -185,31 +197,39 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     test("not activated", () => {
                         header = {name: "Different-header-name", value: configId};
                         details.responseHeaders = [header];
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeFalsy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
                         const readySign = workflow.__get__("readySign");
                         expect(readySign).toBeFalsy();
                     });
 
                     test("tokens > 0", () => {
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeTruthy();
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeTruthy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
                         const readySign = workflow.__get__("readySign");
                         expect(readySign).toBeFalsy();
                     });
 
                     test("tokens > 0 but captcha.website", () => {
                         url = new URL(`https://${chlCaptchaDomain()}`);
-                        const fired = processHeaders(details, url);
-                        expect(fired).toBeFalsy();
+                        const ret = processHeaders(details, url);
+                        expect(ret.attempted).toBeFalsy();
+                        expect(ret.xhr).toBeFalsy();
+                        expect(ret.favicon).toBeFalsy();
                         const readySign = workflow.__get__("readySign");
                         expect(readySign).toBeTruthy();
                     });
 
                     test("redemption off", () => {
                         workflow.__with__({doRedeem: () => false})(() => {
-                            const fired = processHeaders(details, url);
-                            expect(fired).toBeFalsy();
+                            const ret = processHeaders(details, url);
+                            expect(ret.attempted).toBeFalsy();
+                            expect(ret.xhr).toBeFalsy();
+                            expect(ret.favicon).toBeFalsy();
                             const readySign = workflow.__get__("readySign");
                             expect(readySign).toBeTruthy();
                         });
@@ -221,12 +241,100 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         workflow.__with__({readySign: false, doSign: () => false})(() => {
                             header = {name: "Different-header-name", value: configId};
                             details.responseHeaders = [header];
-                            const fired = processHeaders(details, url);
+                            const ret = processHeaders(details, url);
+                            expect(ret.attempted).toBeFalsy();
+                            expect(ret.xhr).toBeFalsy();
+                            expect(ret.favicon).toBeFalsy();
                             expect(workflow.__get__("readySign")).toBeFalsy();
-                            expect(fired).toBeFalsy();
                         });
                     });
                 });
             });
         });
     });
+
+describe("xhr for empty response headers", () => {
+    const details = {
+        statusCode: 403,
+    };
+    const url = new URL("https://example.com");
+
+    beforeEach(() => {
+        setXHR(mockXHRDirectRequest, workflow);
+        // empty response headers
+        details.responseHeaders = [];
+        // set config values (tests currently are CF specific)
+        workflow.__set__("CONFIG_ID", 1);
+        workflow.__set__("emptyRespHeaders", () => ["direct-request"]);
+        workflow.__set__("spendStatusCode", () => [403]);
+    });
+
+    test("direct request is not used if direct-request isn't included in empty-resp-headers", () => {
+        workflow.__set__("emptyRespHeaders", () => ["something-else"]);
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeFalsy();
+        expect(ret.favicon).toBeFalsy();
+    });
+
+    test("direct request is not used if response headers are not empty", () => {
+        const someHeader = {name: "some-name", value: "some-value"};
+        details.responseHeaders = [someHeader];
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeFalsy();
+        expect(ret.favicon).toBeFalsy();
+    });
+
+    test("direct request does nothing if xhr status code != specified value", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 200;
+        xhr.setResponseHeader("cf-chl-bypass", 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request does nothing if CHL_BYPASS_SUPPORT header not received", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader("some-header", 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request does nothing if CHL_BYPASS_SUPPORT header has wrong value", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader(CHL_BYPASS_SUPPORT, 2);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeFalsy();
+        expect(xhr.abort).toBeCalled();
+    });
+
+    test("direct request results in possible spend if CHL_BYPASS_SUPPORT header received", () => {
+        const ret = processHeaders(details, url);
+        expect(ret.attempted).toBeFalsy();
+        expect(ret.xhr).toBeTruthy();
+        expect(ret.favicon).toBeFalsy();
+        const xhr = ret.xhr;
+        xhr.status = 403;
+        xhr.setResponseHeader(CHL_BYPASS_SUPPORT, 1);
+        const b = xhr.onreadystatechange();
+        expect(b).toBeTruthy();
+        expect(xhr.abort).toBeCalled();
+    });
+});
