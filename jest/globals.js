@@ -127,10 +127,10 @@ window.setMock = (key, value) => localStorage.setItem(key, JSON.stringify(value)
 window.CACHED_COMMITMENTS_STRING = "cached-commitments";
 window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
 
-window.setSpendFlagMock = (key, value) => setMock(key, value)
+window.setSpendFlagMock = (key, value) => setMock(key, value);
 window.getSpendFlagMock = (key) => getMock(key);
 
-window.clearLocalStorage = () => localStorage.clear()
+window.clearLocalStorage = () => localStorage.clear();
 
 window.bypassTokens = (config_id) => `bypass-tokens-${config_id}`;
 window.bypassTokensCount = (config_id) => `bypass-tokens-count-${config_id}`;
