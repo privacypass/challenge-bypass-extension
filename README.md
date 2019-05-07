@@ -1,6 +1,6 @@
 # Challenge Bypass Extension
 
-[![CircleCI](https://circleci.com/gh/privacypass/challenge-bypass-extension.svg?style=svg)](https://circleci.com/gh/privacypass/challenge-bypass-extension)
+Tests: [![CircleCI](https://circleci.com/gh/privacypass/challenge-bypass-extension.svg?style=svg)](https://circleci.com/gh/privacypass/challenge-bypass-extension)
 
 The Privacy Pass extension implements the Privacy Pass protocol for providing a
 private authentication mechanism during web browsing. Privacy Pass is
@@ -11,7 +11,15 @@ and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 (v48+). An example server implementation that is compatible with this extension
 is available [here](https://github.com/privacypass/challenge-bypass-server).
 
-The protocol we use is based on a realization of a 'Verifiable, Oblivious
+In effect, the extension enables users to less frequently redo CAPTCHAs _from sites
+implementing the Privacy Pass protocol_. The extension doesn't show if the protocol is
+active or not. Not all users or websites use this, also since this technology is not
+yet well known. Best chance to try this out is if you're in a region that are deemed to
+need CAPTCHAs, and visit a CloudFlare site, like the example http://captcha.website/
+If, by visiting, you don't get any CAPTCHA, you're welcome to hang around anyway and
+learn more about this technology!
+
+The Privacy Protocol is based on a realization of a 'Verifiable, Oblivious
 Pseudorandom Function' (VOPRF) first established by [Jarecki et
 al.](https://eprint.iacr.org/2014/650.pdf). For a technical description of the
 protocol see the [PROTOCOL.md](docs/PROTOCOL.md). We also detail the entire
