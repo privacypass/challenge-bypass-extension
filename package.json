@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
     "atob": "^2.1.2",
     "babel-core": "^6.26.3",
     "babel-jest": "^23.6.0",
@@ -8,9 +10,10 @@
     "babel-preset-env": "^1.7.0",
     "bestzip": "^2.1.2",
     "btoa": "^1.2.1",
+    "eslint": "^6.1.0",
     "eslint-config-google": "^0.12.0",
     "google-closure-compiler": "^20181028.0.1",
-    "jest": "^23.6.0",
+    "jest": "24.8.0",
     "json": "^9.0.6",
     "puppeteer": "^1.9.0",
     "regenerator-runtime": "^0.12.1",
