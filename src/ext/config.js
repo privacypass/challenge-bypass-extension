@@ -62,7 +62,7 @@ function exampleConfig() {
             "verify-error": "5", // error code sent by server for verification error
             "connection-error": "6", // error code sent by server for connection error
         }, // generic error codes (can add more)
-        "h2c-params": { // parameters for establishing which hash-to-curve setting the client wants to use
+        "h2c-params": {// parameters for establishing which hash-to-curve setting the client wants to use
             "curve": "p256", // elliptic curve that generated tokens should be mapped to
             "hash": "sha256", // hash function for mapping bytes to base-field of elliptic curve
             "method": "increment", // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)

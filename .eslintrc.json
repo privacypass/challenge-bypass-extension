@@ -114,6 +114,7 @@
             }
         ],
         "indent": ["error", 4, {"SwitchCase": 1}],
-        "max-len": 0
+        "max-len": 0,
+        "no-redeclare": 0
     }
 }
