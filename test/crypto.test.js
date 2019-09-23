@@ -4,8 +4,7 @@
  * @author Alex Davidson
  */
 
-import rewire from "rewire";
-const workflow = rewire("../addon/compiled/test_compiled.js");
+const workflow = workflowSet();
 const sjcl = workflow.__get__("sjcl");
 const evaluateHkdf = workflow.__get__("evaluateHkdf");
 

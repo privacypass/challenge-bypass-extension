@@ -129,7 +129,7 @@ describe("commitments parsing and caching", () => {
 each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
     .describe("config_id = %i signing request is cancelled", (configId) => {
         test("signing off", () => {
-            workflow.__with__({DO_SIGN: () => false})(() => {
+            workflow.__with__({doSign: () => false})(() => {
                 const b = beforeRequest(details, url);
                 expect(b).toBeFalsy();
             });

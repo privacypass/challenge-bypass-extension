@@ -90,23 +90,20 @@ Documentation for the protocol, workflow and extension components.
     - `test`: Test scripts for using the jest integration test framework.
     - `docs`: Documentation.
 - Commands:
-    - `yarn install`: Installs all dependencies.
-    - `build:all`: Builds all source files (including sjcl) and compiles them
-      (using closure) into minified versions that are kept in `addon/scripts`.
-    - `test:all`: Compiles all source files, excluding `browserUtils.js`, and
-      compiles them (using closure) into test_compiled.js. Runs sjcl tests and
-      the jest test framework for the extension.
-    - `build:ext`: Builds all extension source files and compiles them (using
-      closure) into bg_compiled.js.
-    - `test:ext`: Builds all extension source files, excluding sjcl.
-      `browserUtils.js`, and compiles them (using closure) into bg_compiled.js.
-      Runs the jest test framework for the extension.
-    - `test:ext-quick`: Runs the jest test framework for the extension.
-    - `build:sjcl`: Builds sjcl.
-    - `test:sjcl`: Runs the sjcl tests.
-    - `test:watch`: Runs test:all using the jest --watch flag.
-    - `lint`: Lints the source files.
-    - `dist`: Zips the extension files.
+    - `make install`: Installs all dependencies.
+    - `make build`: Builds all source files (including sjcl) and compiles them
+      into unminified source file at `addon/compiled/build.js`.
+    - `make test`: Builds all source files (except `src/ext/listeners.js`) into
+      a single file and then runs the jest testing framework on this file along
+      with the sjcl tests.
+    - `make build-ext`: Same as `make build` except that it does not build a new
+      version of sjcl.
+    - `make test-ext`: Same as `make test` except that it does not run the sjcl
+      tests.
+    - `make build:sjcl`: Builds sjcl.
+    - `make test:sjcl`: Runs the sjcl tests.
+    - `make lint`: Lints the source files.
+    - `make dist`: Zips the extension files.
 
 ### Firefox
 
@@ -133,8 +130,8 @@ instead.
 ## Plugin overview
 
 The following script files are used for the workflow of Privacy Pass and are
-found in `addon/scripts`. They are compiled into a single file
-(`compiled/bg_compiled.js`) that is then loaded into the browser.
+found in `addon/compiled`. They are compiled into a single file (`build.js`)
+that is then loaded into the browser.
 
 - src/ext/
 	- listeners.js: Initialises the listener functions that are used for the webRequest and webNavigation frameworks.
@@ -153,10 +150,10 @@ found in `addon/scripts`. They are compiled into a single file
   - keccak.js: Local implementation of the Keccak hash function (taken from
     <https://github.com/cryptocoinjs/keccak>).
 
-Files that are used for testing are found in `test/`. These test files use their
-own compiled test file in `compiled/test_compiled.js`. The only difference is
-that src/etx/browserUtils.js is removed for better comptability. Functions from
-this file are mocked during test execution.
+Files that are used for testing are found in `test/`. Some functions from the
+extension files are mocked during test execution. The tests are run on a
+separate file in `addon/compiled/test-build.js` that has the same contents as
+`build.js` but with the HTTP listeners removed.
 
 ## Team
 

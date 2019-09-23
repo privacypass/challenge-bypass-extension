@@ -9,7 +9,7 @@
 /* global sjcl */
 /* exported h2Curve */
 
-const H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
+let H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
 const p256Curve = sjcl.ecc.curves.c256;
 const precomputedP256 = {
     // a=-3, but must be reduced mod p for P256; otherwise,

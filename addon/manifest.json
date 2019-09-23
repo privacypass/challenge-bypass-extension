@@ -10,7 +10,7 @@
 
   "background": {
     "scripts": [
-        "compiled/bg_compiled.js"
+        "build.js"
     ]
   },
 

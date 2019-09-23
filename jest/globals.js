@@ -39,7 +39,7 @@ window.timeSinceLastResp = 0;
 
 window.workflowSet = () => {
 
-    let workflow = rewire("../addon/compiled/test_compiled.js");
+    let workflow = rewire("../addon/test-build.js");
 
     workflow.__set__("get", getMock);
     workflow.__set__("set", setMock);
@@ -88,7 +88,7 @@ window.workflowSet = () => {
     workflow.__set__("setSpentHosts", setSpentHostsMock);
     workflow.__set__("getSpentHosts", getSpentHostsMock);
 
-    workflow.__set__("createShake256", createShake256);
+    workflow.__set__("shake256", () => {return createShake256();});
     workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 
