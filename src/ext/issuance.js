@@ -266,7 +266,7 @@ function createVerificationXHR(url, tabId, tokens, issueResp) {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
             const commitments = retrieveCommitments(xhr, issueResp.version);
             if (!commitments.G || !commitments.H) {
-                throw new Error("[privacy-pass]: Retrieved commitments are are incorrectly specified: " + commitments + ", version: " + issueResp.version);
+                throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + issueResp.version);
             }
             cacheCommitments(issueResp.version, commitments.G, commitments.H);
             verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
@@ -312,23 +312,18 @@ function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
  * @return {Object} Object containing commitment data
  */
 function retrieveCommitments(xhr, version) {
-    let commG;
-    let commH;
-    const respBody = xhr.responseText;
-    const resp = JSON.parse(respBody);
-    const comms = resp[commitmentsKey()];
-    version = checkVersion(version);
-    if (comms) {
-        if (dev()) {
-            commG = comms["dev"]["G"];
-            commH = comms["dev"]["H"];
-        } else {
-            commG = comms[version]["G"];
-            commH = comms[version]["H"];
-        }
-    }
+    const resp = JSON.parse(xhr.responseText);
+    const comms = resp[getConfigName()];
 
-    return {G: commG, H: commH};
+    version = checkVersion(version);
+    const cmt = comms[version];
+    if (typeof cmt === "undefined") {
+        throw new Error("[privacy-pass]: Retrieved version: " + version + " not available.");
+    }
+    if (cmt.sig) {
+        verifyCommitments(cmt, getCommitmentsKey());
+    }
+    return {G: cmt.G, H: cmt.H};
 }
 
 /**
@@ -381,6 +376,9 @@ function getCachedCommitments(version) {
  * @return {string} the version string or "1.0" if it is null
  */
 function checkVersion(version) {
+    if (dev()) {
+        return "dev";
+    }
     return version || "1.0";
 }
 

@@ -17,7 +17,13 @@
 /* exported getCurvePoints */
 /* exported getBigNumFromBytes */
 /* exported getActiveECSettings */
+/* exported verifyCommitments */
+/* exported shake256 */
 "use strict";
+
+const parseKeys = require("parse-asn1");
+const assert = require("assert");
+const Buffer = require("safe-buffer").Buffer;
 
 let shake256 = () => {
     return createShake256();
@@ -289,6 +295,74 @@ function validResponseCompression(compression, setting) {
         return false;
     }
     return true;
+}
+
+// Commitments verification
+
+/**
+ * Parse a DER-encoded signature.
+ * @param {string} derSignature - A signature in DER format.
+ * @return {sjcl.bitArray} a signature object for sjcl library.
+ */
+function parseSignaturefromDER(derSignature) {
+    try {
+        const sigBN = parseKeys.signature.decode(
+            Buffer.from(derSignature, "base64"),
+            "der"
+        );
+        return sjcl.codec.bytes.toBits(
+            sjcl.bitArray.concat(sigBN.r.toArray(), sigBN.s.toArray())
+        );
+    } catch (error) {
+        throw new Error(
+            "[privacy-pass]: Failed on parsing commitment signature. " + error
+        );
+    }
+}
+
+/**
+ * Parse a DER-encoded publick key.
+ * @param {string} derPublicKey - A public key in DER format.
+ * @return {sjcl.ecc.ecdsa.publicKey} a public key for sjcl library.
+ */
+function parsePublicKeyfromDER(derPublicKey) {
+    const OIDCurves = [];
+    OIDCurves["c256"] = "1.2.840.10045.3.1.7"; // oid(prime256v1)
+
+    try {
+        const pkJson = parseKeys(derPublicKey);
+        assert.equal(pkJson.type, "ec");
+        assert.equal(
+            pkJson.data.algorithm.curve.join("."),
+            OIDCurves[sjcl.ecc.curveName(CURVE)]
+        );
+        const point = sec1DecodeFromBytes(pkJson.data.subjectPublicKey.data);
+        return new sjcl.ecc.ecdsa.publicKey(CURVE, point);
+    } catch (error) {
+        throw new Error(
+            "[privacy-pass]: Failed on parsing public key. " + error
+        );
+    }
+}
+
+/**
+ * Verify the signature of commitments.
+ * @param {json} comms - commitments to verify
+ * @param {string} derPublicKey - A public key in DER format.
+ * @return {boolean} True, if the commitment signature is valid.
+ */
+function verifyCommitments(comms, derPublicKey) {
+    const sig = parseSignaturefromDER(comms.sig);
+    delete comms.sig;
+    const msg = JSON.stringify(comms);
+    const pk = parsePublicKeyfromDER(derPublicKey);
+    const hmsg = sjcl.hash.sha256.hash(msg);
+    try {
+        comms.G = sec1EncodeToBase64(CURVE.G, false);
+        return pk.verify(hmsg, sig);
+    } catch (error) {
+        throw new Error("[privacy-pass]: Invalid commitment. " + error);
+    }
 }
 
 /**

@@ -220,7 +220,31 @@ function mockXHRCommitments() {
     mockXHR(this);
     this.status = 200;
     this.readyState = 4;
-    this.responseText = `{"CF":{"dev":{"G": "${testDevG}","H": "${testDevH}"},"1.0":{"G":"${testG}","H":"${testH}"},"1.1":{"G":"new_11_commitment_g","H":"new_11_commitment_h"},"hkdf":{"G":"${hkdfG}","H":"${hkdfH}"}}}`;
+    this.responseText = `{
+      "CF": {
+        "dev": {
+          "G": "${testDevG}",
+          "H": "${testDevH}"
+        },
+        "1.0": {
+          "G": "${testG}",
+          "H": "${testH}"
+        },
+        "1.1": {
+          "G": "new_11_commitment_g",
+          "H": "new_11_commitment_h"
+        },
+        "hkdf": {
+          "G": "${hkdfG}",
+          "H": "${hkdfH}"
+        },
+        "1.01": {
+            "H": "${testSigH}",
+            "expiry": "2019-12-20T05:07:00.298053015-08:00",
+            "sig": "MEQCIDFSb4PqkVAn5wdAyklVMvo5CE2SyAv0redzHnNo68ZnAiBbPcKMCctPHBrTatNMw8xYbesMT8EFTBCwRXAP7QlOsw=="
+        }
+      }
+    }`;
 }
 
 window.mockXHRCommitments = mockXHRCommitments;
@@ -269,6 +293,8 @@ window.testG = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ON
 window.testH = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 window.testDevG = "BIpWWWWFtDRODAHEzZlvjKyDwQAdh72mYKMAsGrtwsG7XmMxsy89gfiOFbX3RZ9Ik6jEYWyJB0TmnWNVeeZBt5Y=";
 window.testDevH = "BKjGppSCZCsL08YlF4MJcml6YkCglMvr56WlUOFjn9hOKXNa0iB9t8OHXW7lARIfYO0CZE/t1SlPA1mXdi/Rcjo=";
+window.testSigG = "BGsX0fLhLEJH+Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT+NC4v4af5uO5+tKfA+eFivOM1drMV7Oy7ZAaDe/UfU=";
+window.testSigH = "BPCEw7u8xI6vRpH90AotdOLWDjT5u2nsz73EVuqY9nq278CNnfOFVsIklsnvLya0qz3DEx05KYCHdbVy5TlY1L8=";
 window.genBytes = [4, 107, 23, 209, 242, 225, 44, 66, 71, 248, 188, 230, 229, 99, 164, 64, 242, 119, 3, 125, 129, 45, 235, 51, 160, 244, 161, 57, 69, 216, 152, 194, 150, 79, 227, 66, 226, 254, 26, 127, 155, 142, 231, 235, 74, 124, 15, 158, 22, 43, 206, 51, 87, 107, 49, 94, 206, 203, 182, 64, 104, 55, 191, 81, 245];
 window.hBytes = [4, 97, 25, 196, 70, 213, 45, 33, 189, 8, 106, 8, 111, 95, 39, 119, 7, 91, 32, 101, 186, 169, 186, 87, 156, 1, 140, 185, 141, 106, 90, 5, 193, 178, 251, 89, 7, 236, 175, 62, 91, 196, 188, 86, 40, 203, 15, 230, 241, 15, 49, 65, 124, 16, 47, 188, 65, 97, 15, 118, 139, 47, 130, 143, 161];
 window.testTokensHkdf = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112,80,67,186,92,112,0,18,62,31,208,88,21,10,77,55,151,0,143,87,168,178,83,119,102,217,65,156,115,150,186,82,121],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252,160,47,15,9,200,58,130,65,180,69,114,160,89,171,73,192,128,163,157,11,206,45,93,11,68,255,93,1,43,81,132,231],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);

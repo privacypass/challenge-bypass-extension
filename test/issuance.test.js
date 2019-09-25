@@ -84,6 +84,13 @@ describe("commitments parsing and caching", () => {
         expect(v11H === commitments.H).toBeTruthy();
     });
 
+    test("parse correctly (v1.01)", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        const commitments = retrieveCommitments(xhr, "1.01");
+        expect(testSigG === commitments.G).toBeTruthy();
+        expect(testSigH === commitments.H).toBeTruthy();
+    });
+
     test("parse correctly (dev)", () => {
         workflow.__with__({dev: () => true})(() => {
             const xhr = createVerificationXHR(); // this usually takes params

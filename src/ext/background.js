@@ -22,7 +22,7 @@
 /* exported reloadOnSign */
 /* exported spentTab, timeSinceLastResp, futureReload, sentTokens */
 /* exported dev */
-/* exported commitmentsKey */
+/* exported getCommitmentsKey */
 /* exported storageKeyTokens, storageKeyCount */
 /* exported sendH2CParams, maxTokens, signResponseFMT, tokensPerRequest */
 /* exported CONFIG_ID */
@@ -30,7 +30,8 @@
 /* exported LISTENER_URLS */
 /* exported getTarget */
 /* exported setFutureReload */
-/* getConfigId */
+/* exported getConfigId */
+/* exported getConfigName */
 
 "use strict";
 
@@ -39,6 +40,7 @@ const LISTENER_URLS = "<all_urls>";
 let CONFIG_ID = 1;
 let getConfigId = () => CONFIG_ID;
 let setConfigId = (val) => CONFIG_ID = val;
+let getConfigName = () => activeConfig()["name"];
 
 let checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
 
@@ -52,7 +54,7 @@ let chlVerificationError = () => activeConfig()["error-codes"]["connection-error
 let chlConnectionError = () => activeConfig()["error-codes"]["verify-error"];
 let chlBadRequestError = () => activeConfig()["error-codes"]["bad-request-error"];
 let chlUnknownError = () => activeConfig()["error-codes"]["unknown-error"];
-let commitmentsKey = () => activeConfig()["commitments"];
+let getCommitmentsKey = () => activeConfig()["pkey-commitments"];
 let spendMax = () => activeConfig()["max-spends"];
 let maxTokens = () => activeConfig()["max-tokens"];
 let doSign = () => activeConfig()["sign"];
