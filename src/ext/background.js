@@ -50,6 +50,8 @@ let chlClearanceCookie = () => activeConfig()["cookies"]["clearance-cookie"];
 let chlCaptchaDomain = () => activeConfig()["captcha-domain"]; // cookies have dots prepended
 let chlVerificationError = () => activeConfig()["error-codes"]["connection-error"];
 let chlConnectionError = () => activeConfig()["error-codes"]["verify-error"];
+let chlBadRequestError = () => activeConfig()["error-codes"]["bad-request-error"];
+let chlUnknownError = () => activeConfig()["error-codes"]["unknown-error"];
 let commitmentsKey = () => activeConfig()["commitments"];
 let spendMax = () => activeConfig()["max-spends"];
 let maxTokens = () => activeConfig()["max-tokens"];
@@ -222,15 +224,18 @@ function processHeaders(details, url) {
     for (let i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() === CHL_BYPASS_RESPONSE) {
-            if (header.value === chlVerificationError()
-                || header.value === chlConnectionError()) {
-                // If these errors occur then something bad is happening.
-                // Either tokens are bad or some resource is calling the server
-                // in a bad way
-                if (header.value === chlVerificationError()) {
+            switch (header.value) {
+                case chlConnectionError():
+                    throw new Error("[privacy-pass]: internal server connection error occurred");
+                case chlVerificationError():
                     clearStorage();
-                }
-                throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
+                    throw new Error(`[privacy-pass]: token verification failed for ${url.href}`);
+                case chlBadRequestError():
+                    throw new Error(`[privacy-pass]: server indicated a bad client request`);
+                case chlUnknownError():
+                    throw new Error(`[privacy-pass]: unknown internal server error occurred`);
+                default:
+                    console.warn(`[privacy-pass]: server sent unrecognised response code (${header.value})`);
             }
         }
 
