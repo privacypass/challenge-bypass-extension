@@ -16,8 +16,10 @@ const workflow = workflowSet();
 const CHL_BYPASS_SUPPORT = workflow.__get__("CHL_BYPASS_SUPPORT");
 const CHL_BYPASS_RESPONSE = workflow.__get__("CHL_BYPASS_RESPONSE");
 const chlVerificationError = workflow.__get__("chlVerificationError");
-const spendStatusCode = workflow.__get__("spendStatusCode");
 const chlConnectionError = workflow.__get__("chlConnectionError");
+const chlBadRequestError = workflow.__get__("chlBadRequestError");
+const chlUnknownError = workflow.__get__("chlUnknownError");
+const spendStatusCode = workflow.__get__("spendStatusCode");
 const isFaviconUrl = workflow.__get__("isFaviconUrl");
 const PPConfigs = workflow.__get__("PPConfigs");
 const LISTENER_URLS = workflow.__get__("LISTENER_URLS");
@@ -50,29 +52,55 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
 
         describe("ensure that errors are handled properly", () => {
             const url = new URL(EXAMPLE_HREF);
-            test("connection error", () => {
-                localStorage.setItem("data", "some token");
+            const UNRECOGNISED_ERROR_CODE = 4;
+            const errorTypes = {
+                "connection": {
+                    code: chlConnectionError(),
+                    message: "[privacy-pass]: internal server connection error occurred",
+                },
+                "verification": {
+                    code: chlVerificationError(),
+                    message: `[privacy-pass]: token verification failed for ${url.href}`,
+                },
+                "bad-request": {
+                    code: chlBadRequestError(),
+                    message: "[privacy-pass]: server indicated a bad client request",
+                },
+                "unknown": {
+                    code: chlUnknownError(),
+                    message: "[privacy-pass]: unknown internal server error occurred",
+                },
+                "unrecognised": {
+                    code: UNRECOGNISED_ERROR_CODE,
+                    message: `[privacy-pass]: server sent unrecognised response code (${UNRECOGNISED_ERROR_CODE})`,
+                },
+            };
 
-                function processConnError() {
-                    const details = {
-                        responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlConnectionError()}],
-                    };
-                    processHeaders(details, url);
-                }
+            const keys = Object.keys(errorTypes);
+            keys.forEach((k) => {
+                const error = errorTypes[k];
+                test(`${error} error`, () => {
+                    localStorage.setItem("data", "some token");
+                    function processError() {
+                        const details = {
+                            responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: error.code}],
+                        };
+                        processHeaders(details, url);
+                    }
 
-                expect(processConnError).toThrowError(`error code: ${chlConnectionError()}`);
-                expect(localStorage.getItem("data")).toBeTruthy();
-            });
-            test("verification error", () => {
-                function processVerifyError() {
-                    const details = {
-                        responseHeaders: [{name: CHL_BYPASS_RESPONSE, value: chlVerificationError()}],
-                    };
-                    processHeaders(details, url);
-                }
-
-                expect(processVerifyError).toThrowError(`error code: ${chlVerificationError()}`);
-                expect(localStorage.getItem("data")).toBeFalsy();
+                    switch (error.code) {
+                        case UNRECOGNISED_ERROR_CODE:
+                            processError();
+                            expect(consoleMock.warn).toBeCalledWith(error.message);
+                            break;
+                        case chlVerificationError():
+                            expect(processError).toThrowError(error.message);
+                            expect(localStorage.getItem("data")).toBeTruthy();
+                            break;
+                        default:
+                            expect(processError).toThrowError(error.message);
+                    }
+                });
             });
         });
 

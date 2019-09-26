@@ -61,6 +61,8 @@ function exampleConfig() {
         "error-codes": {
             "verify-error": "5", // error code sent by server for verification error
             "connection-error": "6", // error code sent by server for connection error
+            "bad-request-error": "7", // error code sent by server for signalling that a bad request was made
+            "unknown-error": "8", // error code sent by server in case of an unknown error occurring
         }, // generic error codes (can add more)
         "h2c-params": {// parameters for establishing which hash-to-curve setting the client wants to use
             "curve": "p256", // elliptic curve that generated tokens should be mapped to
