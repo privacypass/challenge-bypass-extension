@@ -1,10 +1,10 @@
 # Overview of protocol
 
-We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the [JKK14] with the addition of a batch NIZK proof. As mentioned before, support for DLEQ proof verification in the extension is still in development and is not considered completely consistent with the protocol description below.
+We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the \[JKK14\] with the addition of a batch NIZK proof. As mentioned before, support for DLEQ proof verification in the extension is still in development and is not considered completely consistent with the protocol description below.
 
-## Notation 
+## Notation
 
-We have tried to ensure that our notation coincides with the notation that is used to describe the ECVRF construction of [Goldberg et al.](https://tools.ietf.org/pdf/draft-goldbe-vrf-01.pdf). However, we have diverged at points since our construction contains extra features; such as oblivious evaluation and batch DLEQ proofs. We use CAPTCHA as a catch-all term for some form of proof-of-work internet challenge. 
+We have tried to ensure that our notation coincides with the notation that is used to describe the ECVRF construction of [Goldberg et al.](https://tools.ietf.org/pdf/draft-goldbe-vrf-01.pdf). However, we have diverged at points since our construction contains extra features; such as oblivious evaluation and batch DLEQ proofs. We use CAPTCHA as a catch-all term for some form of proof-of-work internet challenge.
 
 ## Introduction
 
@@ -13,11 +13,11 @@ The solution that we develop here is a protocol between a user, a challenger and
 
 ## Preliminaries
 
-- A message authentication code ("MAC") on a message is a keyed authentication tag that can be only be created and verified by the holder of the secret key.
-- A pseudorandom function is a function whose output cannot be efficiently distinguished from random output. This is a general class of functions; concrete examples include hashes and encryption algorithms.
-- An oblivious pseudorandom function ("OPRF") is a generalization of blind signatures. Per Jarecki, it's a two-party protocol between sender S and receiver R for securely computing a pseudorandom function `f_x(·)` on key `x` contributed by S and input `t` contributed by R, in such a way that receiver R learns only the value `f_x(t)` while sender S learns nothing from the interaction.
-    - In this protocol, the edge is the "sender" holding `x` and the inputs `t` are the tokens. So the clients don't learn our key and we don't learn the real token values until they're redeemed.
-- Furthermore, a verifiable OPRF is one where the sender supplies a proof that the function was evaluated correctly.
+-   A message authentication code ("MAC") on a message is a keyed authentication tag that can be only be created and verified by the holder of the secret key.
+-   A pseudorandom function is a function whose output cannot be efficiently distinguished from random output. This is a general class of functions; concrete examples include hashes and encryption algorithms.
+-   An oblivious pseudorandom function ("OPRF") is a generalization of blind signatures. Per Jarecki, it's a two-party protocol between sender S and receiver R for securely computing a pseudorandom function `f_x(·)` on key `x` contributed by S and input `t` contributed by R, in such a way that receiver R learns only the value `f_x(t)` while sender S learns nothing from the interaction.
+    -   In this protocol, the edge is the "sender" holding `x` and the inputs `t` are the tokens. So the clients don't learn our key and we don't learn the real token values until they're redeemed.
+-   Furthermore, a verifiable OPRF is one where the sender supplies a proof that the function was evaluated correctly.
 
 
 ## Protocol description
@@ -31,42 +31,42 @@ We assume the edge has published a public key `Y = xG` for the current epoch and
 
 Token issuance looks like this:
 
-1. User generates a random token `t` and a blinding factor `r`
+1.  User generates a random token `t` and a blinding factor `r`
 
-2. User calculates `T = H_1(t)` and `M = rT`
+2.  User calculates `T = H_1(t)` and `M = rT`
 
-3. User sends `M` to the server along with the CAPTCHA solution
+3.  User sends `M` to the server along with the CAPTCHA solution
 
-4. Edge validates solution with the challenger and computes `Z = xM = xrT`
+4.  Edge validates solution with the challenger and computes `Z = xM = xrT`
 
-5. Edge generates a proof `D` showing that `DLEQ(Z/M == Y/G)`
+5.  Edge generates a proof `D` showing that `DLEQ(Z/M == Y/G)`
 
-6. Edge sends `(Z, D)` to client
+6.  Edge sends `(Z, D)` to client
 
-7. User checks the proof `D` against the sent tokens and the previously-known key commitment `Y` to establish that the edge is using a consistent key.
+7.  User checks the proof `D` against the sent tokens and the previously-known key commitment `Y` to establish that the edge is using a consistent key.
 
-8. User unblinds `Z` to calculate `N = (1/r)Z = xT` and stores `(t, N)`
+8.  User unblinds `Z` to calculate `N = (1/r)Z = xT` and stores `(t, N)`
 
 
 Redemption looks like this:
 
-1. User calculates request binding data `R` for the request they want to make
+1.  User calculates request binding data `R` for the request they want to make
 
-2. User chooses an unspent token `t` to redeem and retrieves `(t, N)`
+2.  User chooses an unspent token `t` to redeem and retrieves `(t, N)`
 
-3. User calculates a shared key `sk = H_2(t, N)`
+3.  User calculates a shared key `sk = H_2(t, N)`
 
-4. User sends a pass `(t, MAC_{sk}(R))` to the edge along with the HTTP request
+4.  User sends a pass `(t, MAC_{sk}(R))` to the edge along with the HTTP request
 
-5. Edge recalculates `R` from observed request data
+5.  Edge recalculates `R` from observed request data
 
-6. Edge checks the double-spend list for `t`
+6.  Edge checks the double-spend list for `t`
 
-7. Edge calculates `T = H_1(t)`, `N = xT` and `sk = H_2(t, N)`
+7.  Edge calculates `T = H_1(t)`, `N = xT` and `sk = H_2(t, N)`
 
-8. Edge checks that `MAC_{sk}(R)` matches the user-supplied value
+8.  Edge checks that `MAC_{sk}(R)` matches the user-supplied value
 
-9. If MAC is valid, edge forwards the request and stores a record of `t`
+9.  If MAC is valid, edge forwards the request and stores a record of `t`
 
 In the current protocol, "request binding data" is the Host header and requested HTTP path.
 
@@ -75,67 +75,67 @@ In the current protocol, "request binding data" is the Host header and requested
 
 In issuance step (5.) above, we call for a zero-knowledge proof of the equality of a discrete logarithm (our edge key) with regard to two different generators.
 
-The protocol naturally provides `Z = xM` in the edge response. To ensure that the edge has not used unique `x` value to tag users, we require them to publish a public key, `Y = xG`. Now we can use knowledge of `G,Y,M,Z` to construct a Chaum-Pedersen proof [CP93] proving in zero knowledge that `log_G(Y) == log_M(Z)` (i.e. that the same key is used for the pinned epoch as for 'signing' the tokens). We note this as `DLEQ(Z/M == Y/G)`.
+The protocol naturally provides `Z = xM` in the edge response. To ensure that the edge has not used unique `x` value to tag users, we require them to publish a public key, `Y = xG`. Now we can use knowledge of `G,Y,M,Z` to construct a Chaum-Pedersen proof \[CP93\] proving in zero knowledge that `log_G(Y) == log_M(Z)` (i.e. that the same key is used for the pinned epoch as for 'signing' the tokens). We note this as `DLEQ(Z/M == Y/G)`.
 
 The proof follows the standard non-interactive Schnorr pattern. For a group of prime order `q` with orthogonal generators `M`, `G`, public key `Y`, and point `Z`:
 
-1. Prover chooses a random nonce
+1.  Prover chooses a random nonce
 
         k <--$-- Z/qZ
 
-2. Prover commits to the nonce with respect to both generators
+2.  Prover commits to the nonce with respect to both generators
 
         A = kG, B = kM
 
-3. Prover constructs the challenge
+3.  Prover constructs the challenge
 
         c = H_3(G,Y,M,Z,A,B)
 
-4. Prover calculates response
+4.  Prover calculates response
 
         s = k - cx (mod q)
 
-5. Prover sends (c, s) to the verifier
+5.  Prover sends (c, s) to the verifier
 
-6. Verifier recalculates commitments
+6.  Verifier recalculates commitments
 
         A' = sG + cY
         B' = sM + cZ
 
-7. Verifier hashes
+7.  Verifier hashes
 
         c' = H_3(G,Y,M,Z,A',B')
 
-   and checks that `c == c'`.
+    and checks that `c == c'`.
 
-If all users share a consistent view of the tuple `(G, Y)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js). 
+If all users share a consistent view of the tuple `(G, Y)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js).
 
 ## Batch Requests
 
 In practice, the issuance protocol operates over sets of tokens rather than just one. A system parameter, `m`, determines how many tokens a user is allowed to request per valid CAPTCHA solution. Consequently, users generate `(t_1, t_2, ... , t_m)` and `(r_1, r_2, ... , r_m)`; send `M_1, M_2, ... , M_m)` to the edge; and receive `(Z_1, Z_2 ... , Z_m)` in response.
 
-Generating an independent proof of equality for each point implies excess overhead in both computation and bandwidth consumption. Therefore, we employ a batch proof to show consistent key usage for an entire set of tokens at once.  The proof is a parallelized Schnorr protocol for the common-exponent case taken from [Hen14] and adapted for non-interactivity:
+Generating an independent proof of equality for each point implies excess overhead in both computation and bandwidth consumption. Therefore, we employ a batch proof to show consistent key usage for an entire set of tokens at once.  The proof is a parallelized Schnorr protocol for the common-exponent case taken from \[Hen14\] and adapted for non-interactivity:
 
 Given `(G, Y, q)`; `(M_1,...,M_m)`, `(Z_1, ... ,Z_m)`; `Z_i = x(M_i)` for i = 1...m
 
-1. Prover calculates a seed using a Fiat-Shamir transform:
+1.  Prover calculates a seed using a Fiat-Shamir transform:
 
         z = H_3(G, Y, M_1, ... , M_m, Z_1, ... , Z_m)
 
-2. Prover initializes PRNG(z) and samples from it to non-interactively generate
+2.  Prover initializes PRNG(z) and samples from it to non-interactively generate
 
         c_1, ... , c_m <--$-- Z/qZ.
 
-3. Prover generates composite group elements M and Z
+3.  Prover generates composite group elements M and Z
 
         M = (c_1*M_1) + (c_2*M_2) + ... + (c_m*M_m)
         Z = (c_1*Z_1) + (c_2*Z_2) + ... + (c_m*Z_m)
 
-4. Prover sends proof<sup>1</sup>
+4.  Prover sends proof<sup>1</sup>
 
         (c, s) <-- DLEQ(Z/M == Y/G)
 
-5. Verifier recalculates the PRNG seed from protocol state<sup>2</sup>, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
+5.  Verifier recalculates the PRNG seed from protocol state<sup>2</sup>, generates the composite elements, and checks that `c' == c` as in the single-element proof above.
 
 <sup>1</sup>In the actual instantiation of the protocol we also send the values of `M` and `Z` for both the batch and DLEQ proofs. The client then recomputes the values of `M` and `Z` themselves using the tokens in the response and checks that these values are equal before verifying the proof.
 
@@ -176,7 +176,7 @@ The process of key rotation is simple: the edge generates a new private key and,
 We mitigate this risk out-of-protocol by applying further arbitrary processing to the requests (for instance, using a WAF or rate limiting) such that even an attacker in possession of many passes cannot effectively damage the origins.
 
 ### Token exhaustion
-Privacy Pass uses a finite list of low-entropy characteristics to determine whether a token should be redeemed or not. In the case of Cloudflare CAPTCHAs, the extension looks for the presence of a HTTP response header and particular status code. Alternative methods that check the HTML tags of a challenge page could also be used. Unfortunately, this means that it is easy to recreate the characteristics that are required by the extension to sanction a redemption. 
+Privacy Pass uses a finite list of low-entropy characteristics to determine whether a token should be redeemed or not. In the case of Cloudflare CAPTCHAs, the extension looks for the presence of a HTTP response header and particular status code. Alternative methods that check the HTML tags of a challenge page could also be used. Unfortunately, this means that it is easy to recreate the characteristics that are required by the extension to sanction a redemption.
 
 To view the attack at its most powerful, consider a sub-resource that manages to embed itself widely on many webpages with high visitation that is able to trigger token redemptions. Such a resource would be able to drain the extension of all its tokens by triggering redemptions until all the tokens were used. While it is unclear why such an attack would be useful, it is important to acknowledge that it is indeed possible to carry out and would thus render the usage of Privacy Pass useless if the sub-resource was especially prevalent.
 
@@ -190,8 +190,8 @@ In this scheme, client software need only pin a Tor relay fingerprint and the ch
 
 ## References
 
-[CP93] Chaum, Pedersen. Wallet Databases with Observers. CRYPTO'92
+\[CP93\] Chaum, Pedersen. Wallet Databases with Observers. CRYPTO'92
 
-[Hen14] Ryan Henry. Efficient Zero-Knowledge Proofs and Applications, August 2014.
+\[Hen14\] Ryan Henry. Efficient Zero-Knowledge Proofs and Applications, August 2014.
 
-[JKK14] Jarecki, Kiayias, Krawczyk. Round-Optimal Password-Protected Secret Sharing and T-PAKE in the Password-Only model. https://eprint.iacr.org/2014/650.pdf
+\[JKK14\] Jarecki, Kiayias, Krawczyk. Round-Optimal Password-Protected Secret Sharing and T-PAKE in the Password-Only model. <https://eprint.iacr.org/2014/650.pdf>
