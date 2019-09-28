@@ -39,7 +39,7 @@ window.timeSinceLastResp = 0;
 
 window.workflowSet = () => {
 
-    let workflow = rewire("../addon/test-build.js");
+    let workflow = rewire("../addon/test.js");
 
     workflow.__set__("get", getMock);
     workflow.__set__("set", setMock);

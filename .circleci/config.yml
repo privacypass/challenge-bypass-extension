@@ -6,11 +6,16 @@ jobs:
       - image: circleci/node:8.12-stretch
     working_directory: ~/challenge-bypass-extension
     steps:
-      - run: sudo apt update
-      - run: sudo apt install default-jre build-essential
       - checkout
-      - run: git submodule update --init
-      - run: make install
-      - run: make lint
-      - run: make build
-      - run: make test
+      - run:
+          name: Fetching Sources
+          command: make install
+      - run:
+          name: Linting
+          command: make lint
+      - run:
+          name: Building
+          command: make build
+      - run:
+          name: Testing
+          command: make test-all

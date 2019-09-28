@@ -1,41 +1,58 @@
+SOURCES= src/crypto/keccak/keccak.js \
+		 src/crypto/local.js         \
+		 src/ext/background.js       \
+		 src/ext/browserUtils.js     \
+		 src/ext/config.js           \
+		 src/ext/h2c.js              \
+		 src/ext/issuance.js         \
+		 src/ext/redemption.js       \
+		 src/ext/tokens.js           \
+		 src/ext/utils.js
+LISTENER=src/ext/listeners.js
+SJCL_PATH=src/crypto/sjcl
+
+all: build
+.PHONY: build
+build: addon/build.js
+
+.PHONY: test
+test: test-ext
+
+.PHONY: test-all
+test-all: test-sjcl test-ext
+
+.PHONY: test-ext
+test-ext: addon/test.js
+	yarn test
+
+.PHONY: test-sjcl
+test-sjcl:
+	make test -C ${SJCL_PATH}
+
 .PHONY: install
 install:
-	yarn \
-	&& yarn install
+	yarn install
 
 .PHONY: lint
 lint:
 	yarn lint
 
-.PHONY: build-sjcl
-build-sjcl:
-	cd src/crypto/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js
-
-.PHONY: build.js
-build.js: src/ext/utils.js src/crypto/sjcl/sjcl.js src/ext/config.js src/ext/h2c.js src/crypto/local.js src/ext/tokens.js src/ext/issuance.js src/ext/redemption.js src/ext/browserUtils.js src/ext/background.js src/ext/listeners.js src/crypto/keccak/keccak.js
-	cat $^ > addon/$@
-
-.PHONY: build
-build: build-sjcl build.js
-
-.PHONY: build-quick
-build: build.js
-
 .PHONY: dist
 dist: build
-	mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist
+	mkdir -p ./dist
+	cp -a addon/* ./dist/
+	zip ext.zip ./dist
+	rm -rf ./dist
 
-.PHONY: test-sjcl
-test-sjcl:
-	make test -C src/crypto/sjcl
+addon/build.js: ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
+	cat $^ > $@
+addon/test.js: ${SJCL_PATH}/sjcl.js ${SOURCES}
+	cat $^ > $@
+${SJCL_PATH}/sjcl.js:
+	git submodule update --init
+	cd ${SJCL_PATH}; ./configure --without-all --with-ecc --with-convenience \
+	--with-codecBytes --with-codecHex --compress=none
+	make -C ${SJCL_PATH} sjcl.js
 
-.PHONY: test-build.js
-test-build.js: src/ext/utils.js src/crypto/sjcl/sjcl.js src/ext/config.js src/ext/h2c.js src/crypto/local.js src/ext/tokens.js src/ext/issuance.js src/ext/redemption.js src/ext/browserUtils.js src/ext/background.js src/crypto/keccak/keccak.js
-	cat $^ > addon/$@
-
-.PHONY: test-ext
-test-ext: test-build.js
-	yarn test:ext-quick
-
-.PHONY: test
-test: test-sjcl test-ext
+clean:
+	rm -f ${SJCL_PATH}/sjcl.js addon/build.js addon/test.js ext.zip
