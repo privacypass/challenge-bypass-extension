@@ -7,7 +7,6 @@
 
 import atob from "atob";
 import btoa from "btoa";
-import createShake256 from "../src/crypto/keccak/keccak";
 import rewire from "rewire";
 
 let localStorageItems = new Map();
@@ -88,7 +87,6 @@ window.workflowSet = () => {
     workflow.__set__("setSpentHosts", setSpentHostsMock);
     workflow.__set__("getSpentHosts", getSpentHostsMock);
 
-    workflow.__set__("shake256", () => {return createShake256();});
     workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 

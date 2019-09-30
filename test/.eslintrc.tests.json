@@ -50,6 +50,8 @@
         "testDevH": true,
         "testG": true,
         "testH": true,
+        "testSigG": true,
+        "testSigH": true,
         "testTokensBadLength": true,
         "testTokensHkdfCompressed": true,
         "testTokensHkdf": true,

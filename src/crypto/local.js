@@ -21,10 +21,6 @@
 /* exported shake256 */
 "use strict";
 
-const parseKeys = require("parse-asn1");
-const assert = require("assert");
-const Buffer = require("safe-buffer").Buffer;
-
 let shake256 = () => {
     return createShake256();
 };

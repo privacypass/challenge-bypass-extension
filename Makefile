@@ -1,4 +1,5 @@
-SOURCES= src/crypto/keccak/keccak.js \
+SOURCES= src/ext/requires.js         \
+		 src/crypto/keccak/keccak.js \
 		 src/crypto/local.js         \
 		 src/ext/background.js       \
 		 src/ext/browserUtils.js     \
@@ -22,7 +23,7 @@ test: test-ext
 test-all: test-sjcl test-ext
 
 .PHONY: test-ext
-test-ext: addon/test.js
+test-ext: jest/globals.js addon/test.js
 	yarn test
 
 .PHONY: test-sjcl
@@ -34,7 +35,7 @@ install:
 	yarn install
 
 .PHONY: lint
-lint:
+lint: build
 	yarn lint
 
 .PHONY: dist
@@ -56,3 +57,6 @@ ${SJCL_PATH}/sjcl.js:
 
 clean:
 	rm -f ${SJCL_PATH}/sjcl.js addon/build.js addon/test.js ext.zip
+
+dist-clean: clean
+	rm -rf ./node_modules
