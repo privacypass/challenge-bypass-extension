@@ -37,48 +37,50 @@
 const LISTENER_URLS = "<all_urls>";
 // CF config is initialized by default
 let CONFIG_ID = 1;
-const getConfigId = () => CONFIG_ID;
-const setConfigId = (val) => CONFIG_ID = val;
+let getConfigId = () => CONFIG_ID;
+let setConfigId = (val) => CONFIG_ID = val;
 
-const checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
+let checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
 
-const STORAGE_STR = "bypass-tokens-";
-const COUNT_STR = STORAGE_STR + "count-";
-const activeConfig = () => PPConfigs()[getConfigId()];
-const dev = () => activeConfig()["dev"];
-const chlClearanceCookie = () => activeConfig()["cookies"]["clearance-cookie"];
-const chlCaptchaDomain = () => activeConfig()["captcha-domain"]; // cookies have dots prepended
-const chlVerificationError = () => activeConfig()["error-codes"]["connection-error"];
-const chlConnectionError = () => activeConfig()["error-codes"]["verify-error"];
-const commitmentsKey = () => activeConfig()["commitments"];
-const spendMax = () => activeConfig()["max-spends"];
-const maxTokens = () => activeConfig()["max-tokens"];
-const doSign = () => activeConfig()["sign"];
-const doRedeem = () => activeConfig()["redeem"];
-const redeemMethod = () => activeConfig()["spend-action"]["redeem-method"];
-const headerName = () => activeConfig()["spend-action"]["header-name"];
-const headerHostName = () => activeConfig()["spend-action"]["header-host-name"];
-const headerPathName = () => activeConfig()["spend-action"]["header-path-name"];
-const spendActionUrls = () => activeConfig()["spend-action"]["urls"];
-const spendStatusCode = () => activeConfig()["spending-restrictions"]["status-code"];
-const maxRedirect = () => activeConfig()["spending-restrictions"]["max-redirects"];
-const newTabs = () => activeConfig()["spending-restrictions"]["new-tabs"];
-const badNav = () => activeConfig()["spending-restrictions"]["bad-navigation"];
-const badTransition = () => activeConfig()["spending-restrictions"]["bad-transition"];
-const validRedirects = () => activeConfig()["spending-restrictions"]["valid-redirects"];
-const validTransitions = () => activeConfig()["spending-restrictions"]["valid-transitions"];
-const varReset = () => activeConfig()["var-reset"];
-const varResetMs = () => activeConfig()["var-reset-ms"];
-const storageKeyTokens = () => STORAGE_STR + activeConfig()["id"];
-const storageKeyCount = () => COUNT_STR + activeConfig()["id"];
-const h2cParams = () => activeConfig()["h2c-params"];
-const sendH2CParams = () => activeConfig()["send-h2c-params"];
-const issueActionUrls = () => activeConfig()["issue-action"]["urls"];
-const reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
-const signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
-const tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
-const optEndpoints = () => activeConfig()["opt-endpoints"];
-const emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
+let STORAGE_STR = "bypass-tokens-";
+let COUNT_STR = STORAGE_STR + "count-";
+let activeConfig = () => PPConfigs()[getConfigId()];
+let dev = () => activeConfig()["dev"];
+let chlClearanceCookie = () => activeConfig()["cookies"]["clearance-cookie"];
+let chlCaptchaDomain = () => activeConfig()["captcha-domain"]; // cookies have dots prepended
+let chlVerificationError = () => activeConfig()["error-codes"]["connection-error"];
+let chlConnectionError = () => activeConfig()["error-codes"]["verify-error"];
+let chlBadRequestError = () => activeConfig()["error-codes"]["bad-request-error"];
+let chlUnknownError = () => activeConfig()["error-codes"]["unknown-error"];
+let commitmentsKey = () => activeConfig()["commitments"];
+let spendMax = () => activeConfig()["max-spends"];
+let maxTokens = () => activeConfig()["max-tokens"];
+let doSign = () => activeConfig()["sign"];
+let doRedeem = () => activeConfig()["redeem"];
+let redeemMethod = () => activeConfig()["spend-action"]["redeem-method"];
+let headerName = () => activeConfig()["spend-action"]["header-name"];
+let headerHostName = () => activeConfig()["spend-action"]["header-host-name"];
+let headerPathName = () => activeConfig()["spend-action"]["header-path-name"];
+let spendActionUrls = () => activeConfig()["spend-action"]["urls"];
+let spendStatusCode = () => activeConfig()["spending-restrictions"]["status-code"];
+let maxRedirect = () => activeConfig()["spending-restrictions"]["max-redirects"];
+let newTabs = () => activeConfig()["spending-restrictions"]["new-tabs"];
+let badNav = () => activeConfig()["spending-restrictions"]["bad-navigation"];
+let badTransition = () => activeConfig()["spending-restrictions"]["bad-transition"];
+let validRedirects = () => activeConfig()["spending-restrictions"]["valid-redirects"];
+let validTransitions = () => activeConfig()["spending-restrictions"]["valid-transitions"];
+let varReset = () => activeConfig()["var-reset"];
+let varResetMs = () => activeConfig()["var-reset-ms"];
+let storageKeyTokens = () => STORAGE_STR + activeConfig()["id"];
+let storageKeyCount = () => COUNT_STR + activeConfig()["id"];
+let h2cParams = () => activeConfig()["h2c-params"];
+let sendH2CParams = () => activeConfig()["send-h2c-params"];
+let issueActionUrls = () => activeConfig()["issue-action"]["urls"];
+let reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
+let signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
+let tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
+let optEndpoints = () => activeConfig()["opt-endpoints"];
+let emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
 
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 initECSettings(h2cParams());
@@ -100,7 +102,7 @@ let spentHosts = new Map();
 let spentUrl = new Map();
 
 // We want to monitor attempted spends to check if we should remove cookies
-const httpsRedirect = new Map();
+let httpsRedirect = new Map();
 
 // Monitor whether we have already sent tokens for signing
 let sentTokens = new Map();
@@ -118,34 +120,34 @@ let spentTab = new Map();
 let readySign = false;
 
 
-const getSpentUrl = (key) => spentUrl[key];
-const setSpentUrl = (key, value) => spentUrl[key] = value;
+let getSpentUrl = (key) => spentUrl[key];
+let setSpentUrl = (key, value) => spentUrl[key] = value;
 
-const getSpendId = (key) => spendId[key];
-const setSpendId = (key, value) => spendId[key] = value;
+let getSpendId = (key) => spendId[key];
+let setSpendId = (key, value) => spendId[key] = value;
 
-const pushSpentTab = (key, value) => {
+let pushSpentTab = (key, value) => {
     if (!Array.isArray(spentTab[key])) {
         spentTab[key] = [];
     }
     spentTab[key].push(value);
 };
 
-const getSpentHosts = (key) => spentHosts[key];
-const setSpentHosts = (key, value) => spentHosts[key] = value;
+let getSpentHosts = (key) => spentHosts[key];
+let setSpentHosts = (key, value) => spentHosts[key] = value;
 
-const getFutureReload = (key) => futureReload[key];
-const setFutureReload = (key, value) => futureReload[key] = value;
+let getFutureReload = (key) => futureReload[key];
+let setFutureReload = (key, value) => futureReload[key] = value;
 
-const getTarget = (key) => target[key];
-const setTarget = (key, value) => target[key] = value;
+let getTarget = (key) => target[key];
+let setTarget = (key, value) => target[key] = value;
 
-const getHttpsRedirect = (key) => httpsRedirect[key];
-const setHttpsRedirect = (key, value) => httpsRedirect[key] = value;
+let getHttpsRedirect = (key) => httpsRedirect[key];
+let setHttpsRedirect = (key, value) => httpsRedirect[key] = value;
 
-const getRedirectCount = (key) => redirectCount[key];
-const setRedirectCount = (key, value) => redirectCount[key] = value;
-const incrRedirectCount = (key) => redirectCount[key] += 1;
+let getRedirectCount = (key) => redirectCount[key];
+let setRedirectCount = (key, value) => redirectCount[key] = value;
+let incrRedirectCount = (key) => redirectCount[key] += 1;
 
 
 /**
@@ -222,15 +224,18 @@ function processHeaders(details, url) {
     for (let i = 0; i < details.responseHeaders.length; i++) {
         const header = details.responseHeaders[i];
         if (header.name.toLowerCase() === CHL_BYPASS_RESPONSE) {
-            if (header.value === chlVerificationError()
-                || header.value === chlConnectionError()) {
-                // If these errors occur then something bad is happening.
-                // Either tokens are bad or some resource is calling the server
-                // in a bad way
-                if (header.value === chlVerificationError()) {
+            switch (header.value) {
+                case chlConnectionError():
+                    throw new Error("[privacy-pass]: internal server connection error occurred");
+                case chlVerificationError():
                     clearStorage();
-                }
-                throw new Error("[privacy-pass]: There may be a problem with the stored tokens. Redemption failed for: " + url.href + " with error code: " + header.value);
+                    throw new Error(`[privacy-pass]: token verification failed for ${url.href}`);
+                case chlBadRequestError():
+                    throw new Error(`[privacy-pass]: server indicated a bad client request`);
+                case chlUnknownError():
+                    throw new Error(`[privacy-pass]: unknown internal server error occurred`);
+                default:
+                    console.warn(`[privacy-pass]: server sent unrecognised response code (${header.value})`);
             }
         }
 

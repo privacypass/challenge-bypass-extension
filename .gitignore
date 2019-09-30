@@ -8,4 +8,3 @@ lcov.info
 coverage/
 dist/
 *.zip
-compiled/

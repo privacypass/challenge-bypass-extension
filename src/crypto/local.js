@@ -19,6 +19,10 @@
 /* exported getActiveECSettings */
 "use strict";
 
+let shake256 = () => {
+    return createShake256();
+};
+
 const BATCH_PROOF_PREFIX = "batch-proof=";
 const MASK = ["0xff", "0x1", "0x3", "0x7", "0xf", "0x1f", "0x3f", "0x7f"];
 
@@ -358,7 +362,7 @@ function recomputeComposites(tokens, signatures, pointG, pointH, prngName) {
     const prng = {name: prngName};
     switch (prng.name) {
         case "shake":
-            prng.func = createShake256();
+            prng.func = shake256();
             prng.func.update(seed, "hex");
             break;
         case "hkdf":
