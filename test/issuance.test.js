@@ -61,19 +61,20 @@ describe("commitments parsing and caching", () => {
         setXHR(mockXHRCommitments, workflow);
     });
 
-    test("Version not available", () => {
+    test("version not available", () => {
         const xhr = createVerificationXHR(); // this usually takes params
-        expect(()=>{
-            const commitments = retrieveCommitments(xhr, "-1.00");
-            expect(commitments).toBeUndefined();
-        }).toThrowError("version");
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "-1.00"))
+        ).toThrow("Retrieved version");
     });
 
     test("bad public key", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const old = workflow.__get__("getCommitmentsKey");
         workflow.__set__("getCommitmentsKey", () => "badPublicKey");
-        expect(jest.fn(() => retrieveCommitments(xhr, "sig-ok"))).toThrow();
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "sig-ok"))
+        ).toThrow("Failed on parsing public key");
         workflow.__set__("getCommitmentsKey", old);
     });
 
@@ -149,11 +150,10 @@ describe("commitments parsing and caching", () => {
     });
 
     test("bad commitments signature", () => {
-        expect(()=>{
-            const xhr = createVerificationXHR(); // this usually takes params
-            const commitments = retrieveCommitments(xhr, "sig-bad");
-            expect(commitments).toBeUndefined();
-        }).toThrowError("sig");
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "sig-bad"))
+        ).toThrow("Failed on parsing commitment signature");
     });
 });
 
