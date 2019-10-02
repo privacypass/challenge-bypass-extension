@@ -149,11 +149,25 @@ describe("commitments parsing and caching", () => {
         expect(getCachedCommitments).not.toThrowError();
     });
 
-    test("bad commitments signature", () => {
+    test("malformed commitment's signature", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         expect(
             jest.fn(() => retrieveCommitments(xhr, "sig-bad"))
         ).toThrow("Failed on parsing commitment signature");
+    });
+
+    test("signature doesn't verify", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "sig-fail"))
+        ).toThrow("Invalid commitment");
+    });
+
+    test("expired commitments", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "expired"))
+        ).toThrow("Commitments expired in");
     });
 });
 

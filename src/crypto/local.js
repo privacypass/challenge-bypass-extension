@@ -348,16 +348,21 @@ function parsePublicKeyfromDER(derPublicKey) {
  * @return {boolean} True, if the commitment signature is valid.
  */
 function verifyCommitments(comms, derPublicKey) {
+    const expDate = new Date(comms.expiry);
+    if (Date.now() >= expDate) {
+        throw new Error("[privacy-pass]: Commitments expired in " + expDate);
+    }
+
     const sig = parseSignaturefromDER(comms.sig);
     delete comms.sig;
     const msg = JSON.stringify(comms);
     const pk = parsePublicKeyfromDER(derPublicKey);
     const hmsg = sjcl.hash.sha256.hash(msg);
+    comms.G = sec1EncodeToBase64(CURVE.G, false);
     try {
-        comms.G = sec1EncodeToBase64(CURVE.G, false);
         return pk.verify(hmsg, sig);
     } catch (error) {
-        throw new Error("[privacy-pass]: Invalid commitment. " + error);
+        throw new Error("[privacy-pass]: Invalid commitment.");
     }
 }
 
