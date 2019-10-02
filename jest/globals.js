@@ -236,10 +236,15 @@ function mockXHRCommitments() {
           "G": "${hkdfG}",
           "H": "${hkdfH}"
         },
-        "1.01": {
+        "sig-ok": {
             "H": "${testSigH}",
             "expiry": "2019-12-20T05:07:00.298053015-08:00",
             "sig": "MEQCIDFSb4PqkVAn5wdAyklVMvo5CE2SyAv0redzHnNo68ZnAiBbPcKMCctPHBrTatNMw8xYbesMT8EFTBCwRXAP7QlOsw=="
+        },
+        "sig-bad": {
+            "H": "${testSigH}",
+            "expiry": "2019-12-20T05:07:00.298053015-08:00",
+            "sig": "=BAD=SIGNATURE=CIDFSb4PqkVAn5wdAyklVMvo5CE2SyAv0redzHnNo68ZnAiBbPcKMCctPHBrTatNMw8xYbesMT8EFTw=="
         }
       }
     }`;

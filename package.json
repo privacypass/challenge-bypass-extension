@@ -29,7 +29,7 @@
   "scripts": {
     "all": "yarn lint && yarn build && yarn test-all",
     "build": "make build",
-    "test": "jest",
+    "test": "make test-ext && jest",
     "test-all": "make test-all",
     "dist": "make dist",
     "lint": "eslint . && cd test && eslint --config .eslintrc.tests.json ."

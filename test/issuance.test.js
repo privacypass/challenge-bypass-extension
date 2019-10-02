@@ -61,6 +61,22 @@ describe("commitments parsing and caching", () => {
         setXHR(mockXHRCommitments, workflow);
     });
 
+    test("Version not available", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(()=>{
+            const commitments = retrieveCommitments(xhr, "-1.00");
+            expect(commitments).toBeUndefined();
+        }).toThrowError("version");
+    });
+
+    test("bad public key", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        const old = workflow.__get__("getCommitmentsKey");
+        workflow.__set__("getCommitmentsKey", () => "badPublicKey");
+        expect(jest.fn(() => retrieveCommitments(xhr, "sig-ok"))).toThrow();
+        workflow.__set__("getCommitmentsKey", old);
+    });
+
     test("parse correctly (null version)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr);
@@ -84,9 +100,9 @@ describe("commitments parsing and caching", () => {
         expect(v11H === commitments.H).toBeTruthy();
     });
 
-    test("parse correctly (v1.01)", () => {
+    test("parse correctly (sig-ok)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
-        const commitments = retrieveCommitments(xhr, "1.01");
+        const commitments = retrieveCommitments(xhr, "sig-ok");
         expect(testSigG === commitments.G).toBeTruthy();
         expect(testSigH === commitments.H).toBeTruthy();
     });
@@ -130,6 +146,14 @@ describe("commitments parsing and caching", () => {
     test("error-free empty cache", () => {
         clearCachedCommitmentsMock();
         expect(getCachedCommitments).not.toThrowError();
+    });
+
+    test("bad commitments signature", () => {
+        expect(()=>{
+            const xhr = createVerificationXHR(); // this usually takes params
+            const commitments = retrieveCommitments(xhr, "sig-bad");
+            expect(commitments).toBeUndefined();
+        }).toThrowError("sig");
     });
 });
 

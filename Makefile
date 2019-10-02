@@ -18,13 +18,13 @@ build: addon/build.js
 
 .PHONY: test
 test: test-ext
-
-.PHONY: test-all
-test-all: test-sjcl test-ext
+	yarn test
 
 .PHONY: test-ext
 test-ext: jest/globals.js addon/test.js
-	yarn test
+
+.PHONY: test-all
+test-all: test-sjcl test
 
 .PHONY: test-sjcl
 test-sjcl:
