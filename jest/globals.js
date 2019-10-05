@@ -135,21 +135,21 @@ window.bypassTokensCount = (config_id) => `bypass-tokens-count-${config_id}`;
 
 /* mock XHR implementations */
 window.mockXHR = (_xhr) => {
-    _xhr.open = function (method, url) {
+    _xhr.open = function(method, url) {
         _xhr.method = method;
         _xhr.url = url;
     };
     _xhr.requestHeaders = new Map();
-    _xhr.getRequestHeader = function (name) {
+    _xhr.getRequestHeader = function(name) {
         return _xhr.requestHeaders[name];
     }
-    _xhr.setRequestHeader = function (name, value) {
+    _xhr.setRequestHeader = function(name, value) {
         _xhr.requestHeaders[name] = value;
     }
     _xhr.overrideMimeType = jest.fn();
     _xhr.body;
     _xhr.send = jest.fn();
-    _xhr.onreadystatechange = function () {
+    _xhr.onreadystatechange = function() {
     };
 }
 
@@ -236,22 +236,22 @@ function mockXHRCommitments() {
           "G": "${hkdfG}",
           "H": "${hkdfH}"
         },
-        "sig-ok": {
+        "2.0-sig-ok": {
             "H": "${testSigH}",
             "expiry": "2022-10-02T13:44:41.894002625-07:00",
             "sig": "MEQCIC6t4Uj/RgaMpugr1DZrJnJS6GWAXvG6jjJkTZQEVbHTAiBmKE7V5lgwCOk5t/t05mUJ9yRLbw19K28t799o4yyZJA=="
         },
-        "sig-bad": {
+        "2.0-sig-bad": {
             "H": "${testSigH}",
             "expiry": "2022-10-02T13:44:41.894002625-07:00",
             "sig": "=BAD==SIGNATUREt4Uj/RgaMpugr1DZrJnJS6GWAXvG6jjJkTZQEVbHTAiBmKE7V5lgwCOk5t/t05mUJ9yRLbw19KyyZJA=="
         },
-        "sig-fail": {
+        "2.0-sig-fail": {
             "H": "${testSigH}",
             "expiry": "2022-10-02T13:44:41.894002625-07:00",
             "sig": "MEQCIC6t4Uj000000000000rJnJS6GWAXvG6jjJkTZQEVbHTAiBmKE7V5lgwCOk5t/t05mUJ9yRLbw19K28t799o4yyZJA=="
         },
-        "expired": {
+        "2.0-expired": {
             "H": "${testSigH}",
             "expiry": "1900-10-02T13:44:41.894002625-07:00",
             "sig": "MEQCIC6t4Uj/RgaMpugr1DZrJnJS6GWAXvG6jjJkTZQEVbHTAiBmKE7V5lgwCOk5t/t05mUJ9yRLbw19K28t799o4yyZJA=="

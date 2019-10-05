@@ -1,14 +1,14 @@
-SOURCES= src/ext/requires.js         \
-		 src/crypto/keccak/keccak.js \
-		 src/crypto/local.js         \
-		 src/ext/background.js       \
-		 src/ext/browserUtils.js     \
-		 src/ext/config.js           \
-		 src/ext/h2c.js              \
-		 src/ext/issuance.js         \
-		 src/ext/redemption.js       \
-		 src/ext/tokens.js           \
-		 src/ext/utils.js
+SOURCES= src/crypto/keccak/keccak.js \
+         src/ext/requires.js         \
+         src/crypto/local.js         \
+         src/ext/background.js       \
+         src/ext/browserUtils.js     \
+         src/ext/config.js           \
+         src/ext/h2c.js              \
+         src/ext/issuance.js         \
+         src/ext/redemption.js       \
+         src/ext/tokens.js           \
+         src/ext/utils.js
 LISTENER=src/ext/listeners.js
 SJCL_PATH=src/crypto/sjcl
 

@@ -320,7 +320,10 @@ function retrieveCommitments(xhr, version) {
     if (typeof cmt === "undefined") {
         throw new Error("[privacy-pass]: Retrieved version: " + version + " not available.");
     }
-    if (cmt.sig) {
+    if (version[0] === "2") {
+        if (cmt.sig === undefined) {
+            throw new Error("[privacy-pass]: Signature field is missing.");
+        }
         verifyCommitments(cmt, getCommitmentsKey());
     }
     return {G: cmt.G, H: cmt.H};

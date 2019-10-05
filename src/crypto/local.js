@@ -204,7 +204,7 @@ function sec1DecodeFromBytes(sec1Bytes) {
  */
 function decompressPoint(bytes) {
     const yTag = bytes[0];
-    const expLength = CURVE.r.bitLength()/8+1; // bitLength rounds up
+    const expLength = CURVE.r.bitLength() / 8 + 1; // bitLength rounds up
     if (yTag != 2 && yTag != 3) {
         throw new Error("[privacy-pass]: compressed point is invalid, bytes[0] = " + yTag);
     } else if (bytes.length !== expLength) {
@@ -345,14 +345,14 @@ function parsePublicKeyfromDER(derPublicKey) {
  * Verify the signature of commitments.
  * @param {json} comms - commitments to verify
  * @param {string} derPublicKey - A public key in DER format.
- * @return {boolean} True, if the commitment signature is valid.
+ * @return {boolean} True, if the commitment has valid signature and is not
+ *                   expired; otherwise, throws an exception.
  */
 function verifyCommitments(comms, derPublicKey) {
     const expDate = new Date(comms.expiry);
     if (Date.now() >= expDate) {
         throw new Error("[privacy-pass]: Commitments expired in " + expDate);
     }
-
     const sig = parseSignaturefromDER(comms.sig);
     delete comms.sig;
     const msg = JSON.stringify(comms);
@@ -447,7 +447,7 @@ function recomputeComposites(tokens, signatures, pointG, pointH, prngName) {
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
     }
     let iter = -1;
-    for (let i=0; i<tokens.length; i++) {
+    for (let i = 0; i < tokens.length; i++) {
         iter++;
         const ci = computePRNGScalar(prng, seed, (new sjcl.bn(iter)).toBits());
         // Moved this check out of computePRNGScalar to here
@@ -480,7 +480,7 @@ function computePRNGScalar(prng, seed, salt) {
             out = prng.func.squeeze(32, "hex");
             break;
         case "hkdf":
-            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), bitLen/8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
+            out = sjcl.codec.hex.fromBits(prng.func(sjcl.codec.hex.toBits(seed), bitLen / 8, sjcl.codec.utf8String.toBits("DLEQ_PROOF"), salt, CURVE_H2C_HASH));
             break;
         default:
             throw new Error(`Server specified PRNG is not compatible: ${prng.name}`);
@@ -507,7 +507,7 @@ function computeSeed(chkM, chkZ, pointG, pointH) {
     const h = new CURVE_H2C_HASH(); // we use the h2c hash for convenience
     h.update(sec1EncodeToBits(pointG, compressed));
     h.update(sec1EncodeToBits(pointH, compressed));
-    for (let i=0; i<chkM.length; i++) {
+    for (let i = 0; i < chkM.length; i++) {
         h.update(sec1EncodeToBits(chkM[i].point, compressed));
         h.update(sec1EncodeToBits(chkZ.points[i], compressed));
     }
@@ -534,7 +534,7 @@ function evaluateHkdf(ikm, length, info, salt, hash) {
     mac.update(ikm);
     const prk = mac.digest();
 
-    const hashLength = Math.ceil(sjcl.bitArray.bitLength(prk)/8);
+    const hashLength = Math.ceil(sjcl.bitArray.bitLength(prk) / 8);
     const numBlocks = Math.ceil(length / hashLength);
     if (numBlocks > 255) {
         throw new Error(`[privacy-pass]: HKDF error, number of proposed iterations too large: ${numBlocks}`);
