@@ -91,7 +91,6 @@ function blindPoint(P) {
     return {point: bP, blind: bF};
 }
 
-
 /**
  * unblindPoint takes an assumed-to-be blinded point Q and an accompanying
  * blinding scalar b, then returns the point (1/b)*Q.
@@ -349,10 +348,6 @@ function parsePublicKeyfromDER(derPublicKey) {
  *                   expired; otherwise, throws an exception.
  */
 function verifyCommitments(comms, derPublicKey) {
-    const expDate = new Date(comms.expiry);
-    if (Date.now() >= expDate) {
-        throw new Error("[privacy-pass]: Commitments expired in " + expDate);
-    }
     const sig = parseSignaturefromDER(comms.sig);
     delete comms.sig;
     const msg = JSON.stringify(comms);
