@@ -6,7 +6,6 @@
  */
 
 /* global sjcl */
-/* global exports */
 /* exported sec1Encode */
 /* exported sec1EncodeToBase64 */
 /* exported sec1DecodeFromBase64 */
@@ -22,10 +21,12 @@
 /* exported shake256 */
 "use strict";
 
-const createShake256 = require("../src/crypto/keccak/keccak.js");
-
-const PEM = exports.PEM;
-const ASN1 = exports.ASN1;
+let PEM;
+let ASN1;
+if (typeof window !== "undefined") {
+    PEM = window.PEM;
+    ASN1 = window.ASN1;
+}
 
 let shake256 = () => {
     return createShake256();

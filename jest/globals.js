@@ -4,7 +4,7 @@
  * @author Drazen Urch
  */
 
-
+import createShake256 from "../src/crypto/keccak/keccak";
 import atob from "atob";
 import btoa from "btoa";
 import rewire from "rewire";
@@ -37,7 +37,6 @@ window.redirectCountMock = redirectCountMock;
 window.timeSinceLastResp = 0;
 
 window.workflowSet = () => {
-
     let workflow = rewire("../addon/test.js");
 
     workflow.__set__("get", getMock);
@@ -87,10 +86,16 @@ window.workflowSet = () => {
     workflow.__set__("setSpentHosts", setSpentHostsMock);
     workflow.__set__("getSpentHosts", getSpentHostsMock);
 
+    workflow.__set__("shake256", () => {return createShake256();});
     workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 
     workflow.__set__("console", consoleMock);
+
+    const PEM = workflow.__get__("exports.PEM");
+    const ASN1 = workflow.__get__("exports.ASN1");
+    workflow.__set__("PEM", PEM);
+    workflow.__set__("ASN1", ASN1);
 
     const sjcl = workflow.__get__("sjcl");
 
