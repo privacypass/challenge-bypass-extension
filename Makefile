@@ -42,7 +42,7 @@ lint:
 dist: build
 	mkdir -p ./dist
 	cp -a addon/* ./dist/
-	zip ext.zip ./dist
+	zip -r ext.zip ./dist
 	rm -rf ./dist
 
 addon/build.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
