@@ -21,6 +21,7 @@ const validRedemptionMethods = () => ["reload", "no-reload"]; // specifies valid
 function exampleConfig() {
     return {
         "id": 0, // unique integer identifying each individual config
+        "name": "example", // string identifier of the configuration
         "dev": true, // sets whether the configuration should only be used in development
         "sign": true, // sets whether tokens should be sent for signing
         "redeem": true, // sets whether tokens should be sent for redemption
@@ -28,7 +29,10 @@ function exampleConfig() {
         "max-tokens": 10, // max number of tokens held by the extension
         "var-reset": true, // whether variables should be reset after time limit expires
         "var-reset-ms": 100, // variable reset time limit
-        "commitments": "example", // public key commitments for verifying DLEQ proofs (dev/prod) in curve P256
+        "pkey-commitments":
+            "-----BEGIN PUBLIC KEY-----\n" +
+            "(PEM)\n" +
+            "-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
         "spending-restrictions": {
             "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
             "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
@@ -83,9 +87,14 @@ function PPConfigs() {
     const cfConfig = exampleConfig();
     cfConfig.id = 1;
     cfConfig.dev = false;
+    cfConfig.name = "CF";
     cfConfig["max-tokens"] = 300;
     cfConfig["var-reset-ms"] = 2000;
-    cfConfig.commitments = "CF";
+    cfConfig["pkey-commitments"] =
+        "-----BEGIN PUBLIC KEY-----\n" +
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
+        "Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
+        "-----END PUBLIC KEY-----";
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
     cfConfig["issue-action"]["tokens-per-request"] = 30;
@@ -99,10 +108,10 @@ function PPConfigs() {
     const hcConfig = exampleConfig();
     hcConfig.id = 2;
     hcConfig.dev = false;
+    hcConfig.name = "HC";
     hcConfig["max-spends"] = undefined;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
-    hcConfig.commitments = "HC";
     hcConfig["spending-restrictions"]["status-code"] = [200];
     hcConfig["spend-action"]["redeem-method"] = "no-reload";
     hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];

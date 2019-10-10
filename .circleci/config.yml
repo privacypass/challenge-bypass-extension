@@ -8,6 +8,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --init
+      - run:
           name: Fetching Sources
           command: make install
       - run:
@@ -15,7 +20,7 @@ jobs:
           command: make lint
       - run:
           name: Building
-          command: make build
+          command: make clean build
       - run:
           name: Testing
           command: make test-all
