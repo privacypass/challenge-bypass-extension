@@ -41,7 +41,7 @@ lint:
 dist: build
 	mkdir -p ./dist
 	cp -a addon/* ./dist/
-	zip ext.zip ./dist
+	zip -r ext.zip ./dist
 	rm -rf ./dist
 
 addon/build.js: ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
