@@ -61,6 +61,23 @@ describe("commitments parsing and caching", () => {
         setXHR(mockXHRCommitments, workflow);
     });
 
+    test("version not available", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "-1.00"))
+        ).toThrow("Retrieved version");
+    });
+
+    test("bad public key", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        const old = workflow.__get__("getCommitmentsKey");
+        workflow.__set__("getCommitmentsKey", () => "badPublicKey");
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "2.0-sig-ok"))
+        ).toThrow("Failed on parsing public key");
+        workflow.__set__("getCommitmentsKey", old);
+    });
+
     test("parse correctly (null version)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
         const commitments = retrieveCommitments(xhr);
@@ -75,13 +92,11 @@ describe("commitments parsing and caching", () => {
         expect(testH === commitments.H).toBeTruthy();
     });
 
-    test("parse correctly (v1.1)", () => {
-        const v11G = "new_11_commitment_g";
-        const v11H = "new_11_commitment_h";
+    test("parse correctly (sig-ok)", () => {
         const xhr = createVerificationXHR(); // this usually takes params
-        const commitments = retrieveCommitments(xhr, "1.1");
-        expect(v11G === commitments.G).toBeTruthy();
-        expect(v11H === commitments.H).toBeTruthy();
+        const commitments = retrieveCommitments(xhr, "2.0-sig-ok");
+        expect(testSigG === commitments.G).toBeTruthy();
+        expect(testSigH === commitments.H).toBeTruthy();
     });
 
     test("parse correctly (dev)", () => {
@@ -123,6 +138,27 @@ describe("commitments parsing and caching", () => {
     test("error-free empty cache", () => {
         clearCachedCommitmentsMock();
         expect(getCachedCommitments).not.toThrowError();
+    });
+
+    test("malformed commitments signature", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "2.0-sig-bad"))
+        ).toThrow("Failed on parsing commitment signature");
+    });
+
+    test("signature doesn't verify", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "2.0-sig-fail"))
+        ).toThrow("Invalid commitment");
+    });
+
+    test("expired commitments", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        expect(
+            jest.fn(() => retrieveCommitments(xhr, "2.0-expired"))
+        ).toThrow("Commitments expired in");
     });
 });
 
@@ -351,7 +387,7 @@ describe("test validating response", () => {
                 let version;
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokenData.length; i++) {
+                    for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
@@ -370,7 +406,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before+testTokenData.length).toBeTruthy();
+                expect(after === before + testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -386,7 +422,7 @@ describe("test validating response", () => {
                 expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokenData.length; i++) {
+                    for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
@@ -403,7 +439,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before+testTokenData.length).toBeTruthy();
+                expect(after === before + testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -420,7 +456,7 @@ describe("test validating response", () => {
                 setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokenData.length; i++) {
+                    for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
@@ -441,7 +477,7 @@ describe("test validating response", () => {
                 expect(consoleMock.warn).toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before+testTokenData.length).toBeTruthy();
+                expect(after === before + testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -454,7 +490,7 @@ describe("test validating response", () => {
                 let version;
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokenData.length; i++) {
+                    for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
@@ -471,7 +507,7 @@ describe("test validating response", () => {
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
-                expect(after === before+testTokenData.length).toBeTruthy();
+                expect(after === before + testTokenData.length).toBeTruthy();
                 expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
@@ -484,7 +520,7 @@ describe("test validating response", () => {
                 const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokenData.length; i++) {
+                    for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
@@ -511,7 +547,7 @@ describe("test validating response", () => {
             test("cannot decode point", () => {
                 function run() {
                     const tokens = [];
-                    for (let i=0; i<testTokens.length; i++) {
+                    for (let i = 0; i < testTokens.length; i++) {
                         tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                     }
                     const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
@@ -530,7 +566,7 @@ describe("test validating response", () => {
                 test("proof is not JSON", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
+                        for (let i = 0; i < testTokens.length; i++) {
                             tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadJson);
@@ -548,7 +584,7 @@ describe("test validating response", () => {
                 test("proof has bad points", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
+                        for (let i = 0; i < testTokens.length; i++) {
                             tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadPoints);
@@ -566,7 +602,7 @@ describe("test validating response", () => {
                 test("proof should not verify (bad lengths)", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokensBadLength.length; i++) {
+                        for (let i = 0; i < testTokensBadLength.length; i++) {
                             tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadProof);
@@ -589,7 +625,7 @@ describe("test validating response", () => {
                 test("proof should not verify", () => {
                     function run() {
                         const tokens = [];
-                        for (let i=0; i<testTokens.length; i++) {
+                        for (let i = 0; i < testTokens.length; i++) {
                             tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                         }
                         const out = parseRespString(respBadProof);
