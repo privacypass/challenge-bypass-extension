@@ -1,6 +1,5 @@
 SOURCES= src/crypto/keccak/keccak.js \
-         src/ext/requires.js         \
-         src/crypto/local.js         \
+		 src/crypto/local.js         \
          src/ext/background.js       \
          src/ext/browserUtils.js     \
          src/ext/config.js           \
@@ -8,8 +7,9 @@ SOURCES= src/crypto/keccak/keccak.js \
          src/ext/issuance.js         \
          src/ext/redemption.js       \
          src/ext/tokens.js           \
-         src/ext/utils.js
+		 src/ext/utils.js
 LISTENER=src/ext/listeners.js
+ASN1_PATH=src/crypto/asn1
 SJCL_PATH=src/crypto/sjcl
 
 all: build
@@ -35,7 +35,7 @@ install:
 	yarn install
 
 .PHONY: lint
-lint: build
+lint:
 	yarn lint
 
 .PHONY: dist
@@ -45,12 +45,11 @@ dist: build
 	zip ext.zip ./dist
 	rm -rf ./dist
 
-addon/build.js: ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
+addon/build.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
 	cat $^ > $@
-addon/test.js: ${SJCL_PATH}/sjcl.js ${SOURCES}
+addon/test.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES}
 	cat $^ > $@
 ${SJCL_PATH}/sjcl.js:
-	git submodule update --init
 	cd ${SJCL_PATH}; ./configure --without-all --with-ecc --with-convenience \
 	--with-codecBytes --with-codecHex --compress=none
 	make -C ${SJCL_PATH} sjcl.js

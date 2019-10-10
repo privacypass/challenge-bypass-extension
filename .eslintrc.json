@@ -12,6 +12,7 @@
     "globals": {
         "activeConfig": true,
         "assert": true,
+        "ASN1": true,
         "attemptRedeem": true,
         "beforeRequest": true,
         "beforeSendHeaders": true,
@@ -60,6 +61,7 @@
         "newRandomPoint": true,
         "parseKeys": true,
         "patternToRegExp": true,
+        "PEM": true,
         "PPConfigs": true,
         "processHeaders": true,
         "processRedirect": true,

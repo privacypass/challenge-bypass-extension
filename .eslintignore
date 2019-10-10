@@ -1,3 +1,4 @@
+src/crypto/asn1/*
 src/crypto/sjcl/*
 src/crypto/keccak/*
 test/*

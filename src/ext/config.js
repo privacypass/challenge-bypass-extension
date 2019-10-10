@@ -29,7 +29,10 @@ function exampleConfig() {
         "max-tokens": 10, // max number of tokens held by the extension
         "var-reset": true, // whether variables should be reset after time limit expires
         "var-reset-ms": 100, // variable reset time limit
-        "pkey-commitments": "-----BEGIN PUBLIC KEY-----(PEM)-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
+        "pkey-commitments":
+            "-----BEGIN PUBLIC KEY-----\n" +
+            "(PEM)\n" +
+            "-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
         "spending-restrictions": {
             "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
             "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
@@ -88,9 +91,9 @@ function PPConfigs() {
     cfConfig["max-tokens"] = 300;
     cfConfig["var-reset-ms"] = 2000;
     cfConfig["pkey-commitments"] =
-        "-----BEGIN PUBLIC KEY-----"+
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD"+
-        "Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw=="+
+        "-----BEGIN PUBLIC KEY-----\n" +
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
+        "Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
         "-----END PUBLIC KEY-----";
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";

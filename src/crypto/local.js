@@ -6,6 +6,7 @@
  */
 
 /* global sjcl */
+/* global exports */
 /* exported sec1Encode */
 /* exported sec1EncodeToBase64 */
 /* exported sec1DecodeFromBase64 */
@@ -20,6 +21,11 @@
 /* exported verifyCommitments */
 /* exported shake256 */
 "use strict";
+
+const createShake256 = require("../src/crypto/keccak/keccak.js");
+
+const PEM = exports.PEM;
+const ASN1 = exports.ASN1;
 
 let shake256 = () => {
     return createShake256();
@@ -295,47 +301,39 @@ function validResponseCompression(compression, setting) {
 // Commitments verification
 
 /**
- * Parse a DER-encoded signature.
- * @param {string} derSignature - A signature in DER format.
+ * Parse a PEM-encoded signature.
+ * @param {string} pemSignature - A signature in PEM format.
  * @return {sjcl.bitArray} a signature object for sjcl library.
  */
-function parseSignaturefromDER(derSignature) {
+function parseSignaturefromPEM(pemSignature) {
     try {
-        const sigBN = parseKeys.signature.decode(
-            Buffer.from(derSignature, "base64"),
-            "der"
-        );
-        return sjcl.codec.bytes.toBits(
-            sjcl.bitArray.concat(sigBN.r.toArray(), sigBN.s.toArray())
-        );
-    } catch (error) {
+        const bytes = PEM.parseBlock(pemSignature);
+        const json = ASN1.parse(bytes.der);
+        const r = sjcl.codec.bytes.toBits(json.children[0].value);
+        const s = sjcl.codec.bytes.toBits(json.children[1].value);
+        return sjcl.bitArray.concat(r, s);
+    } catch (e) {
         throw new Error(
-            "[privacy-pass]: Failed on parsing commitment signature. " + error
+            "[privacy-pass]: Failed on parsing commitment signature. " + e.message
         );
     }
 }
 
 /**
- * Parse a DER-encoded publick key.
- * @param {string} derPublicKey - A public key in DER format.
+ * Parse a PEM-encoded publick key.
+ * @param {string} pemPublicKey - A public key in PEM format.
  * @return {sjcl.ecc.ecdsa.publicKey} a public key for sjcl library.
  */
-function parsePublicKeyfromDER(derPublicKey) {
-    const OIDCurves = [];
-    OIDCurves["c256"] = "1.2.840.10045.3.1.7"; // oid(prime256v1)
-
+function parsePublicKeyfromPEM(pemPublicKey) {
     try {
-        const pkJson = parseKeys(derPublicKey);
-        assert.equal(pkJson.type, "ec");
-        assert.equal(
-            pkJson.data.algorithm.curve.join("."),
-            OIDCurves[sjcl.ecc.curveName(CURVE)]
-        );
-        const point = sec1DecodeFromBytes(pkJson.data.subjectPublicKey.data);
+        let bytes = PEM.parseBlock(pemPublicKey);
+        let json = ASN1.parse(bytes.der);
+        let xy = json.children[1].value;
+        const point = sec1DecodeFromBytes(xy);
         return new sjcl.ecc.ecdsa.publicKey(CURVE, point);
-    } catch (error) {
+    } catch (e) {
         throw new Error(
-            "[privacy-pass]: Failed on parsing public key. " + error
+            "[privacy-pass]: Failed on parsing public key. " + e.message
         );
     }
 }
@@ -343,15 +341,15 @@ function parsePublicKeyfromDER(derPublicKey) {
 /**
  * Verify the signature of commitments.
  * @param {json} comms - commitments to verify
- * @param {string} derPublicKey - A public key in DER format.
+ * @param {string} pemPublicKey - A public key in PEM format.
  * @return {boolean} True, if the commitment has valid signature and is not
  *                   expired; otherwise, throws an exception.
  */
-function verifyCommitments(comms, derPublicKey) {
-    const sig = parseSignaturefromDER(comms.sig);
+function verifyCommitments(comms, pemPublicKey) {
+    const sig = parseSignaturefromPEM(comms.sig);
     delete comms.sig;
     const msg = JSON.stringify(comms);
-    const pk = parsePublicKeyfromDER(derPublicKey);
+    const pk = parsePublicKeyfromPEM(pemPublicKey);
     const hmsg = sjcl.hash.sha256.hash(msg);
     comms.G = sec1EncodeToBase64(CURVE.G, false);
     try {
