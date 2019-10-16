@@ -41,7 +41,11 @@ const LISTENER_URLS = "<all_urls>";
 let CONFIG_ID = 1;
 let getConfigId = () => CONFIG_ID;
 let setConfigId = (val) => CONFIG_ID = val;
-let getConfigName = () => activeConfig()["name"];
+
+// we need to use this function in the JS of the popup and let doesn't allow us
+// to do this.
+// eslint-disable-next-line no-var
+var getConfigName = () => activeConfig()["name"];
 
 let checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
 
@@ -492,10 +496,29 @@ function handleMessage(request, sender, sendResponse) {
     if (request.callback) {
         UpdateCallback = request.callback;
     } else if (request.tokLen) {
-        sendResponse(countStoredTokens());
+        sendResponse(countStoredTokens(), getConfigName());
     } else if (request.clear) {
         clearStorage();
+    } else if (request.redeem) {
+        const tokLen = countStoredTokens();
+        if (tokLen > 0) {
+            const s1 = generateString();
+            const s2 = generateString();
+            const tokenToSpend = GetTokenForSpend();
+            sendResponse(BuildRedeemHeader(tokenToSpend, s1, s2));
+        } else {
+            // respond with null
+            sendResponse();
+        }
     }
+}
+
+/**
+ * Generates a (non-crypto) random string
+ * @return {String}
+ */
+function generateString() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 /* Token storage functions */
