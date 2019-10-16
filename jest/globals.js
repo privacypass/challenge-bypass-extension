@@ -102,8 +102,30 @@ window.workflowSet = () => {
     window._scalarMult = workflow.__get__("_scalarMult");
     window.sec1Encode = workflow.__get__("sec1Encode");
     window.sec1DecodeFromBytes = workflow.__get__("sec1DecodeFromBytes");
+    window.sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
 
     window.hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
+    const testWorkerPoints = [
+        "A3GFH/iDZMTTUuOmC9ATszHN40lp07BTyRYLhp0wnw5P",
+        "Apl2KJiDa6MA24bIN+nvP2pg9g8Bx0Ac3RIHf1m1GWvX",
+        "AktpxdvDKBkK70HsMAh9zIGmRF6pdPsaZlXbWOU10UJx",
+        "AxMQ/h/qkdqS997iLXp9BBkV4G24HHxmOB28r2XFXEYW",
+        "A3UoiqCyasKkaAfsEsNkiZ/s1cxRWBzZhTxBquwmeONs",
+        "A7WoNIKaVydxIrsFFFf7OIVZcGpTgbakmJDB+6R2Sp4p",
+        "A/uBvaGiL9hgkPoqUOlKe3jcx9JRGvS2OKRRayGursuy",
+        "Av1jWg19Wn3pbL2vgEpEEnI9nXyilAN53dgFqol1jT0z",
+        "A9w1lc9nIp/r2edLNYtwN2KJTgZAu3e/s6pU9f3OWJfd",
+        "AgUyp8cbk8KF3NGwOn8Jwf15Bys6bhilmE3nS3bSC+ML"
+    ];
+    window.testTokensWorker = [];
+    for (let i=0; i<10; i++) {
+        const token = {};
+        // random data/blind
+        token.data = [237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1];
+        token.blind = [73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134];
+        token.point = sec1Encode(sec1DecodeFromBase64(testWorkerPoints[i]));
+        window.testTokensWorker[i] = token;
+    }
 
     window.LISTENER_URLS = workflow.__get__("LISTENER_URLS");
 
@@ -238,6 +260,11 @@ function mockXHRCommitments() {
           "expiry": "2022-10-07T11:56:40.064212296-07:00",
           "sig": "MEUCIQD7SPey6kq5G1Pb2TnKKpIa+Yzhc2kka6jAI8JGRHnC4wIgDEWoLCqiIg1Pq3DGt2S7aW9POLYw35E0X1oXEEH1h9E="
         },
+        "1.01": {
+          "H": "${workersH}",
+          "expiry": "2020-01-11T10:29:10.658286752Z",
+          "sig": "MEUCIQDu9xeF1q89bQuIMtGm0g8KS2srOPv+4hHjMWNVzJ92kAIgYrDKNkg3GRs9Jq5bkE/4mM7/QZInAVvwmIyg6lQZGE0="
+        },
         "2.0-sig-ok": {
             "H": "${testSigH}",
             "expiry": "2022-10-02T13:44:41.894002625-07:00",
@@ -307,6 +334,16 @@ window.hkdfG = window.p256G;
 window.hkdfH = "BGEZxEbVLSG9CGoIb18ndwdbIGW6qbpXnAGMuY1qWgXBsvtZB+yvPlvEvFYoyw/m8Q8xQXwQL7xBYQ92iy+Cj6E=";
 window.testTokensHkdf = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112,80,67,186,92,112,0,18,62,31,208,88,21,10,77,55,151,0,143,87,168,178,83,119,102,217,65,156,115,150,186,82,121],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[4,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252,160,47,15,9,200,58,130,65,180,69,114,160,89,171,73,192,128,163,157,11,206,45,93,11,68,255,93,1,43,81,132,231],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
 window.testTokensHkdfCompressed = JSON.parse(`[{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[3,96,37,164,31,129,161,96,198,72,207,232,253,202,164,46,95,125,167,167,16,85,248,226,63,29,199,228,32,74,184,75,112],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]},{"data":[237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1],"point":[3,226,239,220,115,116,126,21,227,139,122,27,185,15,229,228,239,150,75,59,141,204,253,164,40,248,90,67,20,32,200,78,252],"blind":[73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134]}]`);
+window.workersG = window.p256G;
+window.workersH = "BPivZ+bqrAZzBHZtROY72/E4UGVKAanNoHL1Oteg25oTPRUkrYeVcYGfkOr425NzWOTLRfmB8cgnlUfAeN2Ikmg=";
+window.testPubKey = "-----BEGIN PUBLIC KEY-----\n" +
+"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
+"Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
+"-----END PUBLIC KEY-----";
+window.prodPubKey = "-----BEGIN PUBLIC KEY-----\n" +
+"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF\n" +
+"VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==\n" +
+"-----END PUBLIC KEY-----";
 
 window.goodResponses = [
     {
@@ -326,5 +363,9 @@ window.goodResponses = [
         string: `signatures=eyJzaWdzIjpbIkF6cTF6TGFRMkVUY3Q0Q3kyZVdSSnRZcnlGTzZBYkxET2JvY0czakFQa3RxIiwiQTJSK0dyZVVheERCd2NrdDB6UGkvSjZUNkYvZTlaT2I4dk4ycm9XU1NGRSsiXSwicHJvb2YiOiJZbUYwWTJndGNISnZiMlk5ZXlKUUlqb2laWGxLUkVscWIybFVSR3d3WTJwS2ExVnRlRTFaYlRWMVZGVjRhV0ZHU2xGbFZ6QjNUVzA1VldGWE9WWlRiVkpwVjBaV2FGTXdZM1pSYTF
             aUlRUQjBWMUpVTUdsTVEwcFRTV3B2YVUxVlNuWlZWR1J6WkRCa1VtRnFSbTFVUjNSU1MzcHNNVm96YjNwVVJXUnlZbGM1YzFsdWJERmlSMVpYVGtoS1ZXVnFUbFJsYkVKSFZGUXdhV1pSUFQwaWZRPT0iLCJ2ZXJzaW9uIjoiaGtkZiIsInBybmciOiJoa2RmIn0=`,
         name: "compressed-hkdf",
+    },
+    {
+        string: `signatures=eyJzaWdzIjpbIkF3S3Qxd1c1V0dzMjh6dlEzb3Rhd3phbldsN0xSSEpYUjRuZ2d4ZnhyWVJrIiwiQXZOWmowNHV4Rk8rcGJIMjFIM2VvWVVrNnFlRm1xMWZuRFBCWmNMS1RVYUwiLCJBck0rcXVwcDJqUHJMYjBaK3NuVkZUOXAyTnhoNmhCWEJkVVdUZUhrZHlxZiIsIkF4QXJINU1tN3E1SWN3NXFvV3VGNkhSMlVsT1oxNWE2bENLdWM0blQ1UmhBIiwiQThCTG9nZGUrUEJaS0RPUm5LUjA3S1dhajI1b3RVb1BsQ2lRTG9jbnlpMDAiLCJBeVBPTmw2N0M1VGxPZk5KWFN2SlU2WjNKQktHVHJ5YlFYTER3Smd6VmRPSiIsIkFvVFdnTW5tR0tXRmdPUnVrZG54aStGaFdDSUk2WGlGYkxhRTFKM3dKaGltIiwiQXNrWTd4YkZBZVdFRjFydmozY3J2bmNLXC9qMTVKOStsNE5ZS2lydlUwS0dXIiwiQXZSXC9rZngyRHhFckE0bnVBdlNmRVRuRzZTSWJOZmF6NXlCUW1ZU3QrS2F1IiwiQWtrc3ptQzM3a1Z4aTN0eVVsc0pKOU0xeVpRVVc0UUh1RE4zaHNtYzd4MGkiXSwicHJvb2YiOiJleUpRSWpvaVpYbEtSRWxxYjJsbFJGVTFVa1ZvU1ZwRlVuVmpWazVGVWpKbmNrOUZXa1JWYkUxeVlsaE9RMU5ET1hoWlZ6VlRaR3BTZVdGNU9XNVRTRlpMWWpKS1dWTlVNR2xNUTBwVFNXcHZhV1F4YUhaWlZUVjVVVlJPYVZVeFpFWkxNSEJZVTFoV1Qwd3piM2xXYkZweVkyNXNSMUpGZUdoTlJrcHdZbTAxY2tzeWRGaFdlbXhWWVhvd2FXWlJQVDBpZlE9PSIsInZlcnNpb24iOiIxLjAxIiwicHJuZyI6ImhrZGYifQ==`,
+        name: "workers",
     },
 ];
