@@ -92,8 +92,8 @@ function PPConfigs() {
     cfConfig["var-reset-ms"] = 2000;
     cfConfig["pkey-commitments"] =
         "-----BEGIN PUBLIC KEY-----\n" +
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
-        "Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF\n" +
+        "VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==\n" +
         "-----END PUBLIC KEY-----";
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
