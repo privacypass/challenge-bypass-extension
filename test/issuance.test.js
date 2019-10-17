@@ -51,6 +51,7 @@ beforeEach(() => {
     configId = configId === undefined ? 1 : configId;
     setConfig(configId); // set the active config
     workflow.__set__("issueActionUrls", () => [LISTENER_URLS]);
+    workflow.__set__("getCommitmentsKey", () => testPubKey);
 });
 
 /**
@@ -70,12 +71,10 @@ describe("commitments parsing and caching", () => {
 
     test("bad public key", () => {
         const xhr = createVerificationXHR(); // this usually takes params
-        const old = workflow.__get__("getCommitmentsKey");
         workflow.__set__("getCommitmentsKey", () => "badPublicKey");
         expect(
             jest.fn(() => retrieveCommitments(xhr, "2.0-sig-ok"))
         ).toThrow("Failed on parsing public key");
-        workflow.__set__("getCommitmentsKey", old);
     });
 
     test("parse correctly (null version)", () => {
@@ -97,6 +96,14 @@ describe("commitments parsing and caching", () => {
         const commitments = retrieveCommitments(xhr, "2.0-sig-ok");
         expect(testSigG === commitments.G).toBeTruthy();
         expect(testSigH === commitments.H).toBeTruthy();
+    });
+
+    test("parse correctly (prod v1.01)", () => {
+        const xhr = createVerificationXHR(); // this usually takes params
+        workflow.__set__("getCommitmentsKey", () => prodPubKey);
+        const commitments = retrieveCommitments(xhr, "1.01");
+        expect(workersG === commitments.G).toBeTruthy();
+        expect(workersH === commitments.H).toBeTruthy();
     });
 
     test("parse correctly (dev)", () => {
@@ -359,11 +366,13 @@ describe("test validating response", () => {
         beforeAll(() => {
             setXHR(mockXHRCommitments, workflow);
         });
+
         goodResponses.forEach((element) => {
             let commVersion;
             let testTokenData;
             let G;
             let H;
+            let pubKey = testPubKey;
             beforeEach(() => {
                 if (element.name.includes("hkdf")) {
                     commVersion = "hkdf";
@@ -374,6 +383,12 @@ describe("test validating response", () => {
                     }
                     G = hkdfG;
                     H = hkdfH;
+                } else if (element.name.includes("workers")) {
+                    G = workersG;
+                    H = workersH;
+                    testTokenData = testTokensWorker;
+                    commVersion = "1.01";
+                    pubKey = prodPubKey;
                 } else {
                     commVersion = "1.0";
                     testTokenData = testTokens;
@@ -381,11 +396,13 @@ describe("test validating response", () => {
                     H = testH;
                 }
             });
+
             test(`test store tokens: ${element.name}`, () => {
                 let before;
                 let after;
                 let version;
                 function run() {
+                    workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
                     for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
@@ -421,6 +438,7 @@ describe("test validating response", () => {
                 expect(getCachedCommitments(commVersion).G === G).toBeTruthy();
                 expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
                 function run() {
+                    workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
                     for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
@@ -455,6 +473,7 @@ describe("test validating response", () => {
                 commStruct[commVersion] = {L: G, H: H};
                 setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
                 function run() {
+                    workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
                     for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
@@ -489,6 +508,7 @@ describe("test validating response", () => {
                 let after;
                 let version;
                 function run() {
+                    workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
                     for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
@@ -519,6 +539,7 @@ describe("test validating response", () => {
                 let after;
                 const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 function run() {
+                    workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
                     for (let i = 0; i < testTokenData.length; i++) {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
