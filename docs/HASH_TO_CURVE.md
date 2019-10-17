@@ -18,9 +18,7 @@ point on P-256. If this is successful then we can continue, otherwise we try
 again using the result of the previous iteration up to 10 times before failing.
 
 It is obvious that this provides a probabilistic (and non-negligible) chance of
-failure and so this method of hashing is suboptimal. See
-[here](https://github.com/privacypass/challenge-bypass-extension/blob/alxdavids/h2c/addon/scripts/crypto.js#L156-L195)
-for more details.
+failure and so this method of hashing is suboptimal.
 
 ## Affine SSWU method
 
