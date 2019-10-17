@@ -24,9 +24,9 @@ failure and so this method of hashing is suboptimal.
 
 In the new release of Privacy Pass we will move to supporting both the previous
 `hash-and-increment` method, and a new method that we call "affine SSWU". The
-affine SSWU method always returns a elliptic curve point and thus has zero chance
-of failure. The method used is the simplified version of SWU, which was proposed by Brier et al. based on the previous work of Shallue, Woestijne and Ulas (hence SSWU).
+ affine SSWU method always returns an elliptic curve point and thus has zero chance
+ of failure. The encoding method, proposed by [Brier et al.](http://eprint.iacr.org/2009/340), is a simplified version of SWU encoding, which is based on the previous works of Shallue and Woestijne, and Ulas (hence SSWU).
 It is known as "affine" since it generates curve points in the affine
 representation rather than the Jacobian representation.
 
-The algorithm is described in <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>. The input is a field element `t` that is obtained by hashing the input bytes into GF(p) using the output of a random oracle (we use the hash function SHA-256). The output is a coordinate pair (x,y) for a curve point on the  elliptic curve E(GF(p)).
+The algorithm is described in <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>. The input is a field element `t` that is obtained by hashing the input bytes into GF(p) using the output of a random oracle (we use the hash function SHA-256). The output is a coordinate pair (x,y) for a point on the elliptic curve P-256.
