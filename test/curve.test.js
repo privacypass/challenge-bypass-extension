@@ -31,7 +31,7 @@ let hash;
 let activeCurveParams;
 let label;
 beforeEach(() => {
-    setConfig(1);
+    setConfig(0);
     const settings = getActiveECSettings();
     curve = settings.curve;
     hash = settings.hash;
@@ -110,7 +110,7 @@ describe("hashing to p256", () => {
             activeCurveParams["method"] = "swu";
             initECSettings(activeCurveParams);
             sets = getActiveECSettings();
-        })
+        });
         const testVectors = [
             [],
             [0],
@@ -145,7 +145,7 @@ describe("hashing to p256", () => {
             test(`i=${i}`, () => {
                 const alpha = sjcl.codec.bytes.toBits(testVectors[i]);
 
-                // check that h2base is consisten
+                // check that h2base is consistent
                 const t = h2Base(alpha, sets.curve, sets.hash, sets.label);
                 expect(sjcl.codec.hex.fromBits(t.toBits())).toEqual(expected[i].t);
 
