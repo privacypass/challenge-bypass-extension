@@ -119,7 +119,7 @@ window.workflowSet = () => {
         "AgUyp8cbk8KF3NGwOn8Jwf15Bys6bhilmE3nS3bSC+ML"
     ];
     window.testTokensWorker = [];
-    for (let i=0; i<10; i++) {
+    for (let i=0; i<testWorkerPoints.length; i++) {
         const token = {};
         // random data/blind
         token.data = [237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1];
