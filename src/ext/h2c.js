@@ -9,7 +9,6 @@
 /* global sjcl */
 /* exported h2Curve */
 
-let H2C_SEED = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
 const p256Curve = sjcl.ecc.curves.c256;
 const precomputedP256 = {
     // a=-3, but must be reduced mod p for P256; otherwise,
@@ -65,17 +64,17 @@ function h2Base(x, curve, hash, label) {
 /**
  * hashes bits to the chosen elliptic curve
  * @param {sjcl.bitArray} alpha bits to be encoded onto curve
- * @param {literal} ecSettings the curve settings being used by the extension
+ * @param {Object} ecSettings the curve settings being used by the extension
  * @return {sjcl.ecc.point} point on curve
  */
 function h2Curve(alpha, ecSettings) {
     let point;
     switch (ecSettings.method) {
         case "swu":
-            point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash);
+            point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, ecSettings.label);
             break;
         case "increment":
-            point = hashAndInc(alpha, ecSettings.hash);
+            point = hashAndInc(alpha, ecSettings.hash, ecSettings.label);
             break;
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen for hashing, SJCL chosen curve: " + sjcl.ecc.curveName(ecSettings.curve));
@@ -89,11 +88,12 @@ function h2Curve(alpha, ecSettings) {
  * @param {sjcl.bitArray} alpha bits to be encoded
  * @param {sjcl.ecc.curve} activeCurve elliptic curve
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
+ * @param {String} label
  * @return {sjcl.ecc.point} curve point
  */
-function simplifiedSWU(alpha, activeCurve, hash) {
+function simplifiedSWU(alpha, activeCurve, hash, label) {
     const params = getCurveParams(activeCurve);
-    const u = h2Base(alpha, activeCurve, hash, H2C_SEED);
+    const u = h2Base(alpha, activeCurve, hash, label);
     const {X, Y} = computeSWUCoordinates(u, params);
     const point = new sjcl.ecc.point(activeCurve, X, Y);
     if (!point.isValid()) {
@@ -169,17 +169,18 @@ function getCurveParams(curve) {
  * DEPRECATED: Method for hashing to curve based on the principal of attempting
  * to hash the bytes multiple times and recover a curve point. Has non-negligble
  * probailistic failure conditions.
- * @param {sjcl.codec.bitArray} seed
+ * @param {sjcl.bitArray} seed
  * @param {sjcl.hash} hash hash function for hashing bytes to base field
+ * @param {sjcl.bitArray} label
  * @return {sjcl.ecc.point} returns a curve point on the active curve
  */
-function hashAndInc(seed, hash) {
+function hashAndInc(seed, hash, label) {
     const h = new hash();
 
     // Need to match the Go curve hash, so we decode the exact bytes of the
     // string "1.2.840.100045.3.1.7 point generation seed" instead of relying
     // on the utf8 codec that didn't match.
-    const separator = H2C_SEED;
+    const separator = label;
 
     h.update(separator);
 
