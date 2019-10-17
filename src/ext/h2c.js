@@ -30,7 +30,7 @@ const precomputedP256 = {
  */
 function i2osp(x, n) {
     const bytes = [];
-    for (let i=n-1; i>-1; i--) {
+    for (let i = n - 1; i > -1; i--) {
         bytes[i] = x & 0xff;
         x = x >> 8;
     }
@@ -141,8 +141,10 @@ function computeSWUCoordinates(u, params) {
         gx = gx2;
     }
     X = X.mod(p);
-    const Y = gx.montpowermod(sqrt, p); // step 21
-
+    let Y = gx.montpowermod(sqrt, p); // step 21
+    if (!c2.greaterEquals(Y)) { // choose the positive (the smallest) root
+        Y = Y.mul(-1).mod(p);
+    }
     return {X: X, Y: Y};
 }
 
@@ -184,7 +186,7 @@ function hashAndInc(seed, hash) {
     let i = 0;
     // Increased increments to decrease chance of failure
     for (i = 0; i < 20; i++) {
-    // little endian uint32
+        // little endian uint32
         const ctr = new Uint8Array(4);
         // typecast hack: number -> Uint32, bitwise Uint8
         ctr[0] = (i >>> 0) & 0xFF;
