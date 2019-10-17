@@ -105,6 +105,7 @@ window.workflowSet = () => {
     window.sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
 
     window.hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
+//  // Test points generated in a response from CF backend
     const testWorkerPoints = [
         "A3GFH/iDZMTTUuOmC9ATszHN40lp07BTyRYLhp0wnw5P",
         "Apl2KJiDa6MA24bIN+nvP2pg9g8Bx0Ac3RIHf1m1GWvX",
