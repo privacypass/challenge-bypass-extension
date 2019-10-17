@@ -1,4 +1,4 @@
-# Privacy Pass extension protocol implementation and data format
+# Client implementation and data formats
 
 We explain the data format used by the extension in sending and receiving
 responses. All protocol-specific terms that we use are explained in

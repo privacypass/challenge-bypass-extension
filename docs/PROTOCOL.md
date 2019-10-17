@@ -1,15 +1,10 @@
 # Overview of protocol
 
-We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the \[JKK14\] with the addition of a batch NIZK proof. As mentioned before, support for DLEQ proof verification in the extension is still in development and is not considered completely consistent with the protocol description below.
-
-## Notation
-
-We have tried to ensure that our notation coincides with the notation that is used to describe the ECVRF construction of [Goldberg et al.](https://tools.ietf.org/pdf/draft-goldbe-vrf-01.pdf). However, we have diverged at points since our construction contains extra features; such as oblivious evaluation and batch DLEQ proofs. We use CAPTCHA as a catch-all term for some form of proof-of-work internet challenge.
+We give a short, cryptographic overview of the protocol written by George Tankersley. Our construction is based on the concept of a Verifiable, Oblivious Pseudorandom Function (VOPRF) related closely to the ROM realization of 2HashDH-NIZK from the \[JKK14\] with the addition of a batch NIZK proof. This VOPRF construction is currently in the process of standardization, and the latest draft can be found [here](https://tools.ietf.org/html/draft-irtf-cfrg-voprf).
 
 ## Introduction
 
 The solution that we develop here is a protocol between a user, a challenger and an edge server. The edge server proxies user requests for a protected origin and refers the user to the challenger if the request is deemed to be (potentially) malicious. The challenger serves a CAPTCHA to the user. If the user solves the CAPTCHA, then the challenger issues a batch of signed tokens to the user. A user possessing signed tokens may attempt to redeem them with the edge instead of solving a challenge. If the edge verifies that a redemption pass contains a token signed by the challenger that has not already been spent, then the edge allows the connection through to the origin.
-
 
 ## Preliminaries
 
@@ -108,7 +103,7 @@ The proof follows the standard non-interactive Schnorr pattern. For a group of p
 
     and checks that `c == c'`.
 
-If all users share a consistent view of the tuple `(G, Y)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation. A more flexible way is to pin a reference that allows each client to fetch the latest version of the key from a trusted location; we examine this possibility [below](#tor-specific-public-key-publication). We currently use the former method but plan to migrate to the latter in the near future. This means that we will pin commitments for each key that will be accepted for signing in the extension directly (see config.js).
+If all users share a consistent view of the tuple `(G, Y)` for each key epoch, they can all prove that the tokens they have been issued share the same anonymity set with respect to `x`. One way to ensure this consistent view is to pin the same accepted commitments in each copy of the client and use software update mechanisms for rotation.
 
 ## Batch Requests
 
@@ -181,12 +176,6 @@ Privacy Pass uses a finite list of low-entropy characteristics to determine whet
 To view the attack at its most powerful, consider a sub-resource that manages to embed itself widely on many webpages with high visitation that is able to trigger token redemptions. Such a resource would be able to drain the extension of all its tokens by triggering redemptions until all the tokens were used. While it is unclear why such an attack would be useful, it is important to acknowledge that it is indeed possible to carry out and would thus render the usage of Privacy Pass useless if the sub-resource was especially prevalent.
 
 We mitigate this loosely by preventing token redemptions occurring for the same URL in quick succession (until some action has occurred such as the browser window closing or the tokens being cleared). This prevents a sub-resource from continually draining tokens after each spend, it also spreads out the redemptions considerably. While this does not prevent the attack from occurring outright, it makes it quite expensive to launch and also non-trivial to carry out. Notice that the sub-resource would have to schedule a page reload each time the extension is adjudged to have cleared the set of URLs that have been interacted with.
-
-#### Tor-specific public key publication
-
-A better way to publish H is to run a long-lived Tor relay with the public key placed in some of the descriptor fields. The descriptor will be included in the Tor network consensus and thus queryable by any Tor client with control port access - which includes Tor Browser. The descriptor is signed and addressed by a public key under our control that will develop a reputation weighting in the consensus over time. This gives us a reasonably trusted publication mechanism that, by protocol necessity, provides a consistent view to all participants in the Tor network while allowing us to update the values at any time.
-
-In this scheme, client software need only pin a Tor relay fingerprint and the challenger can rotate keys as often as necessary to mitigate stockpiling problems.
 
 ## References
 
