@@ -112,6 +112,11 @@ function PPConfigs() {
     hcConfig["max-spends"] = undefined;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
+    hcConfig["pkey-commitments"] =
+        "-----BEGIN PUBLIC KEY-----\n" +
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4OifvSTxGcy3T/yac6LVugArFb89\n" +
+        "wvqGivp0/54wgeyWkvUZiUdlbIQF7BuGeO9C4sx4nHkpAgRfvd8jdBGz9g==\n" +
+        "-----END PUBLIC KEY-----";
     hcConfig["spending-restrictions"]["status-code"] = [200];
     hcConfig["spend-action"]["redeem-method"] = "no-reload";
     hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];
