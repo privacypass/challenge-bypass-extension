@@ -42,6 +42,11 @@ const PARSE_ERR = "[privacy-pass]: Error parsing proof";
 let CURVE;
 let CURVE_H2C_HASH;
 let CURVE_H2C_METHOD;
+let CURVE_H2C_LABEL;
+
+// 1.2.840.10045.3.1.7 point generation seed
+const INC_H2C_LABEL = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
+const SSWU_H2C_LABEL = "H2C-P256-SHA256-SSWU-";
 
 /**
  * Sets the curve parameters for the current session based on the contents of
@@ -62,6 +67,7 @@ function initECSettings(h2cParams) {
             CURVE = sjcl.ecc.curves.c256;
             CURVE_H2C_HASH = sjcl.hash.sha256;
             CURVE_H2C_METHOD = methodStr;
+            CURVE_H2C_LABEL = methodStr === "increment" ? INC_H2C_LABEL : SSWU_H2C_LABEL;
             break;
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
@@ -73,7 +79,7 @@ function initECSettings(h2cParams) {
  * @return {Object} Object containing the active curve and h2c configuration
  */
 function getActiveECSettings() {
-    return {curve: CURVE, hash: CURVE_H2C_HASH, method: CURVE_H2C_METHOD};
+    return {curve: CURVE, hash: CURVE_H2C_HASH, method: CURVE_H2C_METHOD, label: CURVE_H2C_LABEL};
 }
 
 /**

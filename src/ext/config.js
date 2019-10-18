@@ -103,6 +103,7 @@ function PPConfigs() {
     cfConfig["send-h2c-params"] = true;
     cfConfig["opt-endpoints"].challenge = "/cdn-cgi/challenge";
     cfConfig["spend-action"]["empty-resp-headers"] = ["direct-request"];
+    cfConfig["h2c-params"]["method"] = "swu";
 
     // The configuration used by hcaptcha
     const hcConfig = exampleConfig();

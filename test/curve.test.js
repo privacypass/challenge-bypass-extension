@@ -29,11 +29,13 @@ const sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
 let curve;
 let hash;
 let activeCurveParams;
+let label;
 beforeEach(() => {
-    setConfig(1);
+    setConfig(0);
     const settings = getActiveECSettings();
     curve = settings.curve;
     hash = settings.hash;
+    label = settings.label;
     activeCurveParams = {curve: "p256", hash: "sha256", method: "increment"};
 });
 
@@ -103,6 +105,12 @@ describe("hashing to p256", () => {
     const wordLength = byteLength / 4;
 
     describe("affine test vectors", () => {
+        let sets;
+        beforeEach(() => {
+            activeCurveParams["method"] = "swu";
+            initECSettings(activeCurveParams);
+            sets = getActiveECSettings();
+        });
         const testVectors = [
             [],
             [0],
@@ -135,16 +143,14 @@ describe("hashing to p256", () => {
         ];
         for (let i = 0; i < testVectors.length; i++) {
             test(`i=${i}`, () => {
-                const label = "H2C-P256-SHA256-SSWU-";
-                workflow.__set__("H2C_SEED", label); // use label from the draft
                 const alpha = sjcl.codec.bytes.toBits(testVectors[i]);
 
                 // check that h2base is consistent
-                const t = h2Base(alpha, curve, hash, label);
+                const t = h2Base(alpha, sets.curve, sets.hash, sets.label);
                 expect(sjcl.codec.hex.fromBits(t.toBits())).toEqual(expected[i].t);
 
                 // check that sswu in full is consistent
-                const point = simplifiedSWU(alpha, curve, hash);
+                const point = simplifiedSWU(alpha, sets.curve, sets.hash, sets.label);
                 expect(sjcl.codec.hex.fromBits(point.x.toBits())).toEqual(expected[i].X);
                 expect(sjcl.codec.hex.fromBits(point.y.toBits())).toEqual(expected[i].Y);
                 expect(point.isValid()).toBeTruthy();
@@ -157,7 +163,8 @@ describe("hashing to p256", () => {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
-                simplifiedSWU(rndBits, curve, hash);
+                const lbl = workflow.__get__("SSWU_H2C_LABEL");
+                simplifiedSWU(rndBits, curve, hash, lbl);
             };
             expect(runH2C).not.toThrowError();
         }
@@ -196,7 +203,7 @@ describe("hashing to p256", () => {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
-                hashAndInc(rndBits, hash);
+                hashAndInc(rndBits, hash, label);
             };
             expect(runH2C).not.toThrowError();
         }
