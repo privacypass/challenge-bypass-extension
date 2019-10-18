@@ -106,7 +106,7 @@ describe("building of redemption headers", () => {
         const h2cParams = JSON.parse(atob(contents[2]));
         expect(h2cParams.curve === "p256").toBeTruthy();
         expect(h2cParams.hash === "sha256").toBeTruthy();
-        expect(h2cParams.method === "increment").toBeTruthy();
+        expect(h2cParams.method === "swu").toBeTruthy();
     });
 });
 
