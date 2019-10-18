@@ -1,9 +1,7 @@
 src/crypto/asn1/*
 src/crypto/sjcl/*
 src/crypto/keccak/*
-test/*
 jest/*
 addon/*
-test/*
 coverage/*
 jest.config.js

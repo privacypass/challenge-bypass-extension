@@ -31,7 +31,7 @@
     "test": "make test-ext && jest",
     "test-all": "make test-all",
     "dist": "make dist",
-    "lint": "eslint . && cd test && eslint --config .eslintrc.tests.json ."
+    "lint": "eslint ."
   },
   "devDependencies": {
     "jest-each": "^24.5.0"
