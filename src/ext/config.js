@@ -35,7 +35,7 @@ function exampleConfig() {
             "-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
         "spending-restrictions": {
             "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
-            "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
+            "max-redirects": 2, // when page redirects occur, sets the max number of redirects that tokens will be spent on
             "new-tabs": ["about:privatebrowsing", "chrome://", "about:blank"], // urls that should not trigger page reloads/redemptions (these should probably be standard)
             "bad-navigation": ["auto_subframe"], // navigation types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
             "bad-transition": ["server_redirect"], // transition types that should not trigger page reloads/redemptions (see: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webNavigation/TransitionType)
@@ -89,6 +89,7 @@ function PPConfigs() {
     cfConfig.dev = false;
     cfConfig.name = "CF";
     cfConfig["max-tokens"] = 300;
+    cfConfig["max-spends"] = 2;
     cfConfig["var-reset-ms"] = 2000;
     cfConfig["pkey-commitments"] =
         "-----BEGIN PUBLIC KEY-----\n" +
