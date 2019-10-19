@@ -63,8 +63,8 @@ function exampleConfig() {
         "captcha-domain": "", // optional domain for acquiring tokens
         "opt-endpoints": {}, // optional endpoints for integration-specific operations
         "error-codes": {
-            "verify-error": "5", // error code sent by server for verification error
-            "connection-error": "6", // error code sent by server for connection error
+            "connection-error": "5", // error code sent by server for connection error
+            "verify-error": "6", // error code sent by server for verification error
             "bad-request-error": "7", // error code sent by server for signalling that a bad request was made
             "unknown-error": "8", // error code sent by server in case of an unknown error occurring
         }, // generic error codes (can add more)
