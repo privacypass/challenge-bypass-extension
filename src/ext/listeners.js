@@ -78,8 +78,8 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
             reloadTabForCookie(cookieDomain);
         }
     } else if (changeInfo.removed
-            && cookieName === chlClearanceCookie()
-            && cookieDomain !== "." + chlCaptchaDomain()) {
+        && cookieName === chlClearanceCookie()
+        && cookieDomain !== "." + chlCaptchaDomain()) {
         resetSpendVars();
     }
 });

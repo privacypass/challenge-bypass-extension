@@ -1,5 +1,4 @@
 /**
-
  * Integrations tests for when headers are received by the extension
  *
  * @author: Alex Davidson

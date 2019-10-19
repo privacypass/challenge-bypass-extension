@@ -47,7 +47,7 @@ describe("HKDF", () => {
     describe("edge cases", () => {
         test("numBlocks too high", () => {
             expect(() => {
-                evaluateHkdf(testVectors[0].ikm, 257*42, testVectors[0].info, testVectors[0].salt, testVectors[0].hash);
+                evaluateHkdf(testVectors[0].ikm, 257 * 42, testVectors[0].info, testVectors[0].salt, testVectors[0].hash);
             }).toThrowError("HKDF error");
         });
     });
