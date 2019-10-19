@@ -36,7 +36,7 @@ function CreateBlindToken() {
  */
 function GenerateNewTokens(n) {
     let tokens = [];
-    for (let i=0; i<n; i++) {
+    for (let i = 0; i < n; i++) {
         const tok = CreateBlindToken();
         if (!tok) {
             console.warn("[privacy-pass]: Tried to generate a random point on the curve, but failed.");
@@ -67,7 +67,7 @@ function storeNewTokens(tokens, signedPoints) {
     // Append old tokens to the newly received tokens
     if (countStoredTokens() > 0) {
         const oldTokens = loadTokens();
-        for (let i=0; i<oldTokens.length; i++) {
+        for (let i = 0; i < oldTokens.length; i++) {
             const oldT = oldTokens[i];
             storableTokens.push(getTokenEncoding(oldT, oldT.point));
         }

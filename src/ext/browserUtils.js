@@ -288,4 +288,4 @@ function clear() {
  * We use this function for updating the popup when tokens are cleared
  * The function is passed from bc-plugin.js
  */
-let UpdateCallback = function() {};
+let UpdateCallback = function() { };
