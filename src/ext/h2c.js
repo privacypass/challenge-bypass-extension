@@ -113,38 +113,34 @@ function simplifiedSWU(alpha, activeCurve, hash, label) {
 function computeSWUCoordinates(u, params) {
     const {A, B, baseField, c1, c2, sqrt} = params;
     const p = baseField.modulus;
-    const t1 = u.square().mul(-1); // step 2
-    const t2 = t1.square(); // step 3
-    let x1 = t2.add(t1); // step 4
-    x1 = x1.inverse(); // step 5
-    x1 = x1.add(1); // step 6
-    x1 = x1.mul(c1); // step 7
+    const t1 = u.square().mul(-1); // steps 2-3
+    const t2 = t1.square(); // step 4
+    let x1 = t2.add(t1); // step 5
+    x1 = x1.inverse(); // step 6
+    x1 = x1.add(1); // step 7
+    x1 = x1.mul(c1); // step 8
 
-    let gx1 = x1.square().mod(p); // step 8
-    gx1 = gx1.add(A); // step 9
-    gx1 = gx1.mul(x1); // step 10
-    gx1 = gx1.add(B); // step 11
+    let gx1 = x1.square().mod(p); // steps 9-12
+    gx1 = gx1.add(A);
+    gx1 = gx1.mul(x1);
+    gx1 = gx1.add(B);
     gx1 = gx1.mod(p);
 
-    const x2 = t1.mul(x1); // step 12
-    let gx2 = x2.square().mod(p); // step 13
-    gx2 = gx2.add(A); // step 14
-    gx2 = gx2.mul(x2); // step 15
-    gx2 = gx2.add(B); // step 16
+    const x2 = t1.mul(x1); // step 13
+    let gx2 = x2.square().mod(p); // step 14-17
+    gx2 = gx2.add(A);
+    gx2 = gx2.mul(x2);
+    gx2 = gx2.add(B);
     gx2 = gx2.mod(p);
 
-    const e = new baseField(gx1.montpowermod(c2, p)).equals(new sjcl.bn(1)); // step 17
-    let X = x1; // step 18
-    let gx = gx1;
-    if (!e) {
-        X = x2; // step 19
-        gx = gx2;
-    }
-    X = X.mod(p);
-    let Y = gx.montpowermod(sqrt, p); // step 21
-    if (!c2.greaterEquals(Y)) { // choose the positive (the smallest) root
-        Y = Y.mul(-1).mod(p);
-    }
+    const e = new baseField(gx1.montpowermod(c2, p)).equals(new sjcl.bn(1)); // step 18
+    const X = cmov(x2, x1, e, baseField); // step 19
+    const gx = cmov(gx2, gx1, e, baseField); // step 20
+    let y1 = gx.montpowermod(sqrt, p); // step 21
+    // choose the positive (the smallest) root
+    const r = c2.greaterEquals(y1);
+    let y2 = y1.mul(-1).mod(p);
+    const Y = cmov(y2, y1, r, baseField);
     return {X: X, Y: Y};
 }
 
@@ -213,4 +209,25 @@ function hashAndInc(seed, hash, label) {
     }
 
     throw new Error("Unable to construct point using hash and increment");
+}
+
+/**
+ * Conditional move selects x or y depending on the bit input.
+ * @param {sjcl.bn} x is a big number
+ * @param {sjcl.bn} y is a big number
+ * @param {boolean} b is a bit
+ * @param {sjcl.bn} field is the prime field used.
+ * @return {sjcl.bn} returns x is b=0, otherwise return y.
+ */
+function cmov(x, y, b, field) {
+    let z = new field();
+    const m = z.radixMask;
+    const m0 = m & (m + b);
+    const m1 = m & (m + (!b));
+    x.fullReduce();
+    y.fullReduce();
+    for (let i = Math.max(x.limbs.length, y.limbs.length) - 1; i >= 0; i--) {
+        z.limbs.unshift((x.getLimb(i) & m0) ^ (y.getLimb(i) & m1));
+    }
+    return z.mod(field.modulus);
 }
