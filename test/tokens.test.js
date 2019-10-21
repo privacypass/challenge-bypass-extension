@@ -106,6 +106,23 @@ describe("building of redemption headers", () => {
         const h2cParams = JSON.parse(atob(contents[2]));
         expect(h2cParams.curve === "p256").toBeTruthy();
         expect(h2cParams.hash === "sha256").toBeTruthy();
+        expect(h2cParams.method === "increment").toBeTruthy();
+    });
+
+    test("header value is correct for SWU", () => {
+        workflow.__set__("h2cParams", () => {
+            return {
+                curve: "p256",
+                hash: "sha256",
+                method: "swu",
+            };
+        });
+        const contents = testBuildHeader();
+        // Test additional H2C parameters are constructed correctly
+        expect(contents.length === 3).toBeTruthy();
+        const h2cParams = JSON.parse(atob(contents[2]));
+        expect(h2cParams.curve === "p256").toBeTruthy();
+        expect(h2cParams.hash === "sha256").toBeTruthy();
         expect(h2cParams.method === "swu").toBeTruthy();
     });
 });

@@ -234,17 +234,25 @@ function BuildIssueRequest(tokens) {
  * @return {XMLHttpRequest} commitment XHR object
  */
 function validateAndStoreTokens(url, tabId, tokens, issueResp) {
-    const commitments = getCachedCommitments(issueResp.version);
+    const version = checkVersion(issueResp.version);
+    let commitments;
+    // retrieve CF 1.0 commitments from source code or cache otherwise
+    if (version === "1.0" && getConfigName() === "CF") {
+        commitments = storedCommitments()[version];
+    } else {
+        commitments = getCachedCommitments(version);
+    }
+
     // If cached commitments exist then attempt to verify proof
     if (commitments) {
         if (!commitments.G || !commitments.H) {
-            console.warn("[privacy-pass]: cached commitments are corrupted: " + commitments + ", version: " + issueResp.version + ", will retrieve via XHR.");
+            console.warn("[privacy-pass]: stored commitments are corrupted: " + commitments + ", version: " + version + ", will retrieve via XHR.");
         } else {
             verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
             return;
         }
     }
-    const cXhr = createVerificationXHR(url, tabId, tokens, issueResp);
+    const cXhr = createVerificationXHR(url, tabId, tokens, issueResp, version);
     cXhr.send();
     return cXhr;
 }
@@ -256,19 +264,20 @@ function validateAndStoreTokens(url, tabId, tokens, issueResp) {
  * @param {Number} tabId Tab ID where the request took place
  * @param {Object} tokens Client-generated token objects
  * @param {Object} issueResp Contains the parameters sent back by the server
+ * @param {String} version commitments version
  * @return {XMLHttpRequest} XHR object for verifying server response
  */
-function createVerificationXHR(url, tabId, tokens, issueResp) {
+function createVerificationXHR(url, tabId, tokens, issueResp, version) {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", COMMITMENT_URL, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function() {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
-            const commitments = retrieveCommitments(xhr, issueResp.version);
+            const commitments = retrieveCommitments(xhr, version);
             if (!commitments.G || !commitments.H) {
-                throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + issueResp.version);
+                throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + version);
             }
-            cacheCommitments(issueResp.version, commitments.G, commitments.H);
+            cacheCommitments(version, commitments.G, commitments.H);
             verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
         }
     };
@@ -282,7 +291,7 @@ function createVerificationXHR(url, tabId, tokens, issueResp) {
  * @param {int} tabId Tab ID where the request took place
  * @param {object} tokens Client-generated token objects
  * @param {Object} issueResp Contains the parameters sent back by the server
- * @param {string} commitments base64-encoded curve points
+ * @param {String} commitments base64-encoded curve points
  */
 function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
     const ret = getCurvePoints(issueResp.signatures);
@@ -315,7 +324,6 @@ function retrieveCommitments(xhr, version) {
     const resp = JSON.parse(xhr.responseText);
     const comms = resp[getConfigName()];
 
-    version = checkVersion(version);
     const cmt = comms[version];
     if (typeof cmt === "undefined") {
         throw new Error("[privacy-pass]: Retrieved version: " + version + " not available.");
@@ -344,7 +352,6 @@ function cacheCommitments(version, G, H) {
         cache = {};
     }
     const cachable = {G: G, H: H};
-    version = checkVersion(version);
     cache[version] = cachable;
     set(CACHED_COMMITMENTS_STRING, JSON.stringify(cache));
 }
@@ -367,7 +374,6 @@ function getAllCached() {
  * @return {Object} cache object for specific version
  */
 function getCachedCommitments(version) {
-    version = checkVersion(version);
     const cached = getAllCached();
     if (!cached) {
         return;

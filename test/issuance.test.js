@@ -28,6 +28,7 @@ const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
 const cacheCommitments = workflow.__get__("cacheCommitments");
+const checkVersion = workflow.__get__("checkVersion");
 
 const PPConfigs = workflow.__get__("PPConfigs");
 
@@ -77,11 +78,11 @@ describe("commitments parsing and caching", () => {
         ).toThrow("Failed on parsing public key");
     });
 
-    test("parse correctly (null version)", () => {
+    test("version not available", () => {
         const xhr = createVerificationXHR(); // this usually takes params
-        const commitments = retrieveCommitments(xhr);
-        expect(testG === commitments.G).toBeTruthy();
-        expect(testH === commitments.H).toBeTruthy();
+        expect(
+            jest.fn(() => retrieveCommitments(xhr))
+        ).toThrow("Retrieved version");
     });
 
     test("parse correctly (v1.0)", () => {
@@ -109,7 +110,8 @@ describe("commitments parsing and caching", () => {
     test("parse correctly (dev)", () => {
         workflow.__with__({dev: () => true})(() => {
             const xhr = createVerificationXHR(); // this usually takes params
-            const commitments = retrieveCommitments(xhr, "1.1");
+            const version = checkVersion("1.1");
+            const commitments = retrieveCommitments(xhr, version);
             expect(testDevG === commitments.G).toBeTruthy();
             expect(testDevH === commitments.H).toBeTruthy();
         });
@@ -373,7 +375,15 @@ describe("test validating response", () => {
             let G;
             let H;
             let pubKey = testPubKey;
+            let before;
+            let after;
+            let version;
+            let testUrl;
             beforeEach(() => {
+                before = undefined;
+                after = undefined;
+                version = undefined;
+                testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 if (element.name.includes("hkdf")) {
                     commVersion = "hkdf";
                     if (element.name.includes("compressed")) {
@@ -394,13 +404,44 @@ describe("test validating response", () => {
                     testTokenData = testTokens;
                     G = testG;
                     H = testH;
+                    workflow.__set__("storedCommitments", () => {
+                        return {
+                            "1.0": {
+                                G: testG,
+                                H: testH,
+                            },
+                        };
+                    });
                 }
             });
 
+            function checkCache(version) {
+                const cache = getCachedCommitments(version);
+                if (version !== "1.0") {
+                    expect(cache.G === G).toBeTruthy();
+                    expect(cache.H === H).toBeTruthy();
+                } else {
+                    expect(cache).toBeFalsy();
+                }
+            }
+
+            function oldVersions(tokens, out) {
+                before = getMock(bypassTokensCount(1));
+                const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
+                expect(xhr).toBeFalsy();
+                after = getMock(bypassTokensCount(1));
+            }
+
+            function newVersions(tokens, out) {
+                const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
+                expect(xhr).toBeTruthy();
+                expect(xhr.send).toBeCalledTimes(1);
+                before = getMock(bypassTokensCount(1));
+                xhr.onreadystatechange();
+                after = getMock(bypassTokensCount(1));
+            }
+
             test(`test store tokens: ${element.name}`, () => {
-                let before;
-                let after;
-                let version;
                 function run() {
                     workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
@@ -408,32 +449,21 @@ describe("test validating response", () => {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    expect(xhr).toBeTruthy();
-                    expect(xhr.send).toBeCalledTimes(1);
-                    before = getMock(bypassTokensCount(1));
-                    xhr.onreadystatechange();
-                    after = getMock(bypassTokensCount(1));
-                    version = out.version;
+                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                    version = checkVersion(out.version);
                 }
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
-                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
-                const cache = getCachedCommitments(version);
-                expect(cache.G === G).toBeTruthy();
-                expect(cache.H === H).toBeTruthy();
+                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
+                checkCache(version);
             });
 
             test(`correct verify for cached commitments: ${element.name}`, () => {
-                let before;
-                let after;
-                let version;
                 cacheCommitments(commVersion, G, H);
                 expect(getCachedCommitments(commVersion).G === G).toBeTruthy();
                 expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
@@ -445,29 +475,26 @@ describe("test validating response", () => {
                     }
                     const out = parseRespString(element.string);
                     before = getMock(bypassTokensCount(1));
-                    const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                    const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
                     expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
                     after = getMock(bypassTokensCount(1));
-                    version = out.version;
+                    version = checkVersion(out.version);
                 }
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
-                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                const testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
+                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
                 const cache = getCachedCommitments(version);
                 expect(cache.G === G).toBeTruthy();
                 expect(cache.H === H).toBeTruthy();
             });
 
             test(`correct verify when cached commitments are bad: ${element.name}`, () => {
-                let before;
-                let after;
-                let version;
                 // construct corrupted commitments
                 const commStruct = {};
                 commStruct[commVersion] = {L: G, H: H};
@@ -479,34 +506,25 @@ describe("test validating response", () => {
                         tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    before = getMock(bypassTokensCount(1));
-                    const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    expect(xhr).toBeTruthy();
-                    expect(xhr.send).toBeCalledTimes(1);
-                    before = getMock(bypassTokensCount(1));
-                    xhr.onreadystatechange();
-                    after = getMock(bypassTokensCount(1));
-                    version = out.version;
+                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                    version = checkVersion(out.version);
                 }
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
-                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
-                expect(consoleMock.warn).toBeCalled();
+                commVersion === "1.0" ? expect(consoleMock.warn).not.toBeCalled() : expect(consoleMock.warn).toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).toBeCalled();
                 expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(newUrl.host)).toBeTruthy();
-                const cache = getCachedCommitments(version);
-                expect(cache.G === G).toBeTruthy();
-                expect(cache.H === H).toBeTruthy();
+                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
+                // bad commitments are not removed if using version 1.0
+                if (commVersion !== "1.0") {
+                    checkCache(version);
+                }
             });
 
             test(`test store tokens for captcha.website: ${element.name}`, () => {
-                let before;
-                let after;
-                let version;
                 function run() {
                     workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
@@ -514,30 +532,23 @@ describe("test validating response", () => {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    before = getMock(bypassTokensCount(1));
-                    xhr.onreadystatechange();
-                    after = getMock(bypassTokensCount(1));
-                    version = out.version;
+                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                    version = checkVersion(out.version);
                 }
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
-                const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
+                testUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 expect(consoleMock.error).not.toBeCalled();
                 expect(run).not.toThrow();
                 expect(updateIconMock).toBeCalledTimes(3);
                 expect(updateBrowserTabMock).not.toBeCalled();
                 expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
-                const cache = getCachedCommitments(version);
-                expect(cache.G === G).toBeTruthy();
-                expect(cache.H === H).toBeTruthy();
+                expect(getSpendFlagMock(testUrl.host)).toBeFalsy();
+                checkCache(version);
             });
 
             test(`reloading off after sign: ${element.name}`, () => {
-                let before;
-                let after;
-                const newUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
+                testUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                 function run() {
                     workflow.__set__("getCommitmentsKey", () => pubKey);
                     const tokens = [];
@@ -545,21 +556,20 @@ describe("test validating response", () => {
                         tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                     }
                     const out = parseRespString(element.string);
-                    const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
-                    before = getMock(bypassTokensCount(1));
-                    xhr.onreadystatechange();
-                    after = getMock(bypassTokensCount(1));
+                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                    version = checkVersion(out.version);
                 }
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
                 workflow.__with__({"reloadOnSign": () => false})(() => {
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                    testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(consoleMock.error).not.toBeCalled();
                     expect(run).not.toThrow();
                     expect(updateIconMock).toBeCalledTimes(3);
                     expect(updateBrowserTabMock).not.toBeCalled();
                     expect(after === before + testTokenData.length).toBeTruthy();
-                    expect(getSpendFlagMock(newUrl.host)).toBeFalsy();
+                    expect(getSpendFlagMock(testUrl.host)).toBeFalsy();
+                    checkCache(version);
                 });
             });
         });

@@ -32,6 +32,7 @@
 /* exported setFutureReload */
 /* exported getConfigId */
 /* exported getConfigName */
+/* exported storedCommitments */
 
 "use strict";
 
@@ -83,6 +84,7 @@ let signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
 let tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
 let optEndpoints = () => activeConfig()["opt-endpoints"];
 let emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
+let storedCommitments = () => activeConfig()["commitments"];
 
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 initECSettings(h2cParams());
