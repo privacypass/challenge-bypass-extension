@@ -33,6 +33,12 @@ function exampleConfig() {
             "-----BEGIN PUBLIC KEY-----\n" +
             "(PEM)\n" +
             "-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
+        "commitments": { // an optional set of commitments that are specified inside the extension
+            "1.0": {
+                "G": "",
+                "H": "",
+            },
+        },
         "spending-restrictions": {
             "status-code": [200], // array of status codes that should trigger token redemption (e.g. 403 for CF)
             "max-redirects": "3", // when page redirects occur, sets the max number of redirects that tokens will be spent on
@@ -103,7 +109,9 @@ function PPConfigs() {
     cfConfig["send-h2c-params"] = true;
     cfConfig["opt-endpoints"].challenge = "/cdn-cgi/challenge";
     cfConfig["spend-action"]["empty-resp-headers"] = ["direct-request"];
-    cfConfig["h2c-params"]["method"] = "swu";
+    // old version 1.0 commitments for backwards compatibility
+    cfConfig["commitments"]["1.0"]["G"] = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
+    cfConfig["commitments"]["1.0"]["H"] = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
 
     // The configuration used by hcaptcha
     const hcConfig = exampleConfig();
