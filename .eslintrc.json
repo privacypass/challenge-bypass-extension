@@ -86,6 +86,7 @@
         "spentTab": true,
         "storageKeyCount": true,
         "storageKeyTokens": true,
+        "storedCommitments": true,
         "storeNewTokens": true,
         "storeTokens": true,
         "timeSinceLastResp": true,

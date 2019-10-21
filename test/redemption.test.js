@@ -18,7 +18,8 @@ const LISTENER_URLS = workflow.__get__("LISTENER_URLS");
 const EXAMPLE_HREF = "https://www.example.com";
 const beforeSendHeaders = workflow.__get__("beforeSendHeaders");
 const b64EncodedTokenNoH2CParams = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSJdfQ==";
-const b64EncodedToken = {"1": "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYzNkMUluMD0iXX0=", "2": "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ=="};
+const b64EncodedToken = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==";
+const b64EncodedTokenSwu = "eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiR0Q0NFpreC95VytoMnZsdElucWcyMTI2OWd5eStmRnNSYlZOako0TjJMZz0iLCI0d3RmMXcvWGh4aUpydWtJVnBTQ3Z5NjNYR3lnK1o3bm45citVSlFzSGY0PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYzNkMUluMD0iXX0=";
 let details;
 let url;
 
@@ -169,7 +170,37 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                     expect(reqHeaders).toBeTruthy();
                     const headerName = workflow.__get__("headerName");
                     expect(reqHeaders[0].name === headerName()).toBeTruthy();
-                    expect(reqHeaders[0].value === b64EncodedToken[`${configId}`]).toBeTruthy();
+                    expect(reqHeaders[0].value === b64EncodedToken).toBeTruthy();
+                });
+            });
+
+            test(`redemption header added for SWU (SEND_H2C_PARAMS = true)`, () => {
+                workflow.__with__({
+                    sendH2CParams: () => true,
+                    h2cParams: () => {
+                        return {
+                            curve: "p256",
+                            hash: "sha256",
+                            method: "swu",
+                        };
+                    },
+                })(() => {
+                    setSpentHostsMock(url.host, 0);
+                    setSpendFlagMock(url.host, true);
+                    setSpentUrlMock(url.href, false);
+                    let reqHeaders;
+                    expect(() => {
+                        const redeemHdrs = beforeSendHeaders(details, url);
+                        reqHeaders = redeemHdrs.requestHeaders;
+                    }).not.toThrow();
+                    expect(getSpendFlagMock(url.host)).toBeNull();
+                    expect(getSpendIdMock([details.requestId])).toBeTruthy();
+                    expect(getSpentUrlMock([url.href])).toBeTruthy();
+                    expect(getSpentTabMock([details.tabId]).includes(url.href)).toBeTruthy();
+                    expect(reqHeaders).toBeTruthy();
+                    const headerName = workflow.__get__("headerName");
+                    expect(reqHeaders[0].name === headerName()).toBeTruthy();
+                    expect(reqHeaders[0].value === b64EncodedTokenSwu).toBeTruthy();
                 });
             });
         });
