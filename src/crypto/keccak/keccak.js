@@ -1,6 +1,7 @@
 /**
  * This is a browserify'ed version of the npm module 'keccak' by fanatid
  * https://github.com/cryptocoinjs/keccak
+ * commit: 0d842a50ddd5ef39d40b0277186c6345740bc629, release: v1.3.0
  * 
  * The MIT License (MIT)
  * 
