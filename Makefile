@@ -16,6 +16,12 @@ all: build
 .PHONY: build
 build: addon/build.js
 
+.PHONY: sjcl
+sjcl:
+	cd ${SJCL_PATH}; ./configure --without-all --with-ecc --with-convenience \
+	--with-codecBytes --with-codecHex --compress=none
+	make -C ${SJCL_PATH} sjcl.js
+
 .PHONY: test
 test: test-ext
 	yarn test
@@ -49,10 +55,6 @@ addon/build.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES} ${LI
 	cat $^ > $@
 addon/test.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES}
 	cat $^ > $@
-${SJCL_PATH}/sjcl.js:
-	cd ${SJCL_PATH}; ./configure --without-all --with-ecc --with-convenience \
-	--with-codecBytes --with-codecHex --compress=none
-	make -C ${SJCL_PATH} sjcl.js
 
 clean:
 	rm -f ${SJCL_PATH}/sjcl.js addon/build.js addon/test.js ext.zip
