@@ -108,6 +108,9 @@ let spentUrl = new Map();
 // We want to monitor attempted spends to check if we should remove cookies
 let httpsRedirect = new Map();
 
+// Indicates that a URL has been redirected to
+let redirected = new Map();
+
 // Monitor whether we have already sent tokens for signing
 let sentTokens = new Map();
 
@@ -149,6 +152,9 @@ let setTarget = (key, value) => target[key] = value;
 let getHttpsRedirect = (key) => httpsRedirect[key];
 let setHttpsRedirect = (key, value) => httpsRedirect[key] = value;
 
+let getRedirected = (key) => redirected[key];
+let setRedirected = (key, value) => redirected[key] = value;
+
 let getRedirectCount = (key) => redirectCount[key];
 let setRedirectCount = (key, value) => redirectCount[key] = value;
 let incrRedirectCount = (key) => redirectCount[key] += 1;
@@ -166,7 +172,15 @@ function handleCompletion(details) {
     timeSinceLastResp = Date.now();
     // If we had a spend and we're using "reload" method then reload the page
     if (getSpendId(details.requestId) && redeemMethod() === "reload") {
-        reloadBrowserTab(details.tabId);
+        if (getRedirected(details.url)) {
+            // if a redirection has occurred then we want to update the browser
+            // tab, this is to prevent an issue in Chrome that reloads the tab
+            // for the old URL.
+            updateBrowserTab(details.tabId);
+            setRedirected(details.url, false);
+        } else {
+            reloadBrowserTab(details.tabId);
+        }
     }
     setSpendId(details.requestId, false);
 }
@@ -186,6 +200,7 @@ function processRedirect(details, oldUrl, newUrl) {
     if (getSpendId(details.requestId) && getRedirectCount(details.requestId) < maxRedirect()) {
         setSpendFlag(newUrl.host, true);
         setSpendId(details.requestId, false);
+        setRedirected(newUrl.href, true);
         incrRedirectCount(details.requestId);
     }
 }
@@ -584,6 +599,7 @@ function resetVars() {
     spendId = new Map();
     futureReload = new Map();
     spentHosts = new Map();
+    redirected = new Map();
 }
 
 /**
