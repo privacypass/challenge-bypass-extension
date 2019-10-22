@@ -33,19 +33,22 @@ of any issues that occur. Pull requests and reviews are welcome and encouraged.
 
 ### Contents
 
-*   [Stable releases](#stable-releases)
-*   [Quickstart](#quickstart)
-*   [Useful documentation](#useful-documentation)
-*   [Development](#development)
-    -   [Firefox](#firefox)
-    -   [Chrome](#chrome)
-*   [Plugin overview](#plugin-overview)
-*   [Integrating with Privacy Pass](integrating-with-privacy-pass)
-*   [Team](#team)
-*   [Design](#design)
-*   [Cryptography](#cryptography)
-*   [Acknowledgements](#acknowledgements)
-*   [FAQs](#faqs)
+- [Challenge Bypass Extension](#challenge-bypass-extension)
+    - [Contents](#contents)
+  - [Stable Releases](#stable-releases)
+  - [Quickstart](#quickstart)
+  - [Useful Documentation](#useful-documentation)
+  - [Development](#development)
+    - [Firefox](#firefox)
+    - [Chrome](#chrome)
+  - [Plugin Overview](#plugin-overview)
+  - [Team](#team)
+  - [Design](#design)
+  - [Cryptography](#cryptography)
+  - [Acknowledgements](#acknowledgements)
+  - [FAQs](#faqs)
+    - [What do I have to do to acquire new passes?](#what-do-i-have-to-do-to-acquire-new-passes)
+    - [Are passes stored after a browser restart?](#are-passes-stored-after-a-browser-restart)
 
 ## Stable Releases
 
@@ -58,7 +61,9 @@ Download the latest stable release of the extension:
 ```sh
 $ git clone https://github.com/privacypass/challenge-bypass-extension.git
 $ cd challenge-bypass-extension
+$ git submodule update --init
 $ make install
+$ make sjcl
 $ make build
 $ make test-all
 ```
@@ -74,8 +79,6 @@ Documentation for the protocol, workflow and extension components.
 
 ## Development
 
-*   `git clone https://github.com/privacypass/challenge-bypass-extension.git`
-*   `git submodule update --init`
 *   Directory:
     -   `src`: The source files that are used for establishing the extension.
         -   `ext`: Source files that are specific to the extension.
@@ -87,6 +90,7 @@ Documentation for the protocol, workflow and extension components.
     -   `docs`: Documentation.
 -   Commands:
     -   `make install`: Installs all dependencies.
+    -   `make sjcl`: Configures and builds the SJCL source code.
     -   `make build`: Builds all source files and compiles them into unminified source file at `addon/build.js`.
     -   `make test`: Builds all source files (except `src/ext/listeners.js`) into a single file and then runs the jest testing framework on this file.
     -   `make test-all`: Same as `make test` and runs the sjcl tests.
@@ -95,6 +99,7 @@ Documentation for the protocol, workflow and extension components.
 
 ### Firefox
 
+-   Run [Quickstart](#quickstart) instructions.
 -   Open Firefox and go to `about:debugging`.
 -   Click on 'Load Temporary Add-on' button.
 -   Select `manifest.json` from `addon/` folder.

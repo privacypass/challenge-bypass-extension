@@ -20,7 +20,7 @@ jobs:
           command: make lint
       - run:
           name: Building
-          command: make clean build
+          command: make clean sjcl build
       - run:
           name: Testing
           command: make test-all
