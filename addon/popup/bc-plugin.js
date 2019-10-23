@@ -18,8 +18,7 @@ function UpdatePopup() {
     let tokLen = 0
     if (background) {
         tokLen = background.countStoredTokens();
-        const configName = background.getConfigName();
-        handleResponse(tokLen, configName);
+        handleResponse(tokLen);
     } else {
         let send = browser.runtime.sendMessage({
             tokLen: true
@@ -28,9 +27,9 @@ function UpdatePopup() {
     }
 }
 
-function handleResponse(tokLen, configName) {
+function handleResponse(tokLen) {
     // Replace the count displayed in the popup
-    replaceTokensStoredCount(tokLen, configName);
+    replaceTokensStoredCount(tokLen);
 
     document.getElementById("clear").addEventListener("click", function() {
         if (background) {
@@ -91,7 +90,7 @@ function outputRedemption(v, s1, s2) {
 }
 
 // We have to do replace this way as using innerHtml is unsafe
-function replaceTokensStoredCount(tokLen, configName) {
+function replaceTokensStoredCount(tokLen) {
     // remove old count
     var oldCount = document.getElementById("tokens");
     if (oldCount) {
@@ -109,7 +108,7 @@ function replaceTokensStoredCount(tokLen, configName) {
     // replace with new count
     var passtext = document.createElement("span");
     passtext.setAttribute("id", "passtext");
-    passtext.appendChild(document.createTextNode(`Passes (${configName})`));
+    passtext.appendChild(document.createTextNode(`Passes`));
     document.getElementById("stored").appendChild(passtext);
 
     var newCount = document.createElement("span");

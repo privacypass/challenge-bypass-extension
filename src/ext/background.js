@@ -496,7 +496,7 @@ function handleMessage(request, sender, sendResponse) {
     if (request.callback) {
         UpdateCallback = request.callback;
     } else if (request.tokLen) {
-        sendResponse(countStoredTokens(), getConfigName());
+        sendResponse(countStoredTokens());
     } else if (request.clear) {
         clearStorage();
     } else if (request.redeem) {
