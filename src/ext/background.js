@@ -460,7 +460,7 @@ function beforeRequest(details, url) {
 
     // actually send the token signing request via xhr and return the xhr object
     const xhr = sendXhrSignReq(xhrInfo, url, details.tabId);
-    
+
     /** In the no-reload paradigm the issuance request is sent along side the original solve request. Requests are reconciled on the backend.
      *  If the captcha solution is correct a signature is returned to the extension, with a 200 status code, if the solution is not correct a 403 status code is returned
      *  to the extension along with any error messages. As both the solve request and the issue request are sent to the same endpoint we must send a `{cancel: false}`
