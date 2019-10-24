@@ -62,15 +62,16 @@ function signReqCF(url) {
 /**
  * hCaptcha issuance request
  * @param {URL} url
+ * @param {Object} details
  * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
-function signReqHC(url) {
+function signReqHC(url, details) {
     const reqUrl = url.href;
     const isIssuerUrl = issueActionUrls()
         .map((issuerUrl) => patternToRegExp(issuerUrl))
         .some((re) => reqUrl.match(re));
 
-    if (!isIssuerUrl) {
+    if (!isIssuerUrl || details.method === "OPTIONS") {
         return null;
     }
 
@@ -78,8 +79,8 @@ function signReqHC(url) {
     // Generate tokens and create a JSON request for signing
     const tokens = GenerateNewTokens(tokensPerRequest());
     const request = BuildIssueRequest(tokens);
-    // Construct info for xhr signing request
-    const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens};
+    // Construct info for xhr signing request, set `cancel: false` in order to prevent canceling the original captcha solve request.
+    const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens, cancel: false};
     return xhrInfo;
 }
 
@@ -237,7 +238,7 @@ function validateAndStoreTokens(url, tabId, tokens, issueResp) {
     const version = checkVersion(issueResp.version);
     let commitments;
     // retrieve CF 1.0 commitments from source code or cache otherwise
-    if (version === "1.0" && getConfigName() === "CF") {
+    if (version === "1.0") {
         commitments = storedCommitments()[version];
     } else {
         commitments = getCachedCommitments(version);

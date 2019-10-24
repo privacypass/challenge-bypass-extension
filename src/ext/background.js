@@ -446,7 +446,7 @@ function beforeRequest(details, url) {
             xhrInfo = signReqCF(url);
             break;
         case 2:
-            xhrInfo = signReqHC(url);
+            xhrInfo = signReqHC(url, details);
             break;
         default:
             throw new Error("Incorrect config ID specified");
@@ -460,6 +460,15 @@ function beforeRequest(details, url) {
 
     // actually send the token signing request via xhr and return the xhr object
     const xhr = sendXhrSignReq(xhrInfo, url, details.tabId);
+
+    /** In the no-reload paradigm the issuance request is sent along side the original solve request. Requests are reconciled on the backend.
+     *  If the captcha solution is correct a signature is returned to the extension, with a 200 status code, if the solution is not correct a 403 status code is returned
+     *  to the extension along with any error messages. As both the solve request and the issue request are sent to the same endpoint we must send a `{cancel: false}`
+     *  to avoid canceling the original captcha solve request.
+    */
+    if (xhrInfo.cancel === false) {
+        return false;
+    }
     return {xhr: xhr};
 }
 
