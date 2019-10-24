@@ -129,7 +129,7 @@ function PPConfigs() {
         "-----END PUBLIC KEY-----";
     hcConfig["spending-restrictions"]["status-code"] = [200];
     hcConfig["spend-action"]["redeem-method"] = "no-reload";
-    hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];
+    hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://127.0.0.1/getcaptcha"];
     hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://127.0.0.1/checkcaptcha/*"];
     hcConfig["issue-action"]["sign-reload"] = false;
     hcConfig["issue-action"]["sign-resp-format"] = "json";
