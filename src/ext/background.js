@@ -446,7 +446,7 @@ function beforeRequest(details, url) {
             xhrInfo = signReqCF(url);
             break;
         case 2:
-            xhrInfo = signReqHC(url);
+            xhrInfo = signReqHC(url, details);
             break;
         default:
             throw new Error("Incorrect config ID specified");
@@ -460,6 +460,9 @@ function beforeRequest(details, url) {
 
     // actually send the token signing request via xhr and return the xhr object
     const xhr = sendXhrSignReq(xhrInfo, url, details.tabId);
+    if (xhrInfo.cancel) {
+        return false;
+    }
     return {xhr: xhr};
 }
 
