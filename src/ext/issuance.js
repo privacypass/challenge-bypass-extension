@@ -333,10 +333,11 @@ function retrieveCommitments(xhr, version) {
     if (Date.now() >= expDate) {
         throw new Error("[privacy-pass]: Commitments expired in " + expDate);
     }
-    if (cmt.sig === undefined) {
-        throw new Error("[privacy-pass]: Signature field is missing.");
+    if (cmt.sig !== undefined) {
+        verifyCommitments(cmt, getCommitmentsKey());
+        // throw new Error("[privacy-pass]: Signature field is missing.");
     }
-    verifyCommitments(cmt, getCommitmentsKey());
+   
     return {G: cmt.G, H: cmt.H};
 }
 
