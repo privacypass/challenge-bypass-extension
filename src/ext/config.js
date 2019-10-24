@@ -129,13 +129,19 @@ function PPConfigs() {
         "-----END PUBLIC KEY-----";
     hcConfig["spending-restrictions"]["status-code"] = [200];
     hcConfig["spend-action"]["redeem-method"] = "no-reload";
-    hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://localhost/getcaptcha"];
-    hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://localhost/checkcaptcha/*"];
+    hcConfig["spend-action"]["urls"] = ["https://*.hcaptcha.com/getcaptcha", "https://*.hmt.ai/getcaptcha", "http://127.0.0.1/getcaptcha"];
+    hcConfig["issue-action"]["urls"] = ["https://*.hcaptcha.com/checkcaptcha/*", "https://*.hmt.ai/checkcaptcha/*", "http://127.0.0.1/checkcaptcha/*"];
     hcConfig["issue-action"]["sign-reload"] = false;
-    hcConfig["issue-action"]["sign-response-format"] = "json";
+    hcConfig["issue-action"]["sign-resp-format"] = "json";
     hcConfig.cookies["clearance-cookie"] = "hc_clearance";
     hcConfig["captcha-domain"] = "hcaptcha.com";
     hcConfig["send-h2c-params"] = true;
+    hcConfig["commitments"] = {
+        "1.0": {
+            "G": "BMKCnVDWUEBNiyAR+p0YT7QvtrOfpHAeatzipwo6x98Ch1q3ZoCkNdiQvUTEwDzG20RplG/IE2NCpsXZGLsUdvA=",
+            "H": "BNJIpofS4RhbUfnkblr5yvuymaEfV+ViKshsoN9DkCRaHBB+TiKUnicc14gBswpLfBaKXuC102Cvwzq3YIN8dVo=",
+        },
+    };
 
     // Ordering of configs should correspond to value of cf-chl-bypass header
     // i.e. the first config should have "id": 1, the second "id":2, etc.
