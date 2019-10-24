@@ -62,7 +62,7 @@ function signReqCF(url) {
 /**
  * hCaptcha issuance request
  * @param {URL} url
- * @param {DETAILS} details
+ * @param {Object} details
  * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
 function signReqHC(url, details) {
@@ -79,8 +79,8 @@ function signReqHC(url, details) {
     // Generate tokens and create a JSON request for signing
     const tokens = GenerateNewTokens(tokensPerRequest());
     const request = BuildIssueRequest(tokens);
-    // Construct info for xhr signing request
-    const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens, cancel: true};
+    // Construct info for xhr signing request, set `cancel: false` in order to prevent canceling the original captcha solve request.
+    const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens, cancel: false};
     return xhrInfo;
 }
 
