@@ -79,8 +79,8 @@ function fireRedeem(url, respTabId) {
     if (!isValidRedeemMethod(redeemMethod())) {
         throw new Error("[privacy-pass]: Incompatible redeem method selected.");
     }
+    setSpendFlag(url.host, true);
     if (redeemMethod() === "reload") {
-        setSpendFlag(url.host, true);
         const targetUrl = getTarget(respTabId);
         if (url.href === targetUrl) {
             chrome.tabs.update(respTabId, {url: targetUrl});

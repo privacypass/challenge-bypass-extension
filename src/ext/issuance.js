@@ -337,7 +337,6 @@ function retrieveCommitments(xhr, version) {
         verifyCommitments(cmt, getCommitmentsKey());
         // throw new Error("[privacy-pass]: Signature field is missing.");
     }
-   
     return {G: cmt.G, H: cmt.H};
 }
 
