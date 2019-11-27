@@ -12,11 +12,12 @@ const workflow = workflowSet();
 /**
  * Functions/variables
  */
-const EXAMPLE_HREF = "https://example.com";
+const EXAMPLE_HREF = "https://example.com/";
 const CAPTCHA_HREF = "https://captcha.website";
 const EXAMPLE_RECAPTCHA_KEY = "g-recaptcha-response";
 const EXAMPLE_RECAPTCHA_RESPONSE = "03AOLTBLSOy6WHlUbY1NHUPJ16g4rgCLbxjIDfkPpuXqzJs1Kxlvn_r8_1bSTddulO2D0Syy_Cq0kEATE5qsUZa8aUzX_HR74BnBH_4pTjg8YlgKYWx_Qgi-";
-const EXAMPLE_SUFFIX = "/?__cf_chl_captcha_tk__=216fe230433131e3106752ed2c9555fd296321ad-1574861306-0-AQJlysCcbc7cU5uLtUADvfk13pDWxIV62To0kYVo6YQ3RhYM1LTZUJhSyCFU2RPW-WSPT1ElOSxIjzLFYBWoE6mnQ-fe2lL-fsZQhB_3466PKMLHCy9Hnzl6p-EqPWAXDwStqISWVSdMtKeKDFU52ySlpLs-Q_R5lY8qraCgjym-6gAHYBHZm9IRLNM9T48xUrd8Zs2pyLBRZRdb3ZUZH9Rb40wSVVVNZz0Fh6jLzjjkYemQb43LYrc-cN_GdeVgCcLjo0CBTAvCZUHm0D5c1cX8m1-OBmxO6T0dgcIrgFa_";
+const EXAMPLE_SUFFIX = "?__cf_chl_captcha_tk__=216fe230433131e3106752ed2c9555fd296321ad-1574861306-0-AQJlysCcbc7cU5uLtUADvfk13pDWxIV62To0kYVo6YQ3RhYM1LTZUJhSyCFU2RPW-WSPT1ElOSxIjzLFYBWoE6mnQ-fe2lL-fsZQhB_3466PKMLHCy9Hnzl6p-EqPWAXDwStqISWVSdMtKeKDFU52ySlpLs-Q_R5lY8qraCgjym-6gAHYBHZm9IRLNM9T48xUrd8Zs2pyLBRZRdb3ZUZH9Rb40wSVVVNZz0Fh6jLzjjkYemQb43LYrc-cN_GdeVgCcLjo0CBTAvCZUHm0D5c1cX8m1-OBmxO6T0dgcIrgFa_";
+const OLD_EXAMPLE_SUFFIX = "cdn-cgi/l/chk_captcha?id=4716480f5bb534e8&g-recaptcha-response=03AMGVjXh24S6n8-HMQadfr8AmSr-2i87s1TTWUrhfnrIcti9hw1DigphUtiZzhU5R44VlJ3CmoH1W6wZaqde7iJads2bFaErY2bok29QfgZrbhO8q6UBbwLMkVlZ803M1UyDYhA9xYJqLR4kVtKhrHkDsUEKN4vXKc3CNxQpysmvdTqdt31Lz088ptkkksGLzRluDu-Np11ER6NX8XaH2S4iwIR823r3txm4eaMoEeoLfOD5S_6WHD5RhH0B7LRa_l7Vp5ksEB-0vyHQPLQQLOYixrC_peP3dG3dnaTY5UcUAUxZK4E74glzCu2PyRpKNnQ9akFz-niWiFCY0z-cuJeOArMvGOQCC9Q";
 const CAPTCHA_BYPASS_SUFFIX = "&captcha-bypass=true";
 const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
@@ -244,6 +245,19 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             });
         });
 
+        test("test that true is returned with old example suffix also", () => {
+            workflow.__with__({readySign: true})(() => {
+                const newUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
+                const b = beforeRequest(details, newUrl);
+                expect(b).toBeTruthy();
+                expect(b.xhr).toBeTruthy();
+                if (configId === 1) {
+                    expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining(`${EXAMPLE_RECAPTCHA_KEY}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                }
+            });
+        });
+
         test("bad status does not sign", () => {
             setTimeSinceLastResp(0); // reset the variables
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
@@ -402,12 +416,14 @@ describe("test validating response", () => {
             let before;
             let after;
             let version;
-            let testUrl;
+            let testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            let oldTestUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
             beforeEach(() => {
                 before = undefined;
                 after = undefined;
                 version = undefined;
                 testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                oldTestUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
                 if (element.name.includes("hkdf")) {
                     commVersion = "hkdf";
                     if (element.name.includes("compressed")) {
@@ -465,87 +481,88 @@ describe("test validating response", () => {
                 after = getMock(bypassTokensCount(1));
             }
 
-            test(`test store tokens: ${element.name}`, () => {
-                function run() {
-                    workflow.__set__("getCommitmentsKey", () => pubKey);
-                    const tokens = [];
-                    for (let i = 0; i < testTokenData.length; i++) {
-                        tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+            [testUrl, oldTestUrl].forEach((url) => {
+                test(`test store tokens: ${element.name}`, () => {
+                    function run() {
+                        workflow.__set__("getCommitmentsKey", () => pubKey);
+                        const tokens = [];
+                        for (let i = 0; i < testTokenData.length; i++) {
+                            tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        }
+                        const out = parseRespString(element.string);
+                        commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                        version = checkVersion(out.version);
                     }
-                    const out = parseRespString(element.string);
-                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                    version = checkVersion(out.version);
-                }
-                setTimeSinceLastResp(0); // reset the variables
-                setMock(bypassTokensCount(1), 0);
-                expect(consoleMock.error).not.toBeCalled();
-                expect(run).not.toThrow();
-                expect(updateIconMock).toBeCalledTimes(3);
-                expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
-                checkCache(version);
-            });
-
-            test(`correct verify for cached commitments: ${element.name}`, () => {
-                cacheCommitments(commVersion, G, H);
-                expect(getCachedCommitments(commVersion).G === G).toBeTruthy();
-                expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
-                function run() {
-                    workflow.__set__("getCommitmentsKey", () => pubKey);
-                    const tokens = [];
-                    for (let i = 0; i < testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
-                    }
-                    const out = parseRespString(element.string);
-                    before = getMock(bypassTokensCount(1));
-                    const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
-                    expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
-                    after = getMock(bypassTokensCount(1));
-                    version = checkVersion(out.version);
-                }
-                setTimeSinceLastResp(0); // reset the variables
-                setMock(bypassTokensCount(1), 0);
-                const testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                expect(consoleMock.error).not.toBeCalled();
-                expect(run).not.toThrow();
-                expect(updateIconMock).toBeCalledTimes(3);
-                expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
-                const cache = getCachedCommitments(version);
-                expect(cache.G === G).toBeTruthy();
-                expect(cache.H === H).toBeTruthy();
-            });
-
-            test(`correct verify when cached commitments are bad: ${element.name}`, () => {
-                // construct corrupted commitments
-                const commStruct = {};
-                commStruct[commVersion] = {L: G, H: H};
-                setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
-                function run() {
-                    workflow.__set__("getCommitmentsKey", () => pubKey);
-                    const tokens = [];
-                    for (let i = 0; i < testTokenData.length; i++) {
-                        tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
-                    }
-                    const out = parseRespString(element.string);
-                    commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                    version = checkVersion(out.version);
-                }
-                setTimeSinceLastResp(0); // reset the variables
-                setMock(bypassTokensCount(1), 0);
-                expect(consoleMock.error).not.toBeCalled();
-                expect(run).not.toThrow();
-                commVersion === "1.0" ? expect(consoleMock.warn).not.toBeCalled() : expect(consoleMock.warn).toBeCalled();
-                expect(updateIconMock).toBeCalledTimes(3);
-                expect(updateBrowserTabMock).toBeCalled();
-                expect(after === before + testTokenData.length).toBeTruthy();
-                expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
-                // bad commitments are not removed if using version 1.0
-                if (commVersion !== "1.0") {
+                    setTimeSinceLastResp(0); // reset the variables
+                    setMock(bypassTokensCount(1), 0);
+                    expect(consoleMock.error).not.toBeCalled();
+                    expect(run).not.toThrow();
+                    expect(updateIconMock).toBeCalledTimes(3);
+                    expect(updateBrowserTabMock).toBeCalledWith(details.tabId, EXAMPLE_HREF);
+                    expect(after === before + testTokenData.length).toBeTruthy();
+                    expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
                     checkCache(version);
-                }
+                });
+
+                test(`correct verify for cached commitments: ${element.name}`, () => {
+                    cacheCommitments(commVersion, G, H);
+                    expect(getCachedCommitments(commVersion).G === G).toBeTruthy();
+                    expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
+                    function run() {
+                        workflow.__set__("getCommitmentsKey", () => pubKey);
+                        const tokens = [];
+                        for (let i = 0; i < testTokenData.length; i++) {
+                            tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        }
+                        const out = parseRespString(element.string);
+                        before = getMock(bypassTokensCount(1));
+                        const xhr = validateAndStoreTokens(url, details.tabId, tokens, out);
+                        expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
+                        after = getMock(bypassTokensCount(1));
+                        version = checkVersion(out.version);
+                    }
+                    setTimeSinceLastResp(0); // reset the variables
+                    setMock(bypassTokensCount(1), 0);
+                    expect(consoleMock.error).not.toBeCalled();
+                    expect(run).not.toThrow();
+                    expect(updateIconMock).toBeCalledTimes(3);
+                    expect(updateBrowserTabMock).toBeCalledWith(details.tabId, EXAMPLE_HREF);
+                    expect(after === before + testTokenData.length).toBeTruthy();
+                    expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
+                    const cache = getCachedCommitments(version);
+                    expect(cache.G === G).toBeTruthy();
+                    expect(cache.H === H).toBeTruthy();
+                });
+
+                test(`correct verify when cached commitments are bad: ${element.name}`, () => {
+                    // construct corrupted commitments
+                    const commStruct = {};
+                    commStruct[commVersion] = {L: G, H: H};
+                    setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
+                    function run() {
+                        workflow.__set__("getCommitmentsKey", () => pubKey);
+                        const tokens = [];
+                        for (let i = 0; i < testTokenData.length; i++) {
+                            tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
+                        }
+                        const out = parseRespString(element.string);
+                        commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
+                        version = checkVersion(out.version);
+                    }
+                    setTimeSinceLastResp(0); // reset the variables
+                    setMock(bypassTokensCount(1), 0);
+                    expect(consoleMock.error).not.toBeCalled();
+                    expect(run).not.toThrow();
+                    commVersion === "1.0" ? expect(consoleMock.warn).not.toBeCalled() : expect(consoleMock.warn).toBeCalled();
+                    expect(updateIconMock).toBeCalledTimes(3);
+                    expect(updateBrowserTabMock).toBeCalledWith(details.tabId, EXAMPLE_HREF);
+                    expect(after === before + testTokenData.length).toBeTruthy();
+                    expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
+                    // bad commitments are not removed if using version 1.0
+                    if (commVersion !== "1.0") {
+                        checkCache(version);
+                    }
+                });
             });
 
             test(`test store tokens for captcha.website: ${element.name}`, () => {
@@ -586,7 +603,6 @@ describe("test validating response", () => {
                 setTimeSinceLastResp(0); // reset the variables
                 setMock(bypassTokensCount(1), 0);
                 workflow.__with__({"reloadOnSign": () => false})(() => {
-                    testUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
                     expect(consoleMock.error).not.toBeCalled();
                     expect(run).not.toThrow();
                     expect(updateIconMock).toBeCalledTimes(3);
