@@ -33,6 +33,7 @@
 /* exported getConfigId */
 /* exported getConfigName */
 /* exported storedCommitments */
+/* exported requestIdentifiers */
 
 "use strict";
 
@@ -84,6 +85,7 @@ let h2cParams = () => activeConfig()["h2c-params"];
 let sendH2CParams = () => activeConfig()["send-h2c-params"];
 let issueActionUrls = () => activeConfig()["issue-action"]["urls"];
 let reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
+let requestIdentifiers = () => activeConfig()["issue-action"]["request-identifiers"];
 let signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
 let tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
 let optEndpoints = () => activeConfig()["opt-endpoints"];
@@ -443,7 +445,7 @@ function beforeRequest(details, url) {
     let xhrInfo;
     switch (getConfigId()) {
         case 1:
-            xhrInfo = signReqCF(url);
+            xhrInfo = signReqCF(url, details);
             break;
         case 2:
             xhrInfo = signReqHC(url, details);
@@ -461,7 +463,8 @@ function beforeRequest(details, url) {
     // actually send the token signing request via xhr and return the xhr object
     const xhr = sendXhrSignReq(xhrInfo, url, details.tabId);
 
-    /** In the no-reload paradigm the issuance request is sent along side the original solve request. Requests are reconciled on the backend.
+    /**
+     *  In the no-reload paradigm the issuance request is sent along side the original solve request. Requests are reconciled on the backend.
      *  If the captcha solution is correct a signature is returned to the extension, with a 200 status code, if the solution is not correct a 403 status code is returned
      *  to the extension along with any error messages. As both the solve request and the issue request are sent to the same endpoint we must send a `{cancel: false}`
      *  to avoid canceling the original captcha solve request.

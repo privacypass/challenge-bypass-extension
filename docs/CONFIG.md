@@ -176,6 +176,12 @@ Cloudflare, there is also a server-side upper bound of 100 tokens for each
 signing request. We recommend that this is enforced to prevent unlimited numbers
 of tokens being signed.
 
+#### config\["issue-action"\]\["request-identifiers"\]
+
+An object containing optional identifying characteristics of requests. Requests
+identified using these characteristics can be augmented with data required for
+the issuance portion of the Privacy Pass protocol.
+
 ### config\["cookies"\]
 
 A JSON struct of configuration related to cookie management.

@@ -61,7 +61,7 @@ chrome.webRequest.onBeforeRequest.addListener(
         return {redirectUrl: "javascript:void(0)"};
     }, // callback
     {urls: [LISTENER_URLS]}, // targeted pages
-    ["blocking"] // desired traits
+    ["requestBody", "blocking"] // desired traits
 );
 
 

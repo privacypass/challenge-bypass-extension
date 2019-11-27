@@ -14,7 +14,9 @@ const workflow = workflowSet();
  */
 const EXAMPLE_HREF = "https://example.com";
 const CAPTCHA_HREF = "https://captcha.website";
-const EXAMPLE_SUFFIX = "/cdn-cgi/l/chk_captcha?id=4716480f5bb534e8&g-recaptcha-response=03AMGVjXh24S6n8-HMQadfr8AmSr-2i87s1TTWUrhfnrIcti9hw1DigphUtiZzhU5R44VlJ3CmoH1W6wZaqde7iJads2bFaErY2bok29QfgZrbhO8q6UBbwLMkVlZ803M1UyDYhA9xYJqLR4kVtKhrHkDsUEKN4vXKc3CNxQpysmvdTqdt31Lz088ptkkksGLzRluDu-Np11ER6NX8XaH2S4iwIR823r3txm4eaMoEeoLfOD5S_6WHD5RhH0B7LRa_l7Vp5ksEB-0vyHQPLQQLOYixrC_peP3dG3dnaTY5UcUAUxZK4E74glzCu2PyRpKNnQ9akFz-niWiFCY0z-cuJeOArMvGOQCC9Q";
+const EXAMPLE_RECAPTCHA_KEY = "g-recaptcha-response";
+const EXAMPLE_RECAPTCHA_RESPONSE = "03AOLTBLSOy6WHlUbY1NHUPJ16g4rgCLbxjIDfkPpuXqzJs1Kxlvn_r8_1bSTddulO2D0Syy_Cq0kEATE5qsUZa8aUzX_HR74BnBH_4pTjg8YlgKYWx_Qgi-";
+const EXAMPLE_SUFFIX = "/?__cf_chl_captcha_tk__=216fe230433131e3106752ed2c9555fd296321ad-1574861306-0-AQJlysCcbc7cU5uLtUADvfk13pDWxIV62To0kYVo6YQ3RhYM1LTZUJhSyCFU2RPW-WSPT1ElOSxIjzLFYBWoE6mnQ-fe2lL-fsZQhB_3466PKMLHCy9Hnzl6p-EqPWAXDwStqISWVSdMtKeKDFU52ySlpLs-Q_R5lY8qraCgjym-6gAHYBHZm9IRLNM9T48xUrd8Zs2pyLBRZRdb3ZUZH9Rb40wSVVVNZz0Fh6jLzjjkYemQb43LYrc-cN_GdeVgCcLjo0CBTAvCZUHm0D5c1cX8m1-OBmxO6T0dgcIrgFa_";
 const CAPTCHA_BYPASS_SUFFIX = "&captcha-bypass=true";
 const beforeRequest = workflow.__get__("beforeRequest");
 const sendXhrSignReq = workflow.__get__("sendXhrSignReq");
@@ -45,7 +47,11 @@ beforeEach(() => {
         requestHeaders: [],
         requestId: "212",
         tabId: "101",
+        requestBody: {
+            formData: {},
+        },
     };
+    details.requestBody.formData[EXAMPLE_RECAPTCHA_KEY] = EXAMPLE_RECAPTCHA_RESPONSE;
     url = new URL(EXAMPLE_HREF);
     setTimeSinceLastResp(Date.now());
     // Some tests make sense only for CF
@@ -195,6 +201,12 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             expect(getSpentHostsMock(url.host)).toBeFalsy();
             expect(b).toBeFalsy();
         });
+        test("body does not contain CAPTCHA solution", () => {
+            const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
+            details.requestBody = {};
+            const b = beforeRequest(details, newUrl);
+            expect(b).toBeFalsy();
+        });
         test("already processed", () => {
             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
             const b = beforeRequest(details, newUrl);
@@ -225,6 +237,10 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 expect(b.xhr).toBeTruthy();
+                if (configId === 1) {
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining(`${EXAMPLE_RECAPTCHA_KEY}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                }
             });
         });
 
@@ -235,6 +251,10 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 const xhr = b.xhr;
+                if (configId === 1) {
+                    expect(xhr.send).toBeCalledWith(expect.stringContaining(`${EXAMPLE_RECAPTCHA_KEY}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                }
                 xhr.onreadystatechange();
                 expect(validateRespMock).not.toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(2);
@@ -249,6 +269,10 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 const b = beforeRequest(details, newUrl);
                 expect(b).toBeTruthy();
                 const xhr = b.xhr;
+                if (configId === 1) {
+                    expect(xhr.send).toBeCalledWith(expect.stringContaining(`${EXAMPLE_RECAPTCHA_KEY}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                }
                 xhr.onreadystatechange();
                 expect(validateRespMock).not.toBeCalled();
                 expect(updateIconMock).toBeCalledTimes(2);

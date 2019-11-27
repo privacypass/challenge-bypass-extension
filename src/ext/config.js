@@ -61,6 +61,7 @@ function exampleConfig() {
             "sign-reload": true, // whether pages should be reloaded after signing tokens (e.g. to immediately redeem a token)
             "sign-resp-format": "string", // formatting of response to sign request (string or json)
             "tokens-per-request": 5, // number of tokens sent for each signing request (e.g. 30 for CF)
+            "request-identifiers": {}, // parameters used to identify requests that issuance data should be included into
         },
         "cookies": {
             "check-cookies": true, // whether cookies should be checked before spending
@@ -105,6 +106,7 @@ function PPConfigs() {
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
     cfConfig["issue-action"]["tokens-per-request"] = 30;
+    cfConfig["issue-action"]["request-identifiers"] = {"query-param": "__cf_chl_captcha_tk__", "body-param": "g-recaptcha-response", "post-processed": "&captcha-bypass=true"};
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
     cfConfig["captcha-domain"] = "captcha.website";
     cfConfig["send-h2c-params"] = true;

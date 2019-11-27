@@ -33,28 +33,31 @@ const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitm
 /**
  * Constructs an issue request for sending tokens in Cloudflare-friendly format
  * @param {URL} url URL object for request
+ * @param {Object} details Request details object
  * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
-function signReqCF(url) {
+function signReqCF(url, details) {
     const reqUrl = url.href;
-    const manualChallenge = reqUrl.includes("manual_challenge");
-    const captchaResp = reqUrl.includes("g-recaptcha-response");
-    const alreadyProcessed = reqUrl.includes("&captcha-bypass=true");
+    const captchaResp = reqUrl.includes(requestIdentifiers()["query-param"]);
+    const alreadyProcessed = reqUrl.includes(requestIdentifiers()["post-processed"]);
+    const captchaKey = requestIdentifiers()["body-param"];
+    const bodyParam = details.requestBody.formData[captchaKey];
 
     // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if ((captchaResp && alreadyProcessed) || (!manualChallenge && !captchaResp) || sentTokens[reqUrl]) {
+    if (!captchaResp || !bodyParam || (captchaResp && alreadyProcessed) || sentTokens[reqUrl]) {
         return null;
     }
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
     const tokens = GenerateNewTokens(tokensPerRequest());
-    const request = BuildIssueRequest(tokens);
+    const btRequest = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
     const newUrl = markSignUrl(reqUrl);
     // Construct info for xhr signing request
-    const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens};
+    const bodyCaptcha = `${captchaKey}=${bodyParam}`;
+    const xhrInfo = {newUrl: newUrl, requestBody: `${bodyCaptcha}&blinded-tokens=${btRequest}`, tokens: tokens};
 
     return xhrInfo;
 }

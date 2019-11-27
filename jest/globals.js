@@ -173,7 +173,7 @@ window.mockXHR = (_xhr) => {
         _xhr.requestHeaders[name] = value;
     }
     _xhr.overrideMimeType = jest.fn();
-    _xhr.body;
+    _xhr.requestBody;
     _xhr.send = jest.fn();
     _xhr.onreadystatechange = function() {
     };
