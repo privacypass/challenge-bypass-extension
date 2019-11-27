@@ -145,7 +145,7 @@ function PPConfigs() {
     hcConfig["issue-action"]["sign-resp-format"] = "json";
     hcConfig.cookies["clearance-cookie"] = "hc_clearance";
     hcConfig["captcha-domain"] = null;
-    hcConfig["get-more-passes-url"] = "https://hcaptcha.com";
+    hcConfig["get-more-passes-url"] = "https://www.hcaptcha.com/privacy-pass";
     hcConfig["send-h2c-params"] = true;
     hcConfig["commitments"] = {
         "1.0": {
