@@ -18,7 +18,7 @@ function UpdatePopup() {
     let tokLen = 0
     if (background) {
         tokLen = background.countStoredTokens();
-        handleResponse(tokLen);
+        handleResponse(tokLen, background.getMorePassesUrl());
     } else {
         let send = browser.runtime.sendMessage({
             tokLen: true
@@ -27,9 +27,10 @@ function UpdatePopup() {
     }
 }
 
-function handleResponse(tokLen) {
+function handleResponse(tokLen, url) {
     // Replace the count displayed in the popup
     replaceTokensStoredCount(tokLen);
+    document.getElementById("website").setAttribute("href", url)
 
     document.getElementById("clear").addEventListener("click", function() {
         if (background) {

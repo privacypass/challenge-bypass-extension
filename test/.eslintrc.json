@@ -63,7 +63,8 @@
         "validateRespMock": true,
         "workersG": true,
         "workersH": true,
-        "workflowSet": true
+        "workflowSet": true,
+        "getMorePAssesUrl": true
     },
     "rules": {
         "no-func-assign": 0,
