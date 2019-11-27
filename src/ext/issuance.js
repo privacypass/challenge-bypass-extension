@@ -38,8 +38,8 @@ const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitm
  */
 function signReqCF(url, details) {
     const reqUrl = url.href;
-    const captchaResp = reqUrl.includes(requestIdentifiers()["query-param"]);
-    const alreadyProcessed = reqUrl.includes(requestIdentifiers()["post-processed"]);
+    const captchaResp = url.searchParams.has(requestIdentifiers()["query-param"]);
+    const alreadyProcessed = url.searchParams.has(requestIdentifiers()["post-processed"]);
     const captchaKey = requestIdentifiers()["body-param"];
     const bodyParam = details.requestBody.formData[captchaKey];
 
@@ -56,7 +56,7 @@ function signReqCF(url, details) {
     // Tag the URL of the new request to prevent an infinite loop (see above)
     const newUrl = markSignUrl(reqUrl);
     // Construct info for xhr signing request
-    const bodyCaptcha = `${captchaKey}=${bodyParam}`;
+    const bodyCaptcha = `${captchaKey}=${encodeURIComponent(bodyParam)}`;
     const xhrInfo = {newUrl: newUrl, requestBody: `${bodyCaptcha}&blinded-tokens=${btRequest}`, tokens: tokens};
 
     return xhrInfo;

@@ -106,7 +106,7 @@ function PPConfigs() {
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
     cfConfig["issue-action"]["tokens-per-request"] = 30;
-    cfConfig["issue-action"]["request-identifiers"] = {"query-param": "__cf_chl_captcha_tk__", "body-param": "g-recaptcha-response", "post-processed": "&captcha-bypass=true"};
+    cfConfig["issue-action"]["request-identifiers"] = {"query-param": "__cf_chl_captcha_tk__", "body-param": "g-recaptcha-response", "post-processed": "captcha-bypass"};
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
     cfConfig["captcha-domain"] = "captcha.website";
     cfConfig["send-h2c-params"] = true;
