@@ -33,10 +33,54 @@ const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitm
 /**
  * Constructs an issue request for sending tokens in Cloudflare-friendly format
  * @param {URL} url URL object for request
+ * @param {Object} details Request details object
  * @return {XMLHttpRequest} XHR info for asynchronous token issuance
  */
-function signReqCF(url) {
+function signReqCF(url, details) {
     const reqUrl = url.href;
+
+    // if the old workflow is still being used then just return this
+    // should return null if the checks fail
+    const ret = signReqCFOld(reqUrl);
+    if (ret) {
+        return ret;
+    }
+
+    // otherwise try something new
+    const captchaResp = url.searchParams.has(requestIdentifiers()["query-param"]);
+    const alreadyProcessed = url.searchParams.has(requestIdentifiers()["post-processed"]);
+    const captchaKey = requestIdentifiers()["body-param"];
+    let bodyParam = false;
+    if (details.requestBody) {
+        bodyParam = details.requestBody.formData[captchaKey];
+    }
+
+    // We're only interested in CAPTCHA solution requests that we haven't already altered.
+    if (!captchaResp || !bodyParam || (captchaResp && alreadyProcessed) || sentTokens[reqUrl]) {
+        return null;
+    }
+    sentTokens[reqUrl] = true;
+
+    // Generate tokens and create a JSON request for signing
+    const tokens = GenerateNewTokens(tokensPerRequest());
+    const btRequest = BuildIssueRequest(tokens);
+
+    // Tag the URL of the new request to prevent an infinite loop (see above)
+    const newUrl = markSignUrl(reqUrl);
+    // Construct info for xhr signing request
+    const bodyCaptcha = `${captchaKey}=${encodeURIComponent(bodyParam)}`;
+    const xhrInfo = {newUrl: newUrl, requestBody: `${bodyCaptcha}&blinded-tokens=${btRequest}`, tokens: tokens};
+
+    return xhrInfo;
+}
+
+/**
+ * OLD METHOD: currently being phased out by Cloudflare
+ * Constructs an issue request for sending tokens in Cloudflare-friendly format
+ * @param {string} reqUrl URL object for request
+ * @return {XMLHttpRequest} XHR info for asynchronous token issuance
+ */
+function signReqCFOld(reqUrl) {
     const manualChallenge = reqUrl.includes("manual_challenge");
     const captchaResp = reqUrl.includes("g-recaptcha-response");
     const alreadyProcessed = reqUrl.includes("&captcha-bypass=true");
@@ -58,6 +102,7 @@ function signReqCF(url) {
 
     return xhrInfo;
 }
+
 
 /**
  * hCaptcha issuance request
@@ -307,9 +352,18 @@ function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
 
     // Reload the page for the originally intended url
     if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {
-        const captchaPath = url.pathname;
-        const pathIndex = url.href.indexOf(captchaPath);
-        const reloadUrl = url.href.substring(0, pathIndex + 1);
+        const queryParam = requestIdentifiers()["query-param"];
+        // if the query parameter is not present then this must be an old URL
+        const old = !url.searchParams.has(queryParam);
+        let reloadUrl;
+        if (old) {
+            const captchaPath = url.pathname;
+            const pathIndex = url.href.indexOf(captchaPath);
+            reloadUrl = url.href.substring(0, pathIndex + 1);
+        } else {
+            url.searchParams.delete(queryParam);
+            reloadUrl = url.href;
+        }
         setSpendFlag(url.host, true);
         updateBrowserTab(tabId, reloadUrl);
     }

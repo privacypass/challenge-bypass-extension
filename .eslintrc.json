@@ -69,6 +69,7 @@
         "reloadBrowserTab": true,
         "reloadOnSign": true,
         "reloadTabForCookie": true,
+        "requestIdentifiers": true,
         "resetSpendVars": true,
         "sec1DecodeFromBase64": true,
         "sec1DecodeFromBytes": true,
