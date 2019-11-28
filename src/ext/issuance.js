@@ -354,7 +354,7 @@ function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
     if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {
         const queryParam = requestIdentifiers()["query-param"];
         // if the query parameter is not present then this must be an old URL
-        const old = !url.searchParams.has(requestIdentifiers()["query-param"]);
+        const old = !url.searchParams.has(queryParam);
         let reloadUrl;
         if (old) {
             const captchaPath = url.pathname;
