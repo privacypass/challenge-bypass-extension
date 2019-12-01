@@ -210,6 +210,12 @@ A string specifying a domain where users can obtain signed tokens by solving a
 challenge/CAPTCHA. This is helpful to allow users to build up initial stockpiles
 of tokens before they browse.
 
+### config\["get-more-passes-url"\]
+
+A valid URL string specifying an url where users can get more signed tokens by solving a 
+challange/CAPTCHA. This URL is pulled into the pop-up `Get more passes` menu item. 
+Can be different from `captcha-domain`, and must be a valid URL.
+
 ### config\["opt-endpoints"\]
 
 Optional endpoints for use by the particular configuration.
