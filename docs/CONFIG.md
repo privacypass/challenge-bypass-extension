@@ -214,7 +214,7 @@ of tokens before they browse.
 
 A valid URL string specifying an url where users can get more signed tokens by solving a 
 challange/CAPTCHA. This URL is pulled into the pop-up `Get more passes` menu item. 
-Can be different from `captcha-domain`, and must be a valid URL.
+Can be different from `captcha-domain`, and must be a valid URL with protocol specified.
 
 ### config\["opt-endpoints"\]
 

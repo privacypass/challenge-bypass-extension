@@ -72,7 +72,7 @@ function exampleConfig() {
             "clearance-cookie": "", // name of clearance cookies for checking (cookies that are optionally acquired after redemption occurs)
         },
         "captcha-domain": "", // optional domain for acquiring tokens
-        "get-more-passes-url": "", // optional url that the Get More Passes menu item will point
+        "get-more-passes-url": "", // optional url that the Get More Passes menu item will point, must be valid URL with protocol
         "opt-endpoints": {}, // optional endpoints for integration-specific operations
         "error-codes": {
             "connection-error": "5", // error code sent by server for connection error
