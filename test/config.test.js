@@ -20,6 +20,6 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
         });
 
         test("ensure `get-more-passes-url` is a valid URL", () => {
-            new URL(activeConfig()['get-more-passes-url']);
-        })
-    })
+            new URL(activeConfig()["get-more-passes-url"]);
+        });
+    });
