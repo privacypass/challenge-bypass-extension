@@ -93,7 +93,6 @@ let optEndpoints = () => activeConfig()["opt-endpoints"];
 let emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
 let storedCommitments = () => activeConfig()["commitments"];
 
-
 /**
  * Allows access to get-more-passes-url from UpdatePopup
  * @return {string}

@@ -22,4 +22,18 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
         test("ensure `get-more-passes-url` is a valid URL", () => {
             new URL(activeConfig()["get-more-passes-url"]);
         });
+
+        test("ensure config `get-more-passes-url` value is correct", () => {
+            const url = activeConfig()["get-more-passes-url"];
+            let correctValue;
+            switch (configId) {
+                case 1:
+                    correctValue = "https://captcha.website";
+                    break;
+                case 2:
+                    correctValue = "https://www.hcaptcha.com/privacy-pass";
+                    break;
+            }
+            expect(url === correctValue).toBeTruthy();
+        });
     });
