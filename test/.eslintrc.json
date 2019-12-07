@@ -13,6 +13,7 @@
         "getFutureReloadMock": true,
         "getHttpsRedirectMock": true,
         "getMock": true,
+        "getMorePAssesUrl": true,
         "getRedirectCountMock": true,
         "getSpendFlagMock": true,
         "getSpendIdMock": true,
@@ -63,8 +64,7 @@
         "validateRespMock": true,
         "workersG": true,
         "workersH": true,
-        "workflowSet": true,
-        "getMorePAssesUrl": true
+        "workflowSet": true
     },
     "rules": {
         "no-func-assign": 0,
