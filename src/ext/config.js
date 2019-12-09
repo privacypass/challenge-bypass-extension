@@ -96,6 +96,7 @@ function exampleConfig() {
  */
 function PPConfigs() {
     // The configuration used by Cloudflare
+    const cfDomain = "captcha.website";
     const cfConfig = exampleConfig();
     cfConfig.id = 1;
     cfConfig.dev = false;
@@ -115,8 +116,8 @@ function PPConfigs() {
     cfConfig["issue-action"]["request-identifiers"]["body-param"] = "g-recaptcha-response";
     cfConfig["issue-action"]["request-identifiers"]["post-processed"] = "captcha-bypass";
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
-    cfConfig["captcha-domain"] = "captcha.website";
-    cfConfig["get-more-passes-url"] = "https://captcha.website";
+    cfConfig["captcha-domain"] = cfDomain;
+    cfConfig["get-more-passes-url"] = `https://${cfDomain}`;
     cfConfig["send-h2c-params"] = true;
     cfConfig["opt-endpoints"].challenge = "/cdn-cgi/challenge";
     cfConfig["spend-action"]["empty-resp-headers"] = ["direct-request"];
