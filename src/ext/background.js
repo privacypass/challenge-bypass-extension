@@ -34,6 +34,7 @@
 /* exported getConfigName */
 /* exported storedCommitments */
 /* exported requestIdentifiers */
+/* exported getMorePassesUrl */
 
 "use strict";
 
@@ -91,6 +92,14 @@ let tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"
 let optEndpoints = () => activeConfig()["opt-endpoints"];
 let emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
 let storedCommitments = () => activeConfig()["commitments"];
+
+/**
+ * Allows access to get-more-passes-url from UpdatePopup
+ * @return {string}
+ */
+function getMorePassesUrl() {
+    return activeConfig()["get-more-passes-url"];
+}
 
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
 initECSettings(h2cParams());

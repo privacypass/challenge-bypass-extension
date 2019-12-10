@@ -74,7 +74,6 @@ window.workflowSet = () => {
     workflow.__set__("setTarget", setTargetMock);
     workflow.__set__("getTarget", getTargetMock);
 
-
     workflow.__set__("spendId", spendIdMock);
     workflow.__set__("setSpendId", setSpendIdMock);
     workflow.__set__("getSpendId", getSpendIdMock);

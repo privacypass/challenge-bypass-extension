@@ -1,7 +1,7 @@
 /**
  * Tests for cryptographic functionality
  *
- * @author Alex Davidson
+ * @author; Alex Davidson
  */
 
 const workflow = workflowSet();

@@ -2,7 +2,7 @@
  * Integrations tests for processing redirections
  *
  * @author: Alex Davidson
- * @author Drazen Urch
+ * @author: Drazen Urch
  */
 
 const workflow = workflowSet();

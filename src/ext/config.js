@@ -72,6 +72,7 @@ function exampleConfig() {
             "clearance-cookie": "", // name of clearance cookies for checking (cookies that are optionally acquired after redemption occurs)
         },
         "captcha-domain": "", // optional domain for acquiring tokens
+        "get-more-passes-url": "", // optional url that the Get More Passes menu item will point, must be valid URL with protocol
         "opt-endpoints": {}, // optional endpoints for integration-specific operations
         "error-codes": {
             "connection-error": "5", // error code sent by server for connection error
@@ -95,6 +96,7 @@ function exampleConfig() {
  */
 function PPConfigs() {
     // The configuration used by Cloudflare
+    const cfDomain = "captcha.website";
     const cfConfig = exampleConfig();
     cfConfig.id = 1;
     cfConfig.dev = false;
@@ -114,7 +116,8 @@ function PPConfigs() {
     cfConfig["issue-action"]["request-identifiers"]["body-param"] = "g-recaptcha-response";
     cfConfig["issue-action"]["request-identifiers"]["post-processed"] = "captcha-bypass";
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
-    cfConfig["captcha-domain"] = "captcha.website";
+    cfConfig["captcha-domain"] = cfDomain;
+    cfConfig["get-more-passes-url"] = `https://${cfDomain}`;
     cfConfig["send-h2c-params"] = true;
     cfConfig["opt-endpoints"].challenge = "/cdn-cgi/challenge";
     cfConfig["spend-action"]["empty-resp-headers"] = ["direct-request"];
@@ -143,6 +146,7 @@ function PPConfigs() {
     hcConfig["issue-action"]["sign-resp-format"] = "json";
     hcConfig.cookies["clearance-cookie"] = "hc_clearance";
     hcConfig["captcha-domain"] = null;
+    hcConfig["get-more-passes-url"] = "https://www.hcaptcha.com/privacy-pass";
     hcConfig["send-h2c-params"] = true;
     hcConfig["commitments"] = {
         "1.0": {
