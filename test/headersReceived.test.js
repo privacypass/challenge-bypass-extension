@@ -31,6 +31,7 @@ const setNoTokens = (configId) => {
     setMock(bypassTokens(configId), "{}");
     setMock(bypassTokensCount(configId), 0);
 };
+
 /**
  * Tests
  * (Currently unable to test workflows that are dependent on cookies)
@@ -125,8 +126,8 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 expect(found).toBeFalsy();
             });
             test("config is reset if ID changes", () => {
-                const oldConfigId = configId + 1;
-                workflow.__with__({CONFIG_ID: oldConfigId})(() => {
+                const oldConfigId = configId == 1 ? 2 : 1;
+                workflow.__with__({CONFIG_ID: oldConfigId, recentConfigChange: false})(() => {
                     setMock(bypassTokensCount(oldConfigId), 10);
                     const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
                     const oldCount = getMock(bypassTokensCount(oldConfigId));
@@ -138,7 +139,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             });
             test("config is not reset if ID does not change", () => {
                 const oldConfigId = configId;
-                workflow.__with__({CONFIG_ID: oldConfigId})(() => {
+                workflow.__with__({CONFIG_ID: oldConfigId, recentConfigChange: false})(() => {
                     setMock(bypassTokensCount(oldConfigId), 10);
                     const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
                     const oldCount = getMock(bypassTokensCount(oldConfigId));

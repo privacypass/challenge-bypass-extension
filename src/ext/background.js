@@ -141,6 +141,9 @@ let spentTab = new Map();
 // Track whether we should try to initiate a signing request
 let readySign = false;
 
+// Tracks whether a recent change has occurred
+// prevents overlay of conflicting resources
+let recentConfigChange = false;
 
 let getSpentUrl = (key) => spentUrl[key];
 let setSpentUrl = (key, value) => spentUrl[key] = value;
@@ -644,6 +647,7 @@ function resetVars() {
     futureReload = new Map();
     spentHosts = new Map();
     redirected = new Map();
+    recentConfigChange = false;
 }
 
 /**
@@ -663,8 +667,9 @@ function resetSpendVars() {
 function isBypassHeader(header) {
     const newConfigVal = parseInt(header.value);
     if (header.name.toLowerCase() === CHL_BYPASS_SUPPORT && newConfigVal !== 0) {
-        if (checkConfigId(newConfigVal) && newConfigVal !== getConfigId()) {
+        if (checkConfigId(newConfigVal) && !recentConfigChange) {
             setConfig(newConfigVal);
+            recentConfigChange = true;
         }
         return true;
     }
@@ -677,8 +682,11 @@ function isBypassHeader(header) {
  * @param {int} val
  */
 function setConfig(val) {
-    setConfigId(val);
-    initECSettings(h2cParams());
-    clearCachedCommitments();
-    countStoredTokens();
+    // only reset everything if the value actually changes
+    if (val !== getConfigId()) {
+        setConfigId(val);
+        initECSettings(h2cParams());
+        clearCachedCommitments();
+        countStoredTokens();
+    }
 }

@@ -321,7 +321,7 @@ function parseSignaturefromPEM(pemSignature) {
         return sjcl.bitArray.concat(r, s);
     } catch (e) {
         throw new Error(
-            "[privacy-pass]: Failed on parsing commitment signature. " + e.message
+            "[privacy-pass]: Failed on parsing commitment signature. " + e.message,
         );
     }
 }
@@ -340,7 +340,7 @@ function parsePublicKeyfromPEM(pemPublicKey) {
         return new sjcl.ecc.ecdsa.publicKey(CURVE, point);
     } catch (e) {
         throw new Error(
-            "[privacy-pass]: Failed on parsing public key. " + e.message
+            "[privacy-pass]: Failed on parsing public key. " + e.message,
         );
     }
 }
@@ -546,7 +546,7 @@ function evaluateHkdf(ikm, length, info, salt, hash) {
         const hmac = new sjcl.misc.hmac(prk, hash);
         const input = sjcl.bitArray.concat(
             sjcl.bitArray.concat(prev, info),
-            sjcl.codec.utf8String.toBits((String.fromCharCode(i + 1)))
+            sjcl.codec.utf8String.toBits((String.fromCharCode(i + 1))),
         );
         hmac.update(input);
         prev = hmac.digest();

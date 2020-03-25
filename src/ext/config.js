@@ -63,7 +63,7 @@ function exampleConfig() {
             "tokens-per-request": 5, // number of tokens sent for each signing request (e.g. 30 for CF)
             "request-identifiers": { // parameters used to identify requests that issuance data should be included into
                 "query-param": "", // request identifier in query params of URL
-                "body-param": "", // request identifier in params of HTTP request body
+                "body-param": [""], // request identifier array for checking of HTTP request body and adding to request
                 "post-processed": "", // identifier for requests that have already been processed by WebRequest API
             },
         },
@@ -113,7 +113,7 @@ function PPConfigs() {
     cfConfig["spend-action"]["redeem-method"] = "reload";
     cfConfig["issue-action"]["tokens-per-request"] = 30;
     cfConfig["issue-action"]["request-identifiers"]["query-param"] = "__cf_chl_captcha_tk__";
-    cfConfig["issue-action"]["request-identifiers"]["body-param"] = "g-recaptcha-response";
+    cfConfig["issue-action"]["request-identifiers"]["body-param"] = ["g-recaptcha-response", "h-captcha-response", "cf_captcha_kind"];
     cfConfig["issue-action"]["request-identifiers"]["post-processed"] = "captcha-bypass";
     cfConfig.cookies["clearance-cookie"] = "cf_clearance";
     cfConfig["captcha-domain"] = cfDomain;

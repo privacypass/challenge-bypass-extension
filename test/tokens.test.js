@@ -45,16 +45,14 @@ describe("check that null point errors are caught in token generation", () => {
     test("check that token generation happens correctly", () => {
         const tokens = GenerateNewTokens(3);
         expect(tokens.length === 3).toBeTruthy();
-        const consoleNew = workflow.__get__("console");
-        expect(consoleNew.warn).not.toBeCalled();
+        expect(consoleMock.warn).not.toBeCalled();
     });
 
     test("check that null tokens are caught and ignored", () => {
         workflow.__set__("CreateBlindToken", CreateBlindTokenMock);
         const tokens = GenerateNewTokens(3);
         expect(tokens.length === 2).toBeTruthy();
-        const consoleNew = workflow.__get__("console");
-        expect(consoleNew.warn).toBeCalled();
+        expect(consoleMock.warn).toBeCalled();
     });
 });
 
