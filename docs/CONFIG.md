@@ -66,7 +66,7 @@ An integer corresponding to the status code returned by the server. This HTTP
 status code is checked before a redemption is initiated, for Cloudflare this
 value is set to 403. That is, token redemptions can only occur after a HTTP
 response with status code 403 is received. For hCaptcha the code is 200, however
-only hCaptcha specific URLs are eligable for the spend.
+only hCaptcha specific URLs are eligible for the spend.
 
 #### config\["spending-restrictions"\]\["max-redirects"\]
 
@@ -212,8 +212,8 @@ of tokens before they browse.
 
 ### config\["get-more-passes-url"\]
 
-A valid URL string specifying an url where users can get more signed tokens by solving a 
-challange/CAPTCHA. This URL is pulled into the pop-up `Get more passes` menu item. 
+A valid URL string specifying an URL where users can get more signed tokens by solving a
+challenge/CAPTCHA. This URL is pulled into the pop-up `Get more passes` menu item.
 Can be different from `captcha-domain`, and must be a valid URL with protocol specified.
 
 ### config\["opt-endpoints"\]
