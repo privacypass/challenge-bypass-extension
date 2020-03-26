@@ -37,7 +37,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         processHeaders(details, url);
     }, // callback
     {urls: [LISTENER_URLS]}, // targeted pages
-    ["responseHeaders", "blocking"] // desired traits
+    ["responseHeaders", "blocking"], // desired traits
 );
 
 // Intercepts token-spend reload requests to add a redemption header.
@@ -47,7 +47,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         return beforeSendHeaders(details, url);
     }, // callback
     {urls: [LISTENER_URLS]}, // targeted pages
-    ["requestHeaders", "blocking"]
+    ["requestHeaders", "blocking"],
 );
 
 // Intercepts CAPTCHA solution requests to add our token blob to the body.
@@ -61,7 +61,7 @@ chrome.webRequest.onBeforeRequest.addListener(
         return {redirectUrl: "javascript:void(0)"};
     }, // callback
     {urls: [LISTENER_URLS]}, // targeted pages
-    ["requestBody", "blocking"] // desired traits
+    ["requestBody", "blocking"], // desired traits
 );
 
 

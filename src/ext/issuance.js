@@ -49,14 +49,23 @@ function signReqCF(url, details) {
     // otherwise try something new
     const captchaResp = url.searchParams.has(requestIdentifiers()["query-param"]);
     const alreadyProcessed = url.searchParams.has(requestIdentifiers()["post-processed"]);
-    const captchaKey = requestIdentifiers()["body-param"];
-    let bodyParam = false;
-    if (details.requestBody) {
-        bodyParam = details.requestBody.formData[captchaKey];
+    const captchaKeys = requestIdentifiers()["body-param"];
+
+    // attempt to locate captcha parameter
+    let bodyKeys = []; // name of captcha key
+    let bodyValues = []; // value associated with captcha key
+    let key;
+    if (details.requestBody && details.requestBody.formData) {
+        for (key of captchaKeys) {
+            if (details.requestBody.formData[key]) {
+                bodyKeys.push(key);
+                bodyValues.push(details.requestBody.formData[key]);
+            }
+        }
     }
 
     // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if (!captchaResp || !bodyParam || (captchaResp && alreadyProcessed) || sentTokens[reqUrl]) {
+    if (!captchaResp || bodyKeys.length == 0 || (captchaResp && alreadyProcessed) || sentTokens[reqUrl]) {
         return null;
     }
     sentTokens[reqUrl] = true;
@@ -67,8 +76,14 @@ function signReqCF(url, details) {
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
     const newUrl = markSignUrl(reqUrl);
-    // Construct info for xhr signing request
-    const bodyCaptcha = `${captchaKey}=${encodeURIComponent(bodyParam)}`;
+    // Reconstruct body info for xhr signing request
+    let bodyCaptcha = "";
+    for (let i=0; i<bodyKeys.length; i++) {
+        if (i != 0) {
+            bodyCaptcha += "&";
+        }
+        bodyCaptcha += `${bodyKeys[i]}=${encodeURIComponent(bodyValues[i])}`;
+    }
     const xhrInfo = {newUrl: newUrl, requestBody: `${bodyCaptcha}&blinded-tokens=${btRequest}`, tokens: tokens};
 
     return xhrInfo;

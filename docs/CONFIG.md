@@ -184,9 +184,9 @@ the issuance portion of the Privacy Pass protocol.
 
 For example, the CF config (id=1) uses the following parameters:
 
-- "query-param": for identifying requests based on the URL query parameters
-- "body-param": for identifying requests based on HTTP request body parameters
-- "post-processed": for identifying requests that have already been processed by
+- `"query-param"`: for identifying requests based on the URL query parameters
+- `"body-param"`: for replaying important parameters that part of the request body
+- `"post-processed"`: for identifying requests that have already been processed by
 the WebRequest API
 
 ### config\["cookies"\]
