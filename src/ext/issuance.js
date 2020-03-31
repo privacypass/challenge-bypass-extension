@@ -158,12 +158,13 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
     const xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         // When we receive a response...
+        const id = getConfigId();
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
-            && countStoredTokens() < (maxTokens() - tokensPerRequest())) {
+            && countStoredTokens(id) < (maxTokens() - tokensPerRequest())) {
             const respData = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
             validateResponse(url, tabId, respData, tokens);
-        } else if (countStoredTokens() >= (maxTokens() - tokensPerRequest())) {
+        } else if (countStoredTokens(id) >= (maxTokens() - tokensPerRequest())) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
     };

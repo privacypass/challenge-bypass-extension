@@ -15,40 +15,37 @@ if (background) {
 }
 
 function UpdatePopup() {
-    let tokLen = 0
     if (background) {
-        tokLen = background.countStoredTokens();
-        handleResponse(tokLen, background.getMorePassesUrl());
+        let configTokLens = background.getTokenNumbersForAllConfigs();
+        handleResponse(configTokLens);
     } else {
-        let send = browser.runtime.sendMessage({
-            tokLen: true
-        });
-        send.then(handleResponse);
+        browser.runtime.sendMessage({
+            tokLen: true,
+        }).then(handleResponse);
     }
 }
 
-function handleResponse(tokLen, url) {
+function handleResponse(configTokLens) {
     // Replace the count displayed in the popup
-    replaceTokensStoredCount(tokLen);
-    document.getElementById("website").setAttribute("href", url)
+    replaceTokensStoredCount(configTokLens);
 
     document.getElementById("clear").addEventListener("click", function() {
         if (background) {
             background.clearStorage();
+            UpdatePopup();
         } else {
-            let send = browser.runtime.sendMessage({
+            browser.runtime.sendMessage({
                 clear: true
-            });
-            send.then(function() {
-                replaceTokensStoredCount(0);
-            });
+            }).then(() => {
+                UpdatePopup();
+            })
         }
     });
 
     // this allows the client to generate a redemption token for CF API.
     document.getElementById("redeem").addEventListener("click", () => {
         if (background) {
-            tokLen = background.countStoredTokens();
+            tokLen = background.countStoredTokens(background.getConfigId());
             if (tokLen > 0) {
                 const s1 = background.generateString();
                 const s2 = background.generateString();
@@ -59,10 +56,9 @@ function handleResponse(tokLen, url) {
                 background.console.log("No tokens for redemption!");
             }
         } else {
-            let send = browser.runtime.sendMessage({
+            browser.runtime.sendMessage({
                 redeem: true
-            });
-            send.then((ret) => {
+            }).then((ret) => {
                 const [v, s1, s2] = ret;
                 if (!v) {
                     console.log("No tokens for redemption!");
@@ -91,31 +87,51 @@ function outputRedemption(v, s1, s2) {
 }
 
 // We have to do replace this way as using innerHtml is unsafe
-function replaceTokensStoredCount(tokLen) {
-    // remove old count
-    var oldCount = document.getElementById("tokens");
-    if (oldCount) {
-        oldCount.parentNode.removeChild(oldCount);
-    }
-    var oldText = document.getElementById("passtext");
-    if (oldText) {
-        oldText.parentNode.removeChild(oldText);
-    }
-    var oldName = document.getElementById("name");
-    if (oldName) {
-        oldName.parentNode.removeChild(oldName);
-    }
+function replaceTokensStoredCount(configTokLens) {
+    configTokLens.map((ele) => {
+        // remove old count
+        var span = document.getElementById(`stored-${ele.id}`);
+        if (span) {
+            span.parentNode.removeChild(span);
+        }
+    });
 
     // replace with new count
-    var passtext = document.createElement("span");
-    passtext.setAttribute("id", "passtext");
-    passtext.appendChild(document.createTextNode(`Passes`));
-    document.getElementById("stored").appendChild(passtext);
+    configTokLens.forEach((ele) => {
+        var stored = document.createElement("span");
+        stored.setAttribute("id", `stored-${ele.id}`);
+        stored.className = "stored";
+        stored.onclick = () => {
+            chrome.tabs.create({
+                url: ele.url,
+            });
+        };
 
-    var newCount = document.createElement("span");
-    newCount.setAttribute("id", "tokens");
-    newCount.appendChild(document.createTextNode(tokLen));
-    document.getElementById("stored").appendChild(newCount);
+        const active = ele.active ? "(active)" : "";
+
+        var passtext = document.createElement("span");
+        passtext.setAttribute("id", `passtext-${ele.id}`);
+        passtext.className = "passtext";
+        passtext.textContent = `${ele.name} ${active}`;
+        stored.appendChild(passtext);
+
+        var newCount = document.createElement("span");
+        newCount.setAttribute("id", `tokens-${ele.id}`);
+        newCount.className = "tokens";
+        newCount.textContent = ele.tokLen;
+        stored.appendChild(newCount);
+
+        stored.onmouseover = () => {
+            const passesText = document.getElementById(`passtext-${ele.id}`);
+            passesText.textContent = "Get more passes!";
+        };
+        stored.onmouseleave = () => {
+            const passesText = document.getElementById(`passtext-${ele.id}`);
+            passesText.textContent = `${ele.name} ${active}`;
+        }
+
+        document.getElementById("popup-http").appendChild(stored);
+    });
 }
 
 window.onload = UpdatePopup;

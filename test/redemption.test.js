@@ -6,8 +6,8 @@
  */
 import each from "jest-each";
 
-
 const workflow = workflowSet();
+
 /**
  * Functions/variables
  */

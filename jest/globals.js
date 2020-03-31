@@ -20,6 +20,7 @@ let httpsRedirectMock = new Map();
 let redirectCountMock = new Map();
 let timeSinceLastResp = 0;
 const consoleMock = {
+    log: global.console.log,
     warn: jest.fn(),
     error: jest.fn(),
 };

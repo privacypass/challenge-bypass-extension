@@ -65,7 +65,8 @@ function storeNewTokens(tokens, signedPoints) {
         storableTokens[i] = getTokenEncoding(t, signedPoints[i]);
     }
     // Append old tokens to the newly received tokens
-    if (countStoredTokens() > 0) {
+    const id = getConfigId();
+    if (countStoredTokens(id) > 0) {
         const oldTokens = loadTokens();
         for (let i = 0; i < oldTokens.length; i++) {
             const oldT = oldTokens[i];
@@ -73,8 +74,8 @@ function storeNewTokens(tokens, signedPoints) {
         }
     }
     const json = JSON.stringify(storableTokens);
-    set(storageKeyTokens(), json);
-    set(storageKeyCount(), storableTokens.length);
+    set(storageKeyTokens(id), json);
+    set(storageKeyCount(id), storableTokens.length);
 
     // Update the count on the actual icon
     updateIcon(storableTokens.length);
@@ -91,8 +92,9 @@ function storeTokens(tokens) {
         storableTokens[i] = getTokenEncoding(t, t.point);
     }
     const json = JSON.stringify(storableTokens);
-    set(storageKeyTokens(), json);
-    set(storageKeyCount(), tokens.length);
+    const id = getConfigId();
+    set(storageKeyTokens(id), json);
+    set(storageKeyCount(id), tokens.length);
 
     // Update the count on the actual icon
     updateIcon(tokens.length);
@@ -116,7 +118,8 @@ function getTokenEncoding(t, curvePoint) {
  * @return {Array<Object>} returns null if no tokens stored
  */
 function loadTokens() {
-    const storedJSON = get(storageKeyTokens());
+    const id = getConfigId();
+    const storedJSON = get(storageKeyTokens(id));
     if (storedJSON == null) {
         return null;
     }
@@ -134,16 +137,20 @@ function loadTokens() {
 
 /**
  * Counts the tokens that are stored in localStorage
+ * @param {Number} configId ID of the config that is being queries
+ * @param {boolean} doNotUpdate Set to true if icon shouldn't be updated
  * @return {Number}
  */
-function countStoredTokens() {
-    const count = get(storageKeyCount());
+function countStoredTokens(configId, doNotUpdate) {
+    const count = get(storageKeyCount(configId));
     if (count == null) {
         return 0;
     }
 
     // We change the png file to show if tokens are stored or not
     const countInt = JSON.parse(count);
-    updateIcon(countInt);
+    if (!doNotUpdate) {
+        updateIcon(countInt);
+    }
     return countInt;
 }

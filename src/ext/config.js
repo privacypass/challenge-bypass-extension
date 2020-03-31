@@ -22,6 +22,7 @@ function exampleConfig() {
     return {
         "id": 0, // unique integer identifying each individual config
         "name": "example", // string identifier of the configuration
+        "long-name": "example", // full name of config
         "dev": true, // sets whether the configuration should only be used in development
         "sign": true, // sets whether tokens should be sent for signing
         "redeem": true, // sets whether tokens should be sent for redemption
@@ -101,6 +102,7 @@ function PPConfigs() {
     cfConfig.id = 1;
     cfConfig.dev = false;
     cfConfig.name = "CF";
+    cfConfig["long-name"] = "Cloudflare";
     cfConfig["max-tokens"] = 300;
     cfConfig["max-spends"] = 2;
     cfConfig["var-reset-ms"] = 2000;
@@ -130,6 +132,7 @@ function PPConfigs() {
     hcConfig.id = 2;
     hcConfig.dev = false;
     hcConfig.name = "HC";
+    hcConfig["long-name"] = "hCaptcha";
     hcConfig["max-spends"] = undefined;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
