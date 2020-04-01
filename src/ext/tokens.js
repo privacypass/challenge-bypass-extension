@@ -54,28 +54,28 @@ function GenerateNewTokens(n) {
 /**
  * This is for storing tokens that we've just received from a new issuance
  * response.
+ * @param {Number} cfgId config ID driving request
  * @param {Array<Object>} tokens set of tokens to store
  * @param {Array<sjcl.ecc.point>} signedPoints signed tokens that have been
  * received from server
  */
-function storeNewTokens(tokens, signedPoints) {
+function storeNewTokens(cfgId, tokens, signedPoints) {
     const storableTokens = [];
     for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
         storableTokens[i] = getTokenEncoding(t, signedPoints[i]);
     }
     // Append old tokens to the newly received tokens
-    const id = getConfigId();
-    if (countStoredTokens(id) > 0) {
-        const oldTokens = loadTokens();
+    if (countStoredTokens(cfgId) > 0) {
+        const oldTokens = loadTokens(cfgId);
         for (let i = 0; i < oldTokens.length; i++) {
             const oldT = oldTokens[i];
             storableTokens.push(getTokenEncoding(oldT, oldT.point));
         }
     }
     const json = JSON.stringify(storableTokens);
-    set(storageKeyTokens(id), json);
-    set(storageKeyCount(id), storableTokens.length);
+    set(storageKeyTokens(cfgId), json);
+    set(storageKeyCount(cfgId), storableTokens.length);
 
     // Update the count on the actual icon
     updateIcon(storableTokens.length);
@@ -83,18 +83,18 @@ function storeNewTokens(tokens, signedPoints) {
 
 /**
  * Persists valid tokens after some manipulation, like a spend.
+ * @param {Number} cfgId config ID driving request
  * @param {Array<Object>} tokens set of tokens to store
  */
-function storeTokens(tokens) {
+function storeTokens(cfgId, tokens) {
     const storableTokens = [];
     for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
         storableTokens[i] = getTokenEncoding(t, t.point);
     }
     const json = JSON.stringify(storableTokens);
-    const id = getConfigId();
-    set(storageKeyTokens(id), json);
-    set(storageKeyCount(id), tokens.length);
+    set(storageKeyTokens(cfgId), json);
+    set(storageKeyCount(cfgId), tokens.length);
 
     // Update the count on the actual icon
     updateIcon(tokens.length);
@@ -115,11 +115,11 @@ function getTokenEncoding(t, curvePoint) {
 
 /**
  * Load tokens from browser storage
+ * @param {Number} cfgId config ID driving request
  * @return {Array<Object>} returns null if no tokens stored
  */
-function loadTokens() {
-    const id = getConfigId();
-    const storedJSON = get(storageKeyTokens(id));
+function loadTokens(cfgId) {
+    const storedJSON = get(storageKeyTokens(cfgId));
     if (storedJSON == null) {
         return null;
     }
@@ -137,12 +137,12 @@ function loadTokens() {
 
 /**
  * Counts the tokens that are stored in localStorage
- * @param {Number} configId ID of the config that is being queries
+ * @param {Number} cfgId ID of the config that is being queries
  * @param {boolean} doNotUpdate Set to true if icon shouldn't be updated
  * @return {Number}
  */
-function countStoredTokens(configId, doNotUpdate) {
-    const count = get(storageKeyCount(configId));
+function countStoredTokens(cfgId, doNotUpdate) {
+    const count = get(storageKeyCount(cfgId));
     if (count == null) {
         return 0;
     }

@@ -48,6 +48,11 @@ the future.
 
 The time intervals (ms) by which the variables from above are reset.
 
+### config\["comm-vk"\]
+
+Public verification key, used to verify signatures on commitments that
+are retrieved over HTTP.
+
 ### config\["commitments"\]
 
 Hex-encoded elliptic curve commitment values for verifying DLEQ proofs. These
@@ -262,5 +267,5 @@ full).
 
 ### config\["send-h2c-params"\]
 
-A boolean that determines whether the contents of config\["h2c-params"\] should
+A boolean that determines whether the contents of `config["h2c-params"]` should
 actually be sent to the server.

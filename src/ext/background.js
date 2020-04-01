@@ -22,10 +22,10 @@
 /* exported reloadOnSign */
 /* exported spentTab, timeSinceLastResp, futureReload, sentTokens */
 /* exported dev */
-/* exported getCommitmentsKey */
+/* exported getVerificationKey */
 /* exported storageKeyTokens, storageKeyCount */
 /* exported sendH2CParams, maxTokens, signResponseFMT, tokensPerRequest */
-/* exported CONFIG_ID */
+/* exported CONFIG_ID, CF_CONFIG_ID, HC_CONFIG_ID */
 /* exported issueActionUrls */
 /* exported LISTENER_URLS */
 /* exported getTarget */
@@ -39,66 +39,81 @@
 "use strict";
 
 const LISTENER_URLS = "<all_urls>";
+let STORAGE_STR = "bypass-tokens-";
+let COUNT_STR = STORAGE_STR + "count-";
+
 // CF config is initialized by default
-let CONFIG_ID = 1;
+let CF_CONFIG_ID = 1;
+let HC_CONFIG_ID = 2;
+let CONFIG_ID = CF_CONFIG_ID;
 let getConfigId = () => CONFIG_ID;
 let setConfigId = (val) => CONFIG_ID = val;
+
+let validConfigIds = () => PPConfigs().map((config) => config.id);
+let checkConfigId = (configId) => validConfigIds().includes(configId);
+
+// The active configuration drives the request flow
+let activeConfig = () => PPConfigs()[getConfigId()];
 
 // we need to use this function in the JS of the popup and let doesn't allow us
 // to do this.
 // eslint-disable-next-line no-var
-var getConfigName = () => activeConfig()["name"];
-
-let checkConfigId = (configId) => PPConfigs().map((config) => config.id).includes(configId);
-
-let STORAGE_STR = "bypass-tokens-";
-let COUNT_STR = STORAGE_STR + "count-";
-let activeConfig = () => PPConfigs()[getConfigId()];
-let dev = () => activeConfig()["dev"];
-let chlClearanceCookie = () => activeConfig()["cookies"]["clearance-cookie"];
-let chlCaptchaDomain = () => activeConfig()["captcha-domain"]; // cookies have dots prepended
-let chlVerificationError = () => activeConfig()["error-codes"]["connection-error"];
-let chlConnectionError = () => activeConfig()["error-codes"]["verify-error"];
-let chlBadRequestError = () => activeConfig()["error-codes"]["bad-request-error"];
-let chlUnknownError = () => activeConfig()["error-codes"]["unknown-error"];
-let getCommitmentsKey = () => activeConfig()["pkey-commitments"];
-let spendMax = () => activeConfig()["max-spends"];
-let maxTokens = () => activeConfig()["max-tokens"];
-let doSign = () => activeConfig()["sign"];
-let doRedeem = () => activeConfig()["redeem"];
-let redeemMethod = () => activeConfig()["spend-action"]["redeem-method"];
-let headerName = () => activeConfig()["spend-action"]["header-name"];
-let headerHostName = () => activeConfig()["spend-action"]["header-host-name"];
-let headerPathName = () => activeConfig()["spend-action"]["header-path-name"];
-let spendActionUrls = () => activeConfig()["spend-action"]["urls"];
-let spendStatusCode = () => activeConfig()["spending-restrictions"]["status-code"];
-let maxRedirect = () => activeConfig()["spending-restrictions"]["max-redirects"];
-let newTabs = () => activeConfig()["spending-restrictions"]["new-tabs"];
-let badNav = () => activeConfig()["spending-restrictions"]["bad-navigation"];
-let badTransition = () => activeConfig()["spending-restrictions"]["bad-transition"];
-let validRedirects = () => activeConfig()["spending-restrictions"]["valid-redirects"];
-let validTransitions = () => activeConfig()["spending-restrictions"]["valid-transitions"];
-let varReset = () => activeConfig()["var-reset"];
-let varResetMs = () => activeConfig()["var-reset-ms"];
-let storageKeyTokens = (id) => STORAGE_STR + id;
-let storageKeyCount = (id) => COUNT_STR + id;
-let h2cParams = () => activeConfig()["h2c-params"];
-let sendH2CParams = () => activeConfig()["send-h2c-params"];
-let issueActionUrls = () => activeConfig()["issue-action"]["urls"];
-let reloadOnSign = () => activeConfig()["issue-action"]["sign-reload"];
-let requestIdentifiers = () => activeConfig()["issue-action"]["request-identifiers"];
-let signResponseFMT = () => activeConfig()["issue-action"]["sign-resp-format"];
-let tokensPerRequest = () => activeConfig()["issue-action"]["tokens-per-request"];
-let optEndpoints = () => activeConfig()["opt-endpoints"];
-let emptyRespHeaders = () => activeConfig()["spend-action"]["empty-resp-headers"];
-let storedCommitments = () => activeConfig()["commitments"];
+var getConfigName = (id) => getConfigForId(id)["name"];
+// returns the active config if no id is specified
+let getConfigForId = (id) => {
+    if (!id) {
+        return activeConfig();
+    } else if (!checkConfigId(id)) {
+        throw new Error(`Incorrect config ID specified: ${id}`);
+    }
+    return PPConfigs()[id];
+};
+let dev = (id) => getConfigForId(id)["dev"];
+let chlClearanceCookie = (id) => getConfigForId(id)["cookies"]["clearance-cookie"];
+let chlCaptchaDomain = (id) => getConfigForId(id)["captcha-domain"]; // cookies have dots prepended
+let chlVerificationError = (id) => getConfigForId(id)["error-codes"]["connection-error"];
+let chlConnectionError = (id) => getConfigForId(id)["error-codes"]["verify-error"];
+let chlBadRequestError = (id) => getConfigForId(id)["error-codes"]["bad-request-error"];
+let chlUnknownError = (id) => getConfigForId(id)["error-codes"]["unknown-error"];
+let getVerificationKey = (id) => getConfigForId(id)["comm-vk"];
+let spendMax = (id) => getConfigForId(id)["max-spends"];
+let maxTokens = (id) => getConfigForId(id)["max-tokens"];
+let doSign = (id) => getConfigForId(id)["sign"];
+let doRedeem = (id) => getConfigForId(id)["redeem"];
+let redeemMethod = (id) => getConfigForId(id)["spend-action"]["redeem-method"];
+let headerName = (id) => getConfigForId(id)["spend-action"]["header-name"];
+let headerHostName = (id) => getConfigForId(id)["spend-action"]["header-host-name"];
+let headerPathName = (id) => getConfigForId(id)["spend-action"]["header-path-name"];
+let spendActionUrls = (id) => getConfigForId(id)["spend-action"]["urls"];
+let spendStatusCode = (id) => getConfigForId(id)["spending-restrictions"]["status-code"];
+let maxRedirect = (id) => getConfigForId(id)["spending-restrictions"]["max-redirects"];
+let newTabs = (id) => getConfigForId(id)["spending-restrictions"]["new-tabs"];
+let badNav = (id) => getConfigForId(id)["spending-restrictions"]["bad-navigation"];
+let badTransition = (id) => getConfigForId(id)["spending-restrictions"]["bad-transition"];
+let validRedirects = (id) => getConfigForId(id)["spending-restrictions"]["valid-redirects"];
+let validTransitions = (id) => getConfigForId(id)["spending-restrictions"]["valid-transitions"];
+let varReset = (id) => getConfigForId(id)["var-reset"];
+let varResetMs = (id) => getConfigForId(id)["var-reset-ms"];
+let storageKeyTokens = (id) => STORAGE_STR + getConfigForId(id)["id"];
+let storageKeyCount = (id) => COUNT_STR + getConfigForId(id)["id"];
+let h2cParams = (id) => getConfigForId(id)["h2c-params"];
+let sendH2CParams = (id) => getConfigForId(id)["send-h2c-params"];
+let issueActionUrls = (id) => getConfigForId(id)["issue-action"]["urls"];
+let reloadOnSign = (id) => getConfigForId(id)["issue-action"]["sign-reload"];
+let requestIdentifiers = (id) => getConfigForId(id)["issue-action"]["request-identifiers"];
+let signResponseFMT = (id) => getConfigForId(id)["issue-action"]["sign-resp-format"];
+let tokensPerRequest = (id) => getConfigForId(id)["issue-action"]["tokens-per-request"];
+let optEndpoints = (id) => getConfigForId(id)["opt-endpoints"];
+let emptyRespHeaders = (id) => getConfigForId(id)["spend-action"]["empty-resp-headers"];
+let storedCommitments = (id) => getConfigForId(id)["commitments"];
 
 /**
  * Allows access to get-more-passes-url from UpdatePopup
+ * @param {Number} id
  * @return {string}
  */
-function getMorePassesUrl() {
-    return activeConfig()["get-more-passes-url"];
+function getMorePassesUrl(id) {
+    return getConfigForId(id)["get-more-passes-url"];
 }
 
 /* Config variables that are reset in setConfig() depending on the header value that is received (see config.js) */
@@ -138,8 +153,9 @@ let futureReload = new Map();
 // Tabs that a spend occurred in
 let spentTab = new Map();
 
-// Track whether we should try to initiate a signing request
-let readySign = false;
+// Track whether we should try to initiate a signing request for a
+// specific config
+let readyIssue = new Map();
 
 // Tracks whether a recent change has occurred
 // prevents overlay of conflicting resources
@@ -176,6 +192,9 @@ let setRedirected = (key, value) => redirected[key] = value;
 let getRedirectCount = (key) => redirectCount[key];
 let setRedirectCount = (key, value) => redirectCount[key] = value;
 let incrRedirectCount = (key) => redirectCount[key] += 1;
+
+let getReadyIssue = (key) => readyIssue[key];
+let setReadyIssue = (key, value) => readyIssue[key] = value;
 
 
 /**
@@ -276,9 +295,11 @@ function processHeaders(details, url) {
             }
         }
 
-        // correct status code with the right header indicates a bypassable Cloudflare CAPTCHA
-        if (isBypassHeader(header) && spendStatusCode().includes(details.statusCode)) {
-            ret.attempted = decideRedeem(details, url);
+        // correct status code with the right header indicates a
+        // bypassable Cloudflare CAPTCHA
+        let cfgId = isBypassHeader(header);
+        if (cfgId > 0 && spendStatusCode().includes(details.statusCode)) {
+            ret.attempted = decideRedeem(details, url, cfgId);
             break;
         }
     }
@@ -290,7 +311,7 @@ function processHeaders(details, url) {
         // responseHeaders but where a spend *should* occur. If this happens then we
         // send a direct request to an endpoint that determines whether a CAPTCHA
         // page is shown via XHR.
-        ret.xhr = tryRequestChallenge(details, url, ret);
+        ret.xhr = tryRequestChallenge(details, url);
     }
 
     return ret;
@@ -309,9 +330,10 @@ function tryRequestChallenge(details, url) {
         // We return a boolean for testing purposes
         let xhrRet = false;
         if (this.readyState === this.HEADERS_RECEIVED) {
-            if (spendStatusCode().includes(xhr.status) && xhr.getResponseHeader(CHL_BYPASS_SUPPORT) === CONFIG_ID) {
+            let cfgId = getConfigId();
+            if (spendStatusCode().includes(xhr.status) && xhr.getResponseHeader(CHL_BYPASS_SUPPORT) === cfgId) {
                 // don't return anything here because it is async
-                decideRedeem(details, url);
+                decideRedeem(details, url, cfgId);
                 xhrRet = true;
             }
             xhr.abort();
@@ -328,9 +350,10 @@ function tryRequestChallenge(details, url) {
  * Decides whether to redeem a token for the given URL
  * @param {Object} details Response details
  * @param {URL} url URL object for possible redemption
+ * @param {Number} cfgId config identifier
  * @return {boolean}
  */
-function decideRedeem(details, url) {
+function decideRedeem(details, url, cfgId) {
     let attempted = false;
     if (!spentUrl[url.href]) {
         const count = countStoredTokens(getConfigId());
@@ -345,8 +368,8 @@ function decideRedeem(details, url) {
         }
 
         // If signing is permitted then we should note this
-        if (!attempted && doSign()) {
-            readySign = true;
+        if (!attempted && doSign(cfgId)) {
+            setReadyIssue(cfgId, true);
         }
     }
     return attempted;
@@ -450,41 +473,47 @@ function beforeRequest(details, url) {
     }
 
     // Only sign tokens if config says so and the appropriate header was received previously
-    if (!doSign() || !readySign) {
-        return false;
-    }
-
     // Different signing methods based on configs
+    // We attempt to sign tokens for all available configs
     let xhrInfo;
-    switch (getConfigId()) {
-        case 1:
-            xhrInfo = signReqCF(url, details);
-            break;
-        case 2:
-            xhrInfo = signReqHC(url, details);
-            break;
-        default:
-            throw new Error("Incorrect config ID specified");
-    }
+    let issueId;
+    validConfigIds().forEach((id) => {
+        // check if signing is allowed and that we haven't already
+        // constructed a request
+        if (!doSign(id) || !getReadyIssue(id) || xhrInfo) {
+            return;
+        }
+
+        switch (id) {
+            case 1:
+                xhrInfo = signReqCF(url, details);
+                break;
+            case 2:
+                xhrInfo = signReqHC(url, details);
+                break;
+            default:
+                throw new Error("Incorrect config ID specified");
+        }
+
+        issueId = id;
+    });
 
     // If this is null then signing is not appropriate
-    if (xhrInfo === null) {
+    if (!xhrInfo) {
         return false;
     }
-    readySign = false;
+    setReadyIssue(issueId, false);
 
     // actually send the token signing request via xhr and return the xhr object
-    const xhr = sendXhrSignReq(xhrInfo, url, details.tabId);
+    const xhr = sendXhrSignReq(xhrInfo, url, issueId, details.tabId);
 
-    /**
-     *  In the no-reload paradigm the issuance request is sent along side the original solve request. Requests are reconciled on the backend.
-     *  If the captcha solution is correct a signature is returned to the extension, with a 200 status code, if the solution is not correct a 403 status code is returned
-     *  to the extension along with any error messages. As both the solve request and the issue request are sent to the same endpoint we must send a `{cancel: false}`
-     *  to avoid canceling the original captcha solve request.
-    */
+    // In the no-reload paradigm the issuance request is sent along side
+    // the original solve request, we must return to avoid canceling the
+    // original captcha solve request.
     if (xhrInfo.cancel === false) {
         return false;
     }
+
     return {xhr: xhr};
 }
 
@@ -607,7 +636,8 @@ function GetTokenForSpend() {
     }
     const tokenToSpend = tokens[0];
     tokens = tokens.slice(1);
-    storeTokens(tokens);
+    const cfgId = getConfigId();
+    storeTokens(cfgId, tokens);
     return tokenToSpend;
 }
 
@@ -617,6 +647,7 @@ function GetTokenForSpend() {
  */
 function clearStorage() {
     clear();
+    clearCachedCommitments();
     resetVars();
     resetSpendVars();
     // Update icons
@@ -684,8 +715,8 @@ function resetSpendVars() {
 /**
  * Checks whether a header should activate the extension. The value dictates
  * whether to swap to a new configuration
- * @param {header} header
- * @return {boolean}
+ * @param {Header} header
+ * @return {Number} new config identifier
  */
 function isBypassHeader(header) {
     const newConfigVal = parseInt(header.value);
@@ -694,9 +725,9 @@ function isBypassHeader(header) {
             setConfig(newConfigVal);
             recentConfigChange = true;
         }
-        return true;
+        return newConfigVal;
     }
-    return false;
+    return -1;
 }
 
 /**
@@ -709,7 +740,6 @@ function setConfig(val) {
     if (val !== getConfigId()) {
         setConfigId(val);
         initECSettings(h2cParams());
-        clearCachedCommitments();
         countStoredTokens(val);
     }
 }

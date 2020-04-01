@@ -148,8 +148,7 @@ window.validateRespMock = jest.fn();
 window.getMock = (key) => JSON.parse(localStorage.getItem(key));
 window.setMock = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
-window.CACHED_COMMITMENTS_STRING = "cached-commitments";
-window.clearCachedCommitmentsMock = () => setMock(CACHED_COMMITMENTS_STRING, null);
+window.clearCachedCommitmentsMock = (configId) => setMock(`cached-commitments-${configId}`, null);
 
 window.setSpendFlagMock = (key, value) => setMock(key, value);
 window.getSpendFlagMock = (key) => getMock(key);

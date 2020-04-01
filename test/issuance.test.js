@@ -30,8 +30,10 @@ const parseIssueResp = workflow.__get__("parseIssueResp");
 const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
+const cachedCommitmentsKey = workflow.__get__("cachedCommitmentsKey");
 const cacheCommitments = workflow.__get__("cacheCommitments");
 const checkVersion = workflow.__get__("checkVersion");
+const setReadyIssue = workflow.__get__("setReadyIssue");
 
 const PPConfigs = workflow.__get__("PPConfigs");
 
@@ -62,7 +64,7 @@ beforeEach(() => {
     configId = configId === undefined ? 1 : configId;
     setConfig(configId); // set the active config
     workflow.__set__("issueActionUrls", () => [LISTENER_URLS]);
-    workflow.__set__("getCommitmentsKey", () => testPubKey);
+    workflow.__set__("getVerificationKey", () => testPubKey);
 });
 
 /**
@@ -85,35 +87,35 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
             test("version not available", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr, "-1.00")),
+                    jest.fn(() => retrieveCommitments(configId, xhr, "-1.00")),
                 ).toThrow("Retrieved version");
             });
 
             test("bad public key", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                workflow.__set__("getCommitmentsKey", () => "badPublicKey");
+                workflow.__set__("getVerificationKey", () => "badPublicKey");
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr, "2.0-sig-ok")),
+                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-ok")),
                 ).toThrow("Failed on parsing public key");
             });
 
             test("version not available", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr)),
+                    jest.fn(() => retrieveCommitments(configId, xhr)),
                 ).toThrow("Retrieved version");
             });
 
             test("parse correctly (v1.0)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(xhr, "1.0");
+                const commitments = retrieveCommitments(configId, xhr, "1.0");
                 expect(testG === commitments.G).toBeTruthy();
                 expect(testH === commitments.H).toBeTruthy();
             });
 
             test("parse correctly (sig-ok)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(xhr, "2.0-sig-ok");
+                const commitments = retrieveCommitments(configId, xhr, "2.0-sig-ok");
                 expect(testSigG === commitments.G).toBeTruthy();
                 expect(testSigH === commitments.H).toBeTruthy();
             });
@@ -121,8 +123,8 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
             test("parse correctly (dev)", () => {
                 workflow.__with__({dev: () => true})(() => {
                     const xhr = createVerificationXHR(); // this usually takes params
-                    const version = checkVersion("1.1");
-                    const commitments = retrieveCommitments(xhr, version);
+                    const version = checkVersion(configId, "1.1");
+                    const commitments = retrieveCommitments(configId, xhr, version);
                     expect(testDevG === commitments.G).toBeTruthy();
                     expect(testDevH === commitments.H).toBeTruthy();
                 });
@@ -130,54 +132,54 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
             test("parse correctly (hkdf)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(xhr, "hkdf");
+                const commitments = retrieveCommitments(configId, xhr, "hkdf");
                 expect(hkdfG === commitments.G).toBeTruthy();
                 expect(hkdfH === commitments.H).toBeTruthy();
             });
 
             test("caching commitments", () => {
-                cacheCommitments("1.0", testG, testH);
-                const cached10 = getCachedCommitments("1.0");
+                cacheCommitments(configId, "1.0", testG, testH);
+                const cached10 = getCachedCommitments(configId, "1.0");
                 expect(cached10.G === testG).toBeTruthy();
                 expect(cached10.H === testH).toBeTruthy();
-                const cached11 = getCachedCommitments("1.1");
+                const cached11 = getCachedCommitments(configId, "1.1");
                 expect(cached11).toBeFalsy();
                 setConfig(0);
-                expect(getCachedCommitments("1.0")).toBeFalsy();
+                expect(getCachedCommitments(configId, "1.0")).toEqual(cached10);
             });
 
             test("caching commitments (hkdf)", () => {
-                cacheCommitments("hkdf", hkdfG, hkdfH);
-                const cachedHkdf = getCachedCommitments("hkdf");
+                cacheCommitments(configId, "hkdf", hkdfG, hkdfH);
+                const cachedHkdf = getCachedCommitments(configId, "hkdf");
                 expect(cachedHkdf.G === hkdfG).toBeTruthy();
                 expect(cachedHkdf.H === hkdfH).toBeTruthy();
                 setConfig(0);
-                expect(getCachedCommitments("hkdf")).toBeFalsy();
+                expect(getCachedCommitments(configId, "hkdf")).toEqual(cachedHkdf);
             });
 
             test("error-free empty cache", () => {
-                clearCachedCommitmentsMock();
+                clearCachedCommitmentsMock(configId);
                 expect(getCachedCommitments).not.toThrowError();
             });
 
             test("malformed commitments signature", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr, "2.0-sig-bad")),
+                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-bad")),
                 ).toThrow("Failed on parsing commitment signature");
             });
 
             test("signature doesn't verify", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr, "2.0-sig-fail")),
+                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-fail")),
                 ).toThrow("Invalid commitment");
             });
 
             test("expired commitments", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 expect(
-                    jest.fn(() => retrieveCommitments(xhr, "2.0-expired")),
+                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-expired")),
                 ).toThrow("Commitments expired in");
             });
         });
@@ -191,7 +193,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                     });
                 });
                 test("signing not activated", () => {
-                    workflow.__set__("readySign", false);
+                    setReadyIssue(configId, false);
                     const b = beforeRequest(details, url);
                     expect(b).toBeFalsy();
                 });
@@ -227,6 +229,17 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
         each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             .describe("config_id = %i, test sending sign requests", (configId) => {
+                beforeEach(() => {
+                    const validIds = PPConfigs().map((config) => config.id);
+                    validIds.forEach((id) => {
+                        if (id !== configId) {
+                            setReadyIssue(id, false);
+                        } else {
+                            setReadyIssue(id, true);
+                        }
+                    });
+                });
+
                 test("incorrect config id", () => {
                     function tryRun() {
                         workflow.__with__({CONFIG_ID: () => 3})(() => {
@@ -238,95 +251,101 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                 });
 
                 test("test that true is returned", () => {
-                    workflow.__with__({readySign: true})(() => {
-                        const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                        const b = beforeRequest(details, newUrl);
+                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                    const b = beforeRequest(details, newUrl);
+                    if (configId === 1) {
                         expect(b).toBeTruthy();
                         expect(b.xhr).toBeTruthy();
-                        if (configId === 1) {
-                            expect(b.xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
-                            if (captchaKey == "h-captcha-response") {
-                                expect(b.xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
-                            }
-                            expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                        if (captchaKey == "h-captcha-response") {
+                            expect(b.xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                         }
-                    });
+                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                    } else {
+                        expect(b).toBeFalsy();
+                    }
                 });
 
                 test("test that true is returned with old example suffix also", () => {
-                    workflow.__with__({readySign: true})(() => {
-                        const newUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
-                        const b = beforeRequest(details, newUrl);
+                    const newUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
+                    const b = beforeRequest(details, newUrl);
+                    if (configId === 1) {
                         expect(b).toBeTruthy();
                         expect(b.xhr).toBeTruthy();
-                        if (configId === 1) {
-                            expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
-                            if (captchaKey == "h-captcha-response") {
-                                expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
-                            }
-                            expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                        if (captchaKey == "h-captcha-response") {
+                            expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                         }
-                    });
+                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                    } else {
+                        expect(b).toBeFalsy();
+                    }
                 });
 
                 test("bad status does not sign", () => {
                     setTimeSinceLastResp(0); // reset the variables
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    workflow.__with__({"readySign": true, "XMLHttpRequest": mockXHRBadStatus})(() => {
+                    workflow.__with__({XMLHttpRequest: mockXHRBadStatus})(() => {
                         const b = beforeRequest(details, newUrl);
-                        expect(b).toBeTruthy();
-                        const xhr = b.xhr;
                         if (configId === 1) {
+                            expect(b).toBeTruthy();
+                            expect(b.xhr).toBeTruthy();
+                            const xhr = b.xhr;
                             expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
                             if (captchaKey == "h-captcha-response") {
                                 expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                             }
                             expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                            xhr.onreadystatechange();
+                            expect(validateRespMock).not.toBeCalled();
+                            expect(updateIconMock).toBeCalledTimes(1);
+                            expect(updateBrowserTabMock).not.toBeCalled();
+                        } else {
+                            expect(b).toBeFalsy();
                         }
-                        xhr.onreadystatechange();
-                        expect(validateRespMock).not.toBeCalled();
-                        expect(updateIconMock).toBeCalledTimes(1);
-                        expect(updateBrowserTabMock).not.toBeCalled();
                     });
                 });
 
                 test("bad readyState does not sign", () => {
                     setTimeSinceLastResp(0); // reset the variables
                     const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    workflow.__with__({"readySign": true, "XMLHttpRequest": mockXHRBadReadyState})(() => {
+                    workflow.__with__({XMLHttpRequest: mockXHRBadReadyState})(() => {
                         const b = beforeRequest(details, newUrl);
-                        expect(b).toBeTruthy();
-                        const xhr = b.xhr;
                         if (configId === 1) {
+                            expect(b).toBeTruthy();
+                            expect(b.xhr).toBeTruthy();
+                            const xhr = b.xhr;
                             expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
                             if (captchaKey == "h-captcha-response") {
                                 expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                             }
                             expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                            xhr.onreadystatechange();
+                            expect(validateRespMock).not.toBeCalled();
+                            expect(updateIconMock).toBeCalledTimes(1);
+                            expect(updateBrowserTabMock).not.toBeCalled();
+                        } else {
+                            expect(b).toBeFalsy();
                         }
-                        xhr.onreadystatechange();
-                        expect(validateRespMock).not.toBeCalled();
-                        expect(updateIconMock).toBeCalledTimes(1);
-                        expect(updateBrowserTabMock).not.toBeCalled();
                     });
                 });
 
                 test("too many tokens does not sign", () => {
                     // Always test CF here due to mock data being available
                     if (configId === 1) {
-                        workflow.__with__({readySign: true, XMLHttpRequest: mockXHRGood})(() => {
+                        workflow.__with__({XMLHttpRequest: mockXHRGood})(() => {
                             function run() {
                                 const b = beforeRequest(details, newUrl);
+                                expect(b).toBeTruthy();
                                 const xhr = b.xhr;
                                 xhr.onreadystatechange();
                             }
                             setTimeSinceLastResp(0); // reset the variables
                             setMock(bypassTokensCount(configId), 400);
                             const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-
                             expect(run).toThrowError("upper bound");
                             expect(validateRespMock).not.toBeCalled();
-                            expect(updateIconMock).toBeCalledTimes(2);
+                            expect(updateIconMock).toBeCalledTimes(1);
                             expect(updateBrowserTabMock).not.toBeCalled();
                         });
                     }
@@ -337,7 +356,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                         function run() {
                             const request = "";
                             const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
-                            const xhr = sendXhrSignReq(xhrInfo, newUrl, details.tabId);
+                            const xhr = sendXhrSignReq(xhrInfo, newUrl, configId, details.tabId);
                             xhr.responseText = "";
                             xhr.onreadystatechange();
                         }
@@ -358,7 +377,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                         setTimeSinceLastResp(0); // reset the variables
                         workflow.__with__({signResponseFMT: () => "bad_fmt"})(() => {
                             const tabId = details.tabId;
-                            validateResponse(url, tabId, "", "");
+                            validateResponse(url, configId, tabId, "", "");
                         });
                     }
                     expect(run).toThrowError("invalid signature response format");
@@ -370,7 +389,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                     function run() {
                         setTimeSinceLastResp(0); // reset the variables
                         const tabId = details.tabId;
-                        validateResponse(url, tabId, "bad-set-of-data", "");
+                        validateResponse(url, configId, tabId, "bad-set-of-data", "");
                     }
                     expect(run).toThrowError("signature response invalid");
                     expect(updateIconMock).toBeCalledTimes(0);
@@ -466,9 +485,10 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                         }
                     });
 
-                    function checkCache(version) {
-                        const cache = getCachedCommitments(version);
+                    function checkCache(configId, version) {
+                        const cache = getCachedCommitments(configId, version);
                         if (version !== "1.0") {
+                            expect(cache).toBeTruthy();
                             expect(cache.G === G).toBeTruthy();
                             expect(cache.H === H).toBeTruthy();
                         } else {
@@ -478,13 +498,13 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
                     function oldVersions(tokens, out) {
                         before = getMock(bypassTokensCount(1));
-                        const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
+                        const xhr = validateAndStoreTokens(testUrl, configId, details.tabId, tokens, out);
                         expect(xhr).toBeFalsy();
                         after = getMock(bypassTokensCount(1));
                     }
 
                     function newVersions(tokens, out) {
-                        const xhr = validateAndStoreTokens(testUrl, details.tabId, tokens, out);
+                        const xhr = validateAndStoreTokens(testUrl, configId, details.tabId, tokens, out);
                         expect(xhr).toBeTruthy();
                         expect(xhr.send).toBeCalledTimes(1);
                         before = getMock(bypassTokensCount(1));
@@ -495,14 +515,14 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                     [testUrl, oldTestUrl].forEach((url) => {
                         test(`test store tokens: ${element.name}`, () => {
                             function run() {
-                                workflow.__set__("getCommitmentsKey", () => pubKey);
+                                workflow.__set__("getVerificationKey", () => pubKey);
                                 const tokens = [];
                                 for (let i = 0; i < testTokenData.length; i++) {
                                     tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                                 }
                                 const out = parseRespString(element.string);
                                 commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                                version = checkVersion(out.version);
+                                version = checkVersion(configId, out.version);
                             }
                             setTimeSinceLastResp(0); // reset the variables
                             setMock(bypassTokensCount(1), 0);
@@ -512,25 +532,25 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                             expect(updateBrowserTabMock).toBeCalledWith(details.tabId, EXAMPLE_HREF);
                             expect(after === before + testTokenData.length).toBeTruthy();
                             expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
-                            checkCache(version);
+                            checkCache(configId, version);
                         });
 
                         test(`correct verify for cached commitments: ${element.name}`, () => {
-                            cacheCommitments(commVersion, G, H);
-                            expect(getCachedCommitments(commVersion).G === G).toBeTruthy();
-                            expect(getCachedCommitments(commVersion).H === H).toBeTruthy();
+                            cacheCommitments(configId, commVersion, G, H);
+                            expect(getCachedCommitments(configId, commVersion).G === G).toBeTruthy();
+                            expect(getCachedCommitments(configId, commVersion).H === H).toBeTruthy();
                             function run() {
-                                workflow.__set__("getCommitmentsKey", () => pubKey);
+                                workflow.__set__("getVerificationKey", () => pubKey);
                                 const tokens = [];
                                 for (let i = 0; i < testTokenData.length; i++) {
                                     tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                                 }
                                 const out = parseRespString(element.string);
                                 before = getMock(bypassTokensCount(1));
-                                const xhr = validateAndStoreTokens(url, details.tabId, tokens, out);
+                                const xhr = validateAndStoreTokens(url, configId, details.tabId, tokens, out);
                                 expect(xhr).toBeFalsy(); // because the commitments are cached, the xhr should not be generated.
                                 after = getMock(bypassTokensCount(1));
-                                version = checkVersion(out.version);
+                                version = checkVersion(configId, out.version);
                             }
                             setTimeSinceLastResp(0); // reset the variables
                             setMock(bypassTokensCount(1), 0);
@@ -540,7 +560,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                             expect(updateBrowserTabMock).toBeCalledWith(details.tabId, EXAMPLE_HREF);
                             expect(after === before + testTokenData.length).toBeTruthy();
                             expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
-                            const cache = getCachedCommitments(version);
+                            const cache = getCachedCommitments(configId, version);
                             expect(cache.G === G).toBeTruthy();
                             expect(cache.H === H).toBeTruthy();
                         });
@@ -549,16 +569,16 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                             // construct corrupted commitments
                             const commStruct = {};
                             commStruct[commVersion] = {L: G, H: H};
-                            setMock(CACHED_COMMITMENTS_STRING, JSON.stringify(commStruct));
+                            setMock(cachedCommitmentsKey(configId), JSON.stringify(commStruct));
                             function run() {
-                                workflow.__set__("getCommitmentsKey", () => pubKey);
+                                workflow.__set__("getVerificationKey", () => pubKey);
                                 const tokens = [];
                                 for (let i = 0; i < testTokenData.length; i++) {
                                     tokens[i] = {token: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                                 }
                                 const out = parseRespString(element.string);
                                 commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                                version = checkVersion(out.version);
+                                version = checkVersion(configId, out.version);
                             }
                             setTimeSinceLastResp(0); // reset the variables
                             setMock(bypassTokensCount(1), 0);
@@ -571,21 +591,21 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                             expect(getSpendFlagMock(testUrl.host)).toBeTruthy();
                             // bad commitments are not removed if using version 1.0
                             if (commVersion !== "1.0") {
-                                checkCache(version);
+                                checkCache(configId, version);
                             }
                         });
                     });
 
                     test(`test store tokens for captcha.website: ${element.name}`, () => {
                         function run() {
-                            workflow.__set__("getCommitmentsKey", () => pubKey);
+                            workflow.__set__("getVerificationKey", () => pubKey);
                             const tokens = [];
                             for (let i = 0; i < testTokenData.length; i++) {
                                 tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                             }
                             const out = parseRespString(element.string);
                             commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                            version = checkVersion(out.version);
+                            version = checkVersion(configId, out.version);
                         }
                         setTimeSinceLastResp(0); // reset the variables
                         setMock(bypassTokensCount(1), 0);
@@ -596,20 +616,20 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                         expect(updateBrowserTabMock).not.toBeCalled();
                         expect(after === before + testTokenData.length).toBeTruthy();
                         expect(getSpendFlagMock(testUrl.host)).toBeFalsy();
-                        checkCache(version);
+                        checkCache(configId, version);
                     });
 
                     test(`reloading off after sign: ${element.name}`, () => {
                         testUrl = new URL(CAPTCHA_HREF + EXAMPLE_SUFFIX);
                         function run() {
-                            workflow.__set__("getCommitmentsKey", () => pubKey);
+                            workflow.__set__("getVerificationKey", () => pubKey);
                             const tokens = [];
                             for (let i = 0; i < testTokenData.length; i++) {
                                 tokens[i] = {data: testTokenData[i].data, point: sec1DecodeFromBytes(testTokenData[i].point), blind: getBigNumFromBytes(testTokenData[i].blind)};
                             }
                             const out = parseRespString(element.string);
                             commVersion === "1.0" ? oldVersions(tokens, out) : newVersions(tokens, out);
-                            version = checkVersion(out.version);
+                            version = checkVersion(configId, out.version);
                         }
                         setTimeSinceLastResp(0); // reset the variables
                         setMock(bypassTokensCount(1), 0);
@@ -620,7 +640,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                             expect(updateBrowserTabMock).not.toBeCalled();
                             expect(after === before + testTokenData.length).toBeTruthy();
                             expect(getSpendFlagMock(testUrl.host)).toBeFalsy();
-                            checkCache(version);
+                            checkCache(configId, version);
                         });
                     });
                 });
@@ -633,7 +653,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                                 tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                             }
                             const out = parseRespString("signatures=WyJiYWRfcG9pbnQxIiwgImJhZF9wb2ludDIiXQ==");
-                            const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                            const xhr = validateAndStoreTokens(newUrl, configId, details.tabId, tokens, out);
                             xhr.onreadystatechange();
                         }
                         setTimeSinceLastResp(0); // reset the variables
@@ -652,7 +672,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                                     tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                                 }
                                 const out = parseRespString(respBadJson);
-                                const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                                const xhr = validateAndStoreTokens(newUrl, configId, details.tabId, tokens, out);
                                 xhr.onreadystatechange();
                             }
                             setTimeSinceLastResp(0); // reset the variables
@@ -670,7 +690,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                                     tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                                 }
                                 const out = parseRespString(respBadPoints);
-                                const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                                const xhr = validateAndStoreTokens(newUrl, configId, details.tabId, tokens, out);
                                 xhr.onreadystatechange();
                             }
                             setTimeSinceLastResp(0); // reset the variables
@@ -688,7 +708,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                                     tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                                 }
                                 const out = parseRespString(respBadProof);
-                                const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                                const xhr = validateAndStoreTokens(newUrl, configId, details.tabId, tokens, out);
                                 xhr.onreadystatechange();
                             }
                             setTimeSinceLastResp(0); // reset the variables
@@ -707,7 +727,7 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                                     tokens[i] = {data: testTokens[i].data, point: sec1DecodeFromBytes(testTokens[i].point), blind: getBigNumFromBytes(testTokens[i].blind)};
                                 }
                                 const out = parseRespString(respBadProof);
-                                const xhr = validateAndStoreTokens(newUrl, details.tabId, tokens, out);
+                                const xhr = validateAndStoreTokens(newUrl, configId, details.tabId, tokens, out);
                                 xhr.onreadystatechange();
                             }
                             setTimeSinceLastResp(0); // reset the variables
