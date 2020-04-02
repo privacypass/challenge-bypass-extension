@@ -45,13 +45,14 @@ function handleResponse(configTokLens) {
     // this allows the client to generate a redemption token for CF API.
     document.getElementById("redeem").addEventListener("click", () => {
         if (background) {
-            tokLen = background.countStoredTokens(background.getConfigId());
+            const tokLen = background.countStoredTokens(1);
             if (tokLen > 0) {
                 const s1 = background.generateString();
                 const s2 = background.generateString();
                 const t = background.GetTokenForSpend();
                 const v = background.BuildRedeemHeader(t, s1, s2);
                 outputRedemption(v, s1, s2);
+                UpdatePopup();
             } else {
                 background.console.log("No tokens for redemption!");
             }
@@ -65,6 +66,7 @@ function handleResponse(configTokLens) {
                     return;
                 }
                 outputRedemption(v, s1, s2);
+                UpdatePopup();
             });
         }
     });
