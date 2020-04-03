@@ -5,3 +5,4 @@ jest/*
 addon/*
 coverage/*
 jest.config.js
+!addon/popup/

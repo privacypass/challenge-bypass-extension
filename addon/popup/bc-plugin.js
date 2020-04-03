@@ -10,10 +10,14 @@ if (background) {
     background.UpdateCallback = UpdatePopup;
 } else {
     browser.runtime.sendMessage({
-        callback: UpdatePopup
+        callback: UpdatePopup,
     });
 }
 
+/**
+ * Sens a message to the background page to receover the latest token
+ * counts for each of the available configurations
+ */
 function UpdatePopup() {
     if (background) {
         let configTokLens = background.getTokenNumbersForAllConfigs();
@@ -25,6 +29,12 @@ function UpdatePopup() {
     }
 }
 
+/**
+ * Handles the response from the background page with the number of
+ * tokens for each config
+ * @param {Array<Object>} configTokLens An array of object literals
+ * containing token info relating to each othe available configs
+ */
 function handleResponse(configTokLens) {
     // Replace the count displayed in the popup
     replaceTokensStoredCount(configTokLens);
@@ -35,10 +45,10 @@ function handleResponse(configTokLens) {
             UpdatePopup();
         } else {
             browser.runtime.sendMessage({
-                clear: true
+                clear: true,
             }).then(() => {
                 UpdatePopup();
-            })
+            });
         }
     });
 
@@ -58,10 +68,11 @@ function handleResponse(configTokLens) {
             }
         } else {
             browser.runtime.sendMessage({
-                redeem: true
+                redeem: true,
             }).then((ret) => {
                 const [v, s1, s2] = ret;
                 if (!v) {
+                    // eslint-disable-next-line
                     console.log("No tokens for redemption!");
                     return;
                 }
@@ -72,27 +83,36 @@ function handleResponse(configTokLens) {
     });
 }
 
-// takes redemption contents and outputs it to console
+/**
+ * takes redemption contents and outputs it to console
+ * @param {string} v base64 encoded redemption contents
+ * @param {string} s1 binding
+ * @param {string} s2 binding
+ */
 function outputRedemption(v, s1, s2) {
     const contents = JSON.parse(atob(v)).contents;
     const json = {
         data: contents,
         bindings: [s1, s2],
-    }
+    };
 
     const out = JSON.stringify(json, null, 4);
     if (background) {
-        background.console.log(out)
+        background.console.log(out);
     } else {
+        // eslint-disable-next-line
         console.log(out);
     }
 }
 
-// We have to do replace this way as using innerHtml is unsafe
+/**
+ * Rewrites HTML based on token numbers
+ * @param {Array<Object>} configTokLens Config token info
+ */
 function replaceTokensStoredCount(configTokLens) {
     configTokLens.map((ele) => {
         // remove old count
-        var span = document.getElementById(`stored-${ele.id}`);
+        const span = document.getElementById(`stored-${ele.id}`);
         if (span) {
             span.parentNode.removeChild(span);
         }
@@ -100,7 +120,7 @@ function replaceTokensStoredCount(configTokLens) {
 
     // replace with new count
     configTokLens.forEach((ele) => {
-        var stored = document.createElement("span");
+        const stored = document.createElement("span");
         stored.setAttribute("id", `stored-${ele.id}`);
         stored.className = "stored";
         stored.onclick = () => {
@@ -109,15 +129,13 @@ function replaceTokensStoredCount(configTokLens) {
             });
         };
 
-        const active = ele.active ? "(active)" : "";
-
-        var passtext = document.createElement("span");
+        const passtext = document.createElement("span");
         passtext.setAttribute("id", `passtext-${ele.id}`);
         passtext.className = "passtext";
-        passtext.textContent = `${ele.name} ${active}`;
+        passtext.textContent = ele.name;
         stored.appendChild(passtext);
 
-        var newCount = document.createElement("span");
+        const newCount = document.createElement("span");
         newCount.setAttribute("id", `tokens-${ele.id}`);
         newCount.className = "tokens";
         newCount.textContent = ele.tokLen;
@@ -129,8 +147,8 @@ function replaceTokensStoredCount(configTokLens) {
         };
         stored.onmouseleave = () => {
             const passesText = document.getElementById(`passtext-${ele.id}`);
-            passesText.textContent = `${ele.name} ${active}`;
-        }
+            passesText.textContent = ele.name;
+        };
 
         document.getElementById("popup-http").appendChild(stored);
     });
