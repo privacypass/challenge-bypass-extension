@@ -80,8 +80,8 @@ let validRedirects = () => activeConfig()["spending-restrictions"]["valid-redire
 let validTransitions = () => activeConfig()["spending-restrictions"]["valid-transitions"];
 let varReset = () => activeConfig()["var-reset"];
 let varResetMs = () => activeConfig()["var-reset-ms"];
-let storageKeyTokens = () => STORAGE_STR + activeConfig()["id"];
-let storageKeyCount = () => COUNT_STR + activeConfig()["id"];
+let storageKeyTokens = (id) => STORAGE_STR + id;
+let storageKeyCount = (id) => COUNT_STR + id;
 let h2cParams = () => activeConfig()["h2c-params"];
 let sendH2CParams = () => activeConfig()["send-h2c-params"];
 let issueActionUrls = () => activeConfig()["issue-action"]["urls"];
@@ -333,7 +333,7 @@ function tryRequestChallenge(details, url) {
 function decideRedeem(details, url) {
     let attempted = false;
     if (!spentUrl[url.href]) {
-        const count = countStoredTokens();
+        const count = countStoredTokens(getConfigId());
         if (doRedeem()) {
             if (count > 0 && !url.host.includes(chlCaptchaDomain())) {
                 attemptRedeem(url, details.tabId, target);
@@ -374,7 +374,8 @@ function beforeSendHeaders(request, url) {
 
             setSpendFlag(host, null);
 
-            if (countStoredTokens() > 0 && isRedeemUrl) {
+            const count = countStoredTokens(getConfigId());
+            if (count > 0 && isRedeemUrl) {
                 const tokenToSpend = GetTokenForSpend();
                 if (tokenToSpend == null) {
                     return {cancel: false};
@@ -520,11 +521,11 @@ function handleMessage(request, sender, sendResponse) {
     if (request.callback) {
         UpdateCallback = request.callback;
     } else if (request.tokLen) {
-        sendResponse(countStoredTokens());
+        sendResponse(getTokenNumbersForAllConfigs());
     } else if (request.clear) {
         clearStorage();
     } else if (request.redeem) {
-        const tokLen = countStoredTokens();
+        const tokLen = countStoredTokens(getConfigId());
         if (tokLen > 0) {
             const s1 = generateString();
             const s2 = generateString();
@@ -535,6 +536,28 @@ function handleMessage(request, sender, sendResponse) {
             sendResponse();
         }
     }
+}
+
+/**
+ * Returns the number of tokens for each of the available configurations
+ * @param {Array<Number>} configIds IDs of configs to query
+ * @return {Object} Contains token & configuration information
+ */
+function getTokenNumbersForAllConfigs() {
+    let configs = PPConfigs();
+    configs.shift(); // remove example config
+    let configTokLens = [];
+    configs.forEach((config) => {
+        let active = config.id == getConfigId();
+        configTokLens.push({
+            name: config["long-name"],
+            id: config.id,
+            tokLen: countStoredTokens(config.id, !active),
+            url: config["get-more-passes-url"],
+            active: active,
+        });
+    });
+    return configTokLens;
 }
 
 /**
@@ -687,6 +710,6 @@ function setConfig(val) {
         setConfigId(val);
         initECSettings(h2cParams());
         clearCachedCommitments();
-        countStoredTokens();
+        countStoredTokens(val);
     }
 }
