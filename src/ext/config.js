@@ -30,7 +30,7 @@ function exampleConfig() {
         "max-tokens": 10, // max number of tokens held by the extension
         "var-reset": true, // whether variables should be reset after time limit expires
         "var-reset-ms": 100, // variable reset time limit
-        "pkey-commitments":
+        "comm-vk":
             "-----BEGIN PUBLIC KEY-----\n" +
             "(PEM)\n" +
             "-----END PUBLIC KEY-----", // a PEM-encoded public key for ecdsa P-256.
@@ -106,7 +106,7 @@ function PPConfigs() {
     cfConfig["max-tokens"] = 300;
     cfConfig["max-spends"] = 2;
     cfConfig["var-reset-ms"] = 2000;
-    cfConfig["pkey-commitments"] =
+    cfConfig["comm-vk"] =
         "-----BEGIN PUBLIC KEY-----\n" +
         "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF\n" +
         "VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==\n" +
@@ -136,7 +136,7 @@ function PPConfigs() {
     hcConfig["max-spends"] = undefined;
     hcConfig["max-tokens"] = 300;
     hcConfig["var-reset-ms"] = 2000;
-    hcConfig["pkey-commitments"] =
+    hcConfig["comm-vk"] =
         "-----BEGIN PUBLIC KEY-----\n" +
         "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4OifvSTxGcy3T/yac6LVugArFb89\n" +
         "wvqGivp0/54wgeyWkvUZiUdlbIQF7BuGeO9C4sx4nHkpAgRfvd8jdBGz9g==\n" +

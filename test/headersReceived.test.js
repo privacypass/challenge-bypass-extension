@@ -26,6 +26,8 @@ const EXAMPLE_HREF = "https://www.example.com";
 const processHeaders = workflow.__get__("processHeaders");
 const isBypassHeader = workflow.__get__("isBypassHeader");
 const chlCaptchaDomain = workflow.__get__("chlCaptchaDomain");
+const getReadyIssue = workflow.__get__("getReadyIssue");
+const setReadyIssue = workflow.__get__("setReadyIssue");
 
 const setNoTokens = (configId) => {
     setMock(bypassTokens(configId), "{}");
@@ -113,17 +115,17 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
             test("header is valid", () => {
                 const header = {name: CHL_BYPASS_SUPPORT, value: `${configId}`};
                 found = isBypassHeader(header);
-                expect(found).toBeTruthy();
+                expect(found > 0).toBeTruthy();
             });
             test("header is invalid value", () => {
                 const header = {name: CHL_BYPASS_SUPPORT, value: "0"};
                 found = isBypassHeader(header);
-                expect(found).toBeFalsy();
+                expect(found).toEqual(-1);
             });
             test("header is invalid name", () => {
                 const header = {name: "Different-header-name", value: `${configId}`};
                 found = isBypassHeader(header);
-                expect(found).toBeFalsy();
+                expect(found).toEqual(-1);
             });
             test("config is reset if ID changes", () => {
                 const oldConfigId = configId == 1 ? 2 : 1;
@@ -204,11 +206,11 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                 expect(updateIconMock).toBeCalledTimes(2);
             });
 
-            describe("setting of readySign", () => {
+            describe("setting of readyIssue", () => {
                 describe("signing enabled", () => {
                     beforeEach(() => {
                         workflow.__set__("doSign", () => true);
-                        workflow.__set__("readySign", false);
+                        setReadyIssue(configId, false);
                     });
 
                     test("no tokens", () => {
@@ -217,8 +219,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         expect(ret.attempted).toBeFalsy();
                         expect(ret.xhr).toBeFalsy();
                         expect(ret.favicon).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeTruthy();
+                        expect(getReadyIssue(configId)).toBeTruthy();
                         expect(updateIconMock).toBeCalledWith("!");
                     });
 
@@ -229,8 +230,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         expect(ret.attempted).toBeFalsy();
                         expect(ret.xhr).toBeFalsy();
                         expect(ret.favicon).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeFalsy();
+                        expect(getReadyIssue(configId)).toBeFalsy();
                     });
 
                     test("tokens > 0", () => {
@@ -238,8 +238,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         expect(ret.attempted).toBeTruthy();
                         expect(ret.xhr).toBeFalsy();
                         expect(ret.favicon).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeFalsy();
+                        expect(getReadyIssue(configId)).toBeFalsy();
                     });
 
                     test("tokens > 0 but captcha.website", () => {
@@ -248,8 +247,7 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                         expect(ret.attempted).toBeFalsy();
                         expect(ret.xhr).toBeFalsy();
                         expect(ret.favicon).toBeFalsy();
-                        const readySign = workflow.__get__("readySign");
-                        expect(readySign).toBeTruthy();
+                        expect(getReadyIssue(configId)).toBeTruthy();
                     });
 
                     test("redemption off", () => {
@@ -258,22 +256,24 @@ each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
                             expect(ret.attempted).toBeFalsy();
                             expect(ret.xhr).toBeFalsy();
                             expect(ret.favicon).toBeFalsy();
-                            const readySign = workflow.__get__("readySign");
-                            expect(readySign).toBeTruthy();
+                            expect(getReadyIssue(configId)).toBeTruthy();
                         });
                     });
                 });
 
                 describe("signing disabled", () => {
+                    beforeEach(() => {
+                        setReadyIssue(configId, false);
+                    });
                     test("signing is not activated", () => {
-                        workflow.__with__({readySign: false, doSign: () => false})(() => {
+                        workflow.__with__({doSign: () => false})(() => {
                             header = {name: "Different-header-name", value: configId};
                             details.responseHeaders = [header];
                             const ret = processHeaders(details, url);
                             expect(ret.attempted).toBeFalsy();
                             expect(ret.xhr).toBeFalsy();
                             expect(ret.favicon).toBeFalsy();
-                            expect(workflow.__get__("readySign")).toBeFalsy();
+                            expect(getReadyIssue(configId)).toBeFalsy();
                         });
                     });
                 });

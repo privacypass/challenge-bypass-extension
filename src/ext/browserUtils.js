@@ -250,9 +250,14 @@ const isValidRedeemMethod = (method) => validRedemptionMethods().includes(method
 
 /**
  * Clears the commitments that are cached for the active configuration
+ * @param {Number} cfgId config ID initiating issue request
  */
-function clearCachedCommitments() {
-    localStorage.removeItem(CACHED_COMMITMENTS_STRING);
+function clearCachedCommitments(cfgId) {
+    let id = cfgId;
+    if (!id) {
+        id = getConfigId();
+    }
+    localStorage.removeItem(cachedCommitmentsKey(id));
 }
 
 /**

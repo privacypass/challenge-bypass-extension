@@ -7,7 +7,9 @@
 /* exported signReqCF */
 /* exported signReqHC */
 /* exported sendXhrSignReq */
-/* export CACHED_COMMITMENTS_STRING */
+/* export cachedCommitmentsKey */
+
+const ERR_PROOF_VERIFY = new Error("[privacy-pass]: Unable to verify DLEQ proof.");
 
 /**
  * Checks readystate == 4, this implies a successful response
@@ -27,7 +29,7 @@ function xhrGoodStatus(status) {
     return status === 200;
 }
 
-const CACHED_COMMITMENTS_STRING = "cached-commitments";
+const cachedCommitmentsKey = (id) => `cached-commitments-${id}`;
 const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
 /**
@@ -47,9 +49,9 @@ function signReqCF(url, details) {
     }
 
     // otherwise try something new
-    const captchaResp = url.searchParams.has(requestIdentifiers()["query-param"]);
-    const alreadyProcessed = url.searchParams.has(requestIdentifiers()["post-processed"]);
-    const captchaKeys = requestIdentifiers()["body-param"];
+    const captchaResp = url.searchParams.has(requestIdentifiers(CF_CONFIG_ID)["query-param"]);
+    const alreadyProcessed = url.searchParams.has(requestIdentifiers(CF_CONFIG_ID)["post-processed"]);
+    const captchaKeys = requestIdentifiers(CF_CONFIG_ID)["body-param"];
 
     // attempt to locate captcha parameter
     let bodyKeys = []; // name of captcha key
@@ -71,7 +73,7 @@ function signReqCF(url, details) {
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
-    const tokens = GenerateNewTokens(tokensPerRequest());
+    const tokens = GenerateNewTokens(tokensPerRequest(CF_CONFIG_ID));
     const btRequest = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
@@ -107,7 +109,7 @@ function signReqCFOld(reqUrl) {
     sentTokens[reqUrl] = true;
 
     // Generate tokens and create a JSON request for signing
-    const tokens = GenerateNewTokens(tokensPerRequest());
+    const tokens = GenerateNewTokens(tokensPerRequest(CF_CONFIG_ID));
     const request = BuildIssueRequest(tokens);
 
     // Tag the URL of the new request to prevent an infinite loop (see above)
@@ -127,17 +129,17 @@ function signReqCFOld(reqUrl) {
  */
 function signReqHC(url, details) {
     const reqUrl = url.href;
-    const isIssuerUrl = issueActionUrls()
+    const isIssuerUrl = issueActionUrls(HC_CONFIG_ID)
         .map((issuerUrl) => patternToRegExp(issuerUrl))
         .some((re) => reqUrl.match(re));
 
     if (!isIssuerUrl || details.method === "OPTIONS") {
-        return null;
+        return;
     }
 
     sentTokens[reqUrl] = true;
     // Generate tokens and create a JSON request for signing
-    const tokens = GenerateNewTokens(tokensPerRequest());
+    const tokens = GenerateNewTokens(tokensPerRequest(HC_CONFIG_ID));
     const request = BuildIssueRequest(tokens);
     // Construct info for xhr signing request, set `cancel: false` in order to prevent canceling the original captcha solve request.
     const xhrInfo = {newUrl: reqUrl, requestBody: `blinded-tokens=${request}&captcha-bypass=true`, tokens: tokens, cancel: false};
@@ -148,29 +150,29 @@ function signReqHC(url, details) {
  * Sends an XHR request containing a BlindTokenRequest for signing a set of tokens
  * @param {Object} xhrInfo XHR info for asynchronous issuance request
  * @param {URL} url URL object
+ * @param {Number} cfgId config ID initiating issue request
  * @param {Number} tabId Tab ID for the current request
  * @return {XMLHttpRequest}
  */
-function sendXhrSignReq(xhrInfo, url, tabId) {
+function sendXhrSignReq(xhrInfo, url, cfgId, tabId) {
     const newUrl = xhrInfo["newUrl"];
     const requestBody = xhrInfo["requestBody"];
     const tokens = xhrInfo["tokens"];
     const xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         // When we receive a response...
-        const id = getConfigId();
-        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)
-            && countStoredTokens(id) < (maxTokens() - tokensPerRequest())) {
+        const boundReached = countStoredTokens(cfgId) >= (maxTokens(cfgId) - tokensPerRequest(cfgId));
+        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState) && !boundReached) {
             const respData = xhr.responseText;
             // Validates the response and stores the signed points for redemptions
-            validateResponse(url, tabId, respData, tokens);
-        } else if (countStoredTokens(id) >= (maxTokens() - tokensPerRequest())) {
+            validateResponse(url, cfgId, tabId, respData, tokens);
+        } else if (boundReached) {
             throw new Error("[privacy-pass]: Cannot receive new tokens due to upper bound.");
         }
     };
     xhr.open("POST", newUrl, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, getConfigId());
+    xhr.setRequestHeader(CHL_BYPASS_SUPPORT, cfgId);
     // We seem to get back some odd mime types that cause problems...
     xhr.overrideMimeType("text/plain");
     xhr.send(requestBody);
@@ -181,14 +183,15 @@ function sendXhrSignReq(xhrInfo, url, tabId) {
  * Validates the server response and stores the new signed points for future
  * redemptions
  * @param {URL} url URL object
+ * @param {Number} cfgId config ID driving request
  * @param {int} tabId Tab ID for the current request
  * @param {string} data An issue response takes the form "signatures=[b64 blob]"
  * where the blob is an array of b64-encoded curve points
  * @param {Array<Object>} tokens stored tokens corresponding to signed points
  */
-function validateResponse(url, tabId, data, tokens) {
+function validateResponse(url, cfgId, tabId, data, tokens) {
     let signaturesJSON;
-    switch (signResponseFMT()) {
+    switch (signResponseFMT(cfgId)) {
         case "string":
             signaturesJSON = parseSigString(data);
             break;
@@ -196,7 +199,7 @@ function validateResponse(url, tabId, data, tokens) {
             signaturesJSON = parseSigJson(data);
             break;
         default:
-            throw new Error("[privacy-pass]: invalid signature response format " + signResponseFMT());
+            throw new Error("[privacy-pass]: invalid signature response format " + signResponseFMT(cfgId));
     }
 
     if (signaturesJSON == null) {
@@ -217,7 +220,7 @@ function validateResponse(url, tabId, data, tokens) {
     }
 
     // Validate the received information and store the tokens
-    validateAndStoreTokens(url, tabId, tokens, issueResp);
+    validateAndStoreTokens(url, cfgId, tabId, tokens, issueResp);
 }
 
 /**
@@ -289,20 +292,21 @@ function BuildIssueRequest(tokens) {
  * Retrieves cached commitments or sends an XHR for acquiring them, and verifies
  * server response (returns the xhr object for testing purposes)
  * @param {URL} url URL object for the original request
+ * @param {Number} cfgId config ID driving request
  * @param {Number} tabId Tab ID where the request took place
  * @param {Array<Object>} tokens Client-generated token objects
  * @param {Object} issueResp Contains the parameters sent back by the server,
  * including signed tokens, batched DLEQ proof and optional others
  * @return {XMLHttpRequest} commitment XHR object
  */
-function validateAndStoreTokens(url, tabId, tokens, issueResp) {
-    const version = checkVersion(issueResp.version);
+function validateAndStoreTokens(url, cfgId, tabId, tokens, issueResp) {
+    const version = checkVersion(cfgId, issueResp.version);
     let commitments;
-    // retrieve CF 1.0 commitments from source code or cache otherwise
+    // retrieve version 1.0 commitments from source code or cache otherwise
     if (version === "1.0") {
-        commitments = storedCommitments()[version];
+        commitments = storedCommitments(cfgId)[version];
     } else {
-        commitments = getCachedCommitments(version);
+        commitments = getCachedCommitments(cfgId, version);
     }
 
     // If cached commitments exist then attempt to verify proof
@@ -310,11 +314,13 @@ function validateAndStoreTokens(url, tabId, tokens, issueResp) {
         if (!commitments.G || !commitments.H) {
             console.warn("[privacy-pass]: stored commitments are corrupted: " + commitments + ", version: " + version + ", will retrieve via XHR.");
         } else {
-            verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
+            verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitments);
             return;
         }
     }
-    const cXhr = createVerificationXHR(url, tabId, tokens, issueResp, version);
+
+    // Attempt to verify with newly retrieved commitments
+    const cXhr = createVerificationXHR(url, cfgId, tabId, tokens, issueResp, version);
     cXhr.send();
     return cXhr;
 }
@@ -323,24 +329,26 @@ function validateAndStoreTokens(url, tabId, tokens, issueResp) {
  * Asynchronously retrieves the commitments from the GH beacon and verifies
  * server-sent information
  * @param {URL} url URL object for the original request
+ * @param {Number} cfgId config ID driving request
  * @param {Number} tabId Tab ID where the request took place
  * @param {Object} tokens Client-generated token objects
  * @param {Object} issueResp Contains the parameters sent back by the server
  * @param {String} version commitments version
  * @return {XMLHttpRequest} XHR object for verifying server response
  */
-function createVerificationXHR(url, tabId, tokens, issueResp, version) {
+function createVerificationXHR(url, cfgId, tabId, tokens, issueResp, version) {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", COMMITMENT_URL, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function() {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
-            const commitments = retrieveCommitments(xhr, version);
+            const commitments = retrieveCommitments(cfgId, xhr, version);
             if (!commitments.G || !commitments.H) {
                 throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + version);
             }
-            cacheCommitments(version, commitments.G, commitments.H);
-            verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments);
+            // cache commitments since they were verified correctly
+            cacheCommitments(cfgId, version, commitments.G, commitments.H);
+            verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitments);
         }
     };
     return xhr;
@@ -350,25 +358,26 @@ function createVerificationXHR(url, tabId, tokens, issueResp, version) {
  * Uses the client-acquired commitments to verify the batched DLEQ from the
  * server. If this passes then the tokens are stored.
  * @param {URL} url URL object for the original request
+ * @param {Number} cfgId config ID driving request
  * @param {int} tabId Tab ID where the request took place
  * @param {object} tokens Client-generated token objects
  * @param {Object} issueResp Contains the parameters sent back by the server
  * @param {String} commitments base64-encoded curve points
  */
-function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
+function verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitments) {
     const ret = getCurvePoints(issueResp.signatures);
 
     // Verify the DLEQ batch proof before handing back the usable points
     if (!verifyProof(issueResp.proof, tokens, ret, commitments, issueResp.prng)) {
-        throw new Error("[privacy-pass]: Unable to verify DLEQ proof.");
+        throw ERR_PROOF_VERIFY;
     }
 
     // Store the tokens for future usage (we don't store compressed for now)
-    storeNewTokens(tokens, ret.points);
+    storeNewTokens(cfgId, tokens, ret.points);
 
     // Reload the page for the originally intended url
-    if (reloadOnSign() && !url.href.includes(chlCaptchaDomain())) {
-        const queryParam = requestIdentifiers()["query-param"];
+    if (reloadOnSign(cfgId) && !url.href.includes(chlCaptchaDomain(cfgId))) {
+        const queryParam = requestIdentifiers(cfgId)["query-param"];
         // if the query parameter is not present then this must be an old URL
         const old = !url.searchParams.has(queryParam);
         let reloadUrl;
@@ -386,14 +395,16 @@ function verifyProofAndStoreTokens(url, tabId, tokens, issueResp, commitments) {
 }
 
 /**
- * Retrieves the public commitments that are used for validating the DLEQ proof
+ * Retrieves the public commitments that are used for validating the
+ * DLEQ proof
+ * @param {Number} cfgId config ID driving request
  * @param {XMLHttpRequest} xhr XHR for retrieving the active EC commitments
  * @param {string} version commitment version string
  * @return {Object} Object containing commitment data
  */
-function retrieveCommitments(xhr, version) {
+function retrieveCommitments(cfgId, xhr, version) {
     const resp = JSON.parse(xhr.responseText);
-    const comms = resp[getConfigName()];
+    const comms = resp[getConfigName(cfgId)];
 
     const cmt = comms[version];
     if (typeof cmt === "undefined") {
@@ -406,33 +417,35 @@ function retrieveCommitments(xhr, version) {
     if (cmt.sig === undefined) {
         throw new Error("[privacy-pass]: Signature field is missing.");
     }
-    verifyCommitments(cmt, getCommitmentsKey());
+    verifyCommitments(cmt, getVerificationKey(cfgId));
     return {G: cmt.G, H: cmt.H};
 }
 
 /**
  * Adds the specified commitment pair to the localStorage cache as a JSON string
  * (we have to use JSON.stringify as localStorage only deals in strings)
+ * @param {Number} cfgId config ID driving request
  * @param {string} version the version of commitments as specified by the server
  * @param {string} G base64-encoded curve point
  * @param {string} H base64-encoded curve point
  */
-function cacheCommitments(version, G, H) {
-    let cache = getAllCached();
+function cacheCommitments(cfgId, version, G, H) {
+    let cache = getAllCached(cfgId);
     if (!cache) {
         cache = {};
     }
     const cachable = {G: G, H: H};
     cache[version] = cachable;
-    set(CACHED_COMMITMENTS_STRING, JSON.stringify(cache));
+    set(cachedCommitmentsKey(cfgId), JSON.stringify(cache));
 }
 
 /**
  * Recovers all commitments pairs from the cache
+ * @param {Number} cfgId config ID driving request
  * @return {Object}
  */
-function getAllCached() {
-    const cache = get(CACHED_COMMITMENTS_STRING);
+function getAllCached(cfgId) {
+    const cache = get(cachedCommitmentsKey(cfgId));
     if (!cache) {
         return;
     }
@@ -441,11 +454,12 @@ function getAllCached() {
 
 /**
  * Gets the cached commitments for a particular version string
+ * @param {Number} cfgId config ID driving request
  * @param {string} version the version of commitments as specified by the server
  * @return {Object} cache object for specific version
  */
-function getCachedCommitments(version) {
-    const cached = getAllCached();
+function getCachedCommitments(cfgId, version) {
+    const cached = getAllCached(cfgId);
     if (!cached) {
         return;
     }
@@ -454,11 +468,12 @@ function getCachedCommitments(version) {
 
 /**
  * Sets the version to be "1.0" if it is undefined
+ * @param {Number} cfgId config ID driving request
  * @param {string} version version string (possibly null) specified by server
  * @return {string} the version string or "1.0" if it is null
  */
-function checkVersion(version) {
-    if (dev()) {
+function checkVersion(cfgId, version) {
+    if (dev(cfgId)) {
         return "dev";
     }
     return version || "1.0";
