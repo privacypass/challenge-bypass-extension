@@ -6,13 +6,26 @@
 /* exported DevCommitmentConfig */
 /* exported CHL_BYPASS_SUPPORT */
 /* exported CHL_BYPASS_RESPONSE */
-/* exported activeConfig */
+/* exported CONFIGURATION_URL */
 /* exported PPConfigs */
+/* exported processConfigPatches */
 /* exported validRedemptionMethods */
+/* exported retrieveConfiguration */
 
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
 const validRedemptionMethods = () => ["reload", "no-reload"]; // specifies valid token redemption methods
+const CONFIGURATION_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
+
+// initialise configurations from base settings, and potentially modify
+// with patches later
+let VALID_CONFIGS = [
+    exampleConfig(),
+    cfBaseConfig(),
+    hcBaseConfig(),
+];
+
+let PPConfigs = () => Object.assign([], VALID_CONFIGS);
 
 /**
  * Generates exampleConfig configuration object
@@ -90,13 +103,12 @@ function exampleConfig() {
     };
 }
 
-
 /**
- * Generates array of configuration objects
- * @return {Array} Array of configuration objects
+* Returns the base configuration (without patches) used to integrated
+* with Cloudflare
+* @return {Object} base JSON configuration
  */
-function PPConfigs() {
-    // The configuration used by Cloudflare
+function cfBaseConfig() {
     const cfDomain = "captcha.website";
     const cfConfig = exampleConfig();
     cfConfig.id = 1;
@@ -126,8 +138,15 @@ function PPConfigs() {
     // old version 1.0 commitments for backwards compatibility
     cfConfig["commitments"]["1.0"]["G"] = "BOidEuO9HSJsMZYE/Pfc5D+0ELn0bqhjEef2O0u+KAw3fPMHHXtVlEBvYjE5I/ONf9SyTFSkH3mLNHkS06Du6hQ=";
     cfConfig["commitments"]["1.0"]["H"] = "BHOPNAWXRi4r/NEptOiLOp8MSwcX0vHrVDRXv16Jnowc1eXXo5xFFKIOI6mUp8k9/eca5VY07dBhAe8QfR/FSRY=";
+    return cfConfig;
+}
 
-    // The configuration used by hcaptcha
+/**
+* Returns the base configuration (without patches) used to integrated
+* with hCaptcha
+* @return {Object} base JSON configuration
+ */
+function hcBaseConfig() {
     const hcConfig = exampleConfig();
     hcConfig.id = 2;
     hcConfig.dev = false;
@@ -157,8 +176,112 @@ function PPConfigs() {
             "H": "BNJIpofS4RhbUfnkblr5yvuymaEfV+ViKshsoN9DkCRaHBB+TiKUnicc14gBswpLfBaKXuC102Cvwzq3YIN8dVo=",
         },
     };
-
-    // Ordering of configs should correspond to value of cf-chl-bypass header
-    // i.e. the first config should have "id": 1, the second "id":2, etc.
-    return [exampleConfig(), cfConfig, hcConfig];
+    return hcConfig;
 }
+
+// Top-level configuration keys that can be patched externally
+const PATCHABLE_KEYS = [
+    "max-spends",
+    "max-tokens",
+    "var-reset",
+    "var-reset-ms",
+    "spending-restrictions",
+    "spend-action",
+    "issue-action",
+    "cookies",
+    "captcha-domain",
+    "get-more-passes-url",
+    "opt-endpoints",
+    "error-codes",
+    "h2c-params",
+    "send-h2c-params",
+];
+
+/**
+ * Processes valid patches to the available configurations. This
+ * function is run in init.js
+ * @param {Number} cfgId ID of the configuration being used
+ * @return {XMLHttpRequest} the XHR used to retrieve any patches
+ */
+function processConfigPatches(cfgId) {
+    const callback = (retrieved) => {
+        const patches = retrieved["patches"];
+        if (!patches) {
+            return;
+        } else if (typeof patches !== "object") {
+            console.warn("[privacy-pass]: Patches not specified in correct format");
+            return;
+        }
+
+        // check if signature is valid
+        if (patches.sig === undefined) {
+            console.warn("[privacy-pass]: Signature field for patches is missing not processing them.");
+            return;
+        }
+
+        // error is thrown if bad verification, just ignore if it fails
+        try {
+            verifyConfiguration(cfgId, patches);
+        } catch (e) {
+            console.warn("[privacy-pass]: Not processing config as unable to verify signature on patches");
+            return;
+        }
+
+        const config = getConfigForId(cfgId);
+        Object.keys(patches).forEach((key) => {
+            if (!PATCHABLE_KEYS.includes(key)) {
+                // do not process patches for non-patchable fields
+                console.warn(`Patches for ${key} are not permitted`);
+                return;
+            }
+            const patch = patches[key];
+            let current = config[key];
+            switch (typeof current) {
+                case "object":
+                    if (current !== null) {
+                        Object.assign(current, patch);
+                    } else {
+                        current = patch;
+                    }
+                    break;
+                default:
+                    current = patch;
+                    break;
+            }
+            config[key] = current;
+        });
+
+        // modify valid configs
+        VALID_CONFIGS[cfgId] = config;
+    };
+    const xhr = retrieveConfiguration(cfgId, callback);
+    xhr.send();
+    return xhr;
+}
+
+/**
+ * Creates an XMLHttpRequest object to retrieve the active JSON
+ * configuration for the given provider
+ * @param {Number} cfgId ID of configuration to retrieve
+ * @param {Function} callback function to execute after configuration is
+ * retrieved
+ * @return {XMLHttpRequest}
+ */
+function retrieveConfiguration(cfgId, callback) {
+    if (!callback) {
+        throw new Error("[privacy-pass]: Invalid configuration retrieval callback specified");
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", CONFIGURATION_URL, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
+            const provider = getConfigName(cfgId);
+            const resp = JSON.parse(xhr.responseText);
+            const config = resp[provider];
+            callback(config);
+        }
+    };
+    return xhr;
+}
+

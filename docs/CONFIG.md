@@ -142,11 +142,11 @@ request.
 #### config\["spend-action"\]\["empty-resp-headers"\]
 
 If an empty set of response headers is received with the correct status code (as
-defined in `config\["spending-restrictions"\]\["status-code"\]`) then this object
+defined in `config["spending-restrictions"]["status-code"]`) then this object
 contains an array of strings that correspond to possible ways of acquiring the
 headers. Currently we only support `"direct-request"`, which sends a direct
 request to the same URL with a specific endpoint attached as defined in
-`config\["opt-endpoints"\]\["challenge"\]`.
+`config["opt-endpoints"]["challenge"]`.
 
 This option was introduced to mitigate problems with Chrome in conjunction with
 sub-resources hosted on separate Cloudflare domains.
@@ -269,3 +269,80 @@ full).
 
 A boolean that determines whether the contents of `config["h2c-params"]` should
 actually be sent to the server.
+
+## Patching configurations
+
+Configurations can be patched by adding patches to the configuration
+available at <https://github.com/privacypass/ec-commitments>. This
+allows external configuration changes to be made without requiring an
+extension update. A patch blob must be signed with the secret key
+corresponding to the public available at `config["comm-vk"]`.
+
+Currently, the configuration available at the URL above looks something
+like:
+
+```json
+"CF": {
+    "1.0": {
+        // ...
+    },
+    "1.01": {
+        // ...
+    },
+    // more ...
+}
+```
+
+Adding patches to the `"CF"` would require adding a `"patches"` field to
+take the following form:
+
+```json
+"CF": {
+    "patches": {
+        // example patched fields
+        "captcha-domain": "new-domain",
+        "spend-action": {
+            "urls": ["https://some.example.com"],
+            "header-name": "new-header",
+        },
+        // more fields ...
+        "sig": "<signature_value>"
+    },
+    "1.0": {
+        // ...
+    },
+    "1.01": {
+        // ...
+    },
+    ...
+}
+```
+
+The `patches.sig` value is an ECDSA signature computed over the contents
+of the `patches` member. When patches are specified in the external
+configuration, they must come with a valid signature to be accepted as
+modifications to the base config specified in the extension.
+
+Patches are only permitted for the following configuration members:
+```
+[
+    "max-spends",
+    "max-tokens",
+    "var-reset",
+    "var-reset-ms",
+    "spending-restrictions",
+    "spend-action",
+    "issue-action",
+    "cookies",
+    "captcha-domain",
+    "get-more-passes-url",
+    "opt-endpoints",
+    "error-codes",
+    "h2c-params",
+    "send-h2c-params",
+]
+```
+Patches for other members will be rejected.
+
+For further examples of how to patch configurations, see
+`config.test.js`.
