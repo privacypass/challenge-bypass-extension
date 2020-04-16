@@ -234,18 +234,18 @@ function processConfigPatches(cfgId) {
                 console.warn(`Patches for ${key} are not permitted`);
                 return;
             }
-            const patch = patches[key];
+            const patchValue = patches[key];
             let current = config[key];
             switch (typeof current) {
                 case "object":
                     if (current !== null) {
-                        Object.assign(current, patch);
+                        Object.assign(current, patchValue);
                     } else {
-                        current = patch;
+                        current = patchValue;
                     }
                     break;
                 default:
-                    current = patch;
+                    current = patchValue;
                     break;
             }
             config[key] = current;
