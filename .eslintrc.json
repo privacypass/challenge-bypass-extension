@@ -37,6 +37,7 @@
         "countStoredTokens": true,
         "createShake256": true,
         "dev": true,
+        "extVersion": true,
         "futureReload": true,
         "GenerateNewTokens": true,
         "getActiveECSettings": true,

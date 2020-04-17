@@ -274,7 +274,7 @@ The hash-to-curve method that is used for moving field elements to curve
 points. If it is set to "increment" then we use the hash-and-increment
 method that will be deprecated moving forward. If it is set to "swu",
 then we use the affine version of the SWU algorithm implemented in
-h2c.js (see [HASH_TO_CURVE.md](docs/HASH_TO_CURVE.md) for a
+h2c.js (see [HASH_TO_CURVE](HASH_TO_CURVE.md) for a
 description of the algorithm in full).
 
 ### config\["send-h2c-params"\]
@@ -310,16 +310,28 @@ take the following form:
 
 ```json
 "CF": {
-    "patches": {
-        // example patched fields
-        "captcha-domain": "new-domain",
-        "spend-action": {
-            "urls": ["https://some.example.com"],
-            "header-name": "new-header",
+    "patches": [
+        {
+            "min-version": "2.0.0",
+            "config": {
+                // example patched fields
+                "captcha-domain": "new-domain",
+                "spend-action": {
+                    "urls": ["https://some.example.com"],
+                    "header-name": "new-header",
+                },
+                // more fields ...
+            },
+            "sig": "<signature_value>"
         },
-        // more fields ...
-        "sig": "<signature_value>"
-    },
+        {
+            "min-version": "x.y.z",
+            "config": {
+                // patched fields
+            },
+            "sig": "<signature_value>"
+        }
+    ],
     "1.0": {
         // ...
     },
@@ -330,10 +342,13 @@ take the following form:
 }
 ```
 
-The `patches.sig` value is an ECDSA signature computed over the contents
-of the `patches` member. When patches are specified in the external
-configuration, they must come with a valid signature to be accepted as
-modifications to the base config specified in the extension.
+In other words, `patches` is an array containing multiple configuration
+patches, each corresponding to a minimum version of the extension and a
+signature. The `sig` value is an ECDSA signature computed over the
+contents of the `config` and `min-version` members. When patches are
+specified in the external configuration, they must come with a valid
+signature to be accepted as modifications to the base config specified
+in the extension.
 
 Patches are only permitted for the following configuration members:
 ```

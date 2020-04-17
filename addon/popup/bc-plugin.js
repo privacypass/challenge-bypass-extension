@@ -8,9 +8,17 @@
 let background = chrome.extension.getBackgroundPage();
 if (background) {
     background.UpdateCallback = UpdatePopup;
+    // update version text
+    document.getElementById("header-text").innerHTML = `<h1>Privacy Pass<br><font size="1">Version ${background.extVersion()}</font></h1>`;
 } else {
     browser.runtime.sendMessage({
         callback: UpdatePopup,
+    });
+    // update version text
+    browser.runtime.sendMessage({
+        version: true,
+    }).then((extVersion) => {
+        document.getElementById("header-text").innerHTML = `<h1>Privacy Pass<br><font size="1">Version ${extVersion}</font></h1>`;
     });
 }
 

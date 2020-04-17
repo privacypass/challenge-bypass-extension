@@ -11,6 +11,23 @@
 /* exported processConfigPatches */
 /* exported validRedemptionMethods */
 /* exported retrieveConfiguration */
+/* exported extVersion */
+
+/**
+ * Returns the version of the extension that is currently running
+ * @return {string} Extension version
+ */
+function extVersion() {
+    return browser.runtime.getManifest().version;
+}
+
+/**
+ * Returns the version of the extension as a separated array
+ * @return {Array<Number>} Extension version
+ */
+function extVersionAsArray() {
+    return versionStringAsNumbers(extVersion());
+}
 
 const CHL_BYPASS_SUPPORT = "cf-chl-bypass"; // header from server to indicate that Privacy Pass is supported
 const CHL_BYPASS_RESPONSE = "cf-chl-bypass-resp"; // response header from server, e.g. with erorr code
@@ -208,51 +225,67 @@ function processConfigPatches(cfgId) {
         const patches = retrieved["patches"];
         if (!patches) {
             return;
-        } else if (typeof patches !== "object") {
+        } else if (!(patches instanceof Array)) {
             console.warn("[privacy-pass]: Patches not specified in correct format");
             return;
         }
 
-        // check if signature is valid
-        if (patches.sig === undefined) {
-            console.warn("[privacy-pass]: Signature field for patches is missing not processing them.");
-            return;
-        }
-
-        // error is thrown if bad verification, just ignore if it fails
-        try {
-            verifyConfiguration(cfgId, patches);
-        } catch (e) {
-            console.warn("[privacy-pass]: Not processing config as unable to verify signature on patches");
-            return;
-        }
-
-        const config = getConfigForId(cfgId);
-        Object.keys(patches).forEach((key) => {
-            if (!PATCHABLE_KEYS.includes(key)) {
-                // do not process patches for non-patchable fields
-                console.warn(`Patches for ${key} are not permitted`);
+        // process patches if they verify correctly
+        patches.forEach((patch) => {
+            if (!patch || typeof patch !== "object") {
+                console.warn("[privacy-pass]: Patch not specified in correct format");
                 return;
             }
-            const patchValue = patches[key];
-            let current = config[key];
-            switch (typeof current) {
-                case "object":
-                    if (current !== null) {
-                        Object.assign(current, patchValue);
-                    } else {
-                        current = patchValue;
-                    }
-                    break;
-                default:
-                    current = patchValue;
-                    break;
-            }
-            config[key] = current;
-        });
 
-        // modify valid configs
-        VALID_CONFIGS[cfgId] = config;
+            // try to verify patch
+            if (!applicablePatch(patch["min-version"])) {
+                console.warn("[privacy-pass]: Patch version criteria not met. Not applying following: " + JSON.stringify(patch, null, 4));
+                return;
+            }
+
+            // check if signature is valid
+            if (patch["sig"] === undefined) {
+                console.warn("[privacy-pass]: Signature field for patch is missing not processing them");
+                return;
+            }
+
+            // error is thrown if bad verification, just ignore if it
+            // fails
+            try {
+                verifyConfiguration(cfgId, patch);
+            } catch (e) {
+                console.warn("[privacy-pass]: Not processing patch as unable to verify signature");
+                return;
+            }
+
+            const config = getConfigForId(cfgId);
+            const patchConfig = patch["config"];
+            Object.keys(patchConfig).forEach((key) => {
+                if (!PATCHABLE_KEYS.includes(key)) {
+                    // do not process patch for non-patchable fields
+                    console.warn(`[privacy-pass]: Patches for ${key} are not permitted`);
+                    return;
+                }
+                const patchValue = patchConfig[key];
+                let current = config[key];
+                switch (typeof current) {
+                    case "object":
+                        if (current !== null) {
+                            Object.assign(current, patchValue);
+                        } else {
+                            current = patchValue;
+                        }
+                        break;
+                    default:
+                        current = patchValue;
+                        break;
+                }
+                config[key] = current;
+            });
+
+            // modify valid configs
+            VALID_CONFIGS[cfgId] = config;
+        });
     };
     const xhr = retrieveConfiguration(cfgId, callback);
     xhr.send();
@@ -273,7 +306,7 @@ function retrieveConfiguration(cfgId, callback) {
     }
     const xhr = new XMLHttpRequest();
     xhr.open("GET", CONFIGURATION_URL, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Accept", "application/json");
     xhr.onreadystatechange = function() {
         if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
             const provider = getConfigName(cfgId);
@@ -285,3 +318,60 @@ function retrieveConfiguration(cfgId, callback) {
     return xhr;
 }
 
+/**
+ * Returns the version number (string of form x.y.z) as an array of
+ * three numbers to make comparisons easier
+ * @param {string} version
+ * @return {Array<Number>}
+ */
+function versionStringAsNumbers(version) {
+    return version.split(".").map((s) => parseInt(s));
+}
+
+/**
+ * Compares the version of a patch with that of the extension and
+ * returns true if the min patch version is satisfied.
+ * @param {string} pv Patch version to compare with extension version
+ * @return {boolean}
+ */
+function applicablePatch(pv) {
+    if (!pv) {
+        console.warn("[privacy-pass]: No version specified in patch.");
+        return false;
+    }
+
+    let arr;
+    try {
+        arr = versionStringAsNumbers(pv);
+    } catch (e) {
+        console.warn("[privacy-pass]: Failed to parse patch version.");
+        return false;
+    }
+
+    // compare version strings
+    const extVersion = extVersionAsArray();
+    if (extVersion[0] < arr[0]) {
+        return false;
+    } else if (extVersion[0] === arr[0]) {
+        if (extVersion[1] < arr[1]) {
+            return false;
+        } else if (extVersion[1] === arr[1]) {
+            if (extVersion[2] < arr[2]) {
+                return false;
+            } else if (
+                // typically versions consist of 3 numbers, but Chrome
+                // supports up to 4 so we should check for this. If the
+                // lengths differ and they are equal up to this point
+                // then just return true.
+                extVersion.length === 4
+                && arr.length === 4
+                && extVersion[2] === arr[2]
+            ) {
+                if (extVersion[3] < arr[3]) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}

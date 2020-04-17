@@ -568,6 +568,8 @@ function handleMessage(request, sender, sendResponse) {
             // respond with null
             sendResponse();
         }
+    } else if (request.version) {
+        sendResponse(extVersion());
     }
 }
 
