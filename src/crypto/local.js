@@ -17,7 +17,7 @@
 /* exported getCurvePoints */
 /* exported getBigNumFromBytes */
 /* exported getActiveECSettings */
-/* exported verifyCommitments */
+/* exported verifyConfiguration */
 /* exported shake256 */
 "use strict";
 
@@ -327,7 +327,7 @@ function parseSignaturefromPEM(pemSignature) {
 }
 
 /**
- * Parse a PEM-encoded publick key.
+ * Parse a PEM-encoded public key.
  * @param {string} pemPublicKey - A public key in PEM format.
  * @return {sjcl.ecc.ecdsa.publicKey} a public key for sjcl library.
  */
@@ -346,23 +346,22 @@ function parsePublicKeyfromPEM(pemPublicKey) {
 }
 
 /**
- * Verify the signature of commitments.
- * @param {json} comms - commitments to verify
- * @param {string} pemPublicKey - A public key in PEM format.
+ * Verify the signature of the retrieved configuration portion.
+ * @param {Number} cfgId - ID of configuration being used.
+ * @param {json} config - commitments to verify
  * @return {boolean} True, if the commitment has valid signature and is not
  *                   expired; otherwise, throws an exception.
  */
-function verifyCommitments(comms, pemPublicKey) {
-    const sig = parseSignaturefromPEM(comms.sig);
-    delete comms.sig;
-    const msg = JSON.stringify(comms);
-    const pk = parsePublicKeyfromPEM(pemPublicKey);
+function verifyConfiguration(cfgId, config) {
+    const sig = parseSignaturefromPEM(config.sig);
+    delete config.sig;
+    const msg = JSON.stringify(config);
+    const pk = parsePublicKeyfromPEM(getVerificationKey(cfgId));
     const hmsg = sjcl.hash.sha256.hash(msg);
-    comms.G = sec1EncodeToBase64(CURVE.G, false);
     try {
         return pk.verify(hmsg, sig);
     } catch (error) {
-        throw new Error("[privacy-pass]: Invalid commitment.");
+        throw new Error("[privacy-pass]: Invalid configuration verification.");
     }
 }
 

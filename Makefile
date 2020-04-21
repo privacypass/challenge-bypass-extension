@@ -1,14 +1,15 @@
 SOURCES= src/crypto/keccak/keccak.js \
 		 src/crypto/local.js         \
+         src/ext/config.js           \
          src/ext/background.js       \
          src/ext/browserUtils.js     \
-         src/ext/config.js           \
          src/ext/h2c.js              \
          src/ext/issuance.js         \
          src/ext/redemption.js       \
          src/ext/tokens.js           \
 		 src/ext/utils.js
 LISTENER=src/ext/listeners.js
+INIT=src/ext/init.js
 ASN1_PATH=src/crypto/asn1
 SJCL_PATH=src/crypto/sjcl
 
@@ -51,7 +52,7 @@ dist: build
 	zip -r ext.zip ./dist
 	rm -rf ./dist
 
-addon/build.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES} ${LISTENER}
+addon/build.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES} ${INIT} ${LISTENER}
 	cat $^ > $@
 addon/test.js: ${ASN1_PATH}/asn1-parser.js ${SJCL_PATH}/sjcl.js ${SOURCES}
 	cat $^ > $@

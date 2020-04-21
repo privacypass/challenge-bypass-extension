@@ -31,10 +31,13 @@
 /* exported getTarget */
 /* exported setFutureReload */
 /* exported getConfigId */
+/* exported getConfigForId */
 /* exported getConfigName */
 /* exported storedCommitments */
 /* exported requestIdentifiers */
 /* exported getMorePassesUrl */
+/* exported xhrDone, xhrGoodStatus */
+/* exported validConfigIds */
 
 "use strict";
 
@@ -43,13 +46,14 @@ let STORAGE_STR = "bypass-tokens-";
 let COUNT_STR = STORAGE_STR + "count-";
 
 // CF config is initialized by default
-let CF_CONFIG_ID = 1;
-let HC_CONFIG_ID = 2;
+const EXAMPLE_ID = 0;
+const CF_CONFIG_ID = 1;
+const HC_CONFIG_ID = 2;
 let CONFIG_ID = CF_CONFIG_ID;
 let getConfigId = () => CONFIG_ID;
 let setConfigId = (val) => CONFIG_ID = val;
 
-let validConfigIds = () => PPConfigs().map((config) => config.id);
+let validConfigIds = () => [EXAMPLE_ID, CF_CONFIG_ID, HC_CONFIG_ID];
 let checkConfigId = (configId) => validConfigIds().includes(configId);
 
 // The active configuration drives the request flow
@@ -564,6 +568,8 @@ function handleMessage(request, sender, sendResponse) {
             // respond with null
             sendResponse();
         }
+    } else if (request.version) {
+        sendResponse(extVersion());
     }
 }
 
@@ -742,4 +748,22 @@ function setConfig(val) {
         initECSettings(h2cParams());
         countStoredTokens(val);
     }
+}
+
+/**
+ * Checks readystate == 4, this implies a successful response
+ * @param {Number} readystate
+ * @return {boolean}
+ */
+function xhrDone(readystate) {
+    return readystate === 4;
+}
+
+/**
+ * Checks a good HTTP response
+ * @param {Number} status
+ * @return {boolean}
+ */
+function xhrGoodStatus(status) {
+    return status === 200;
 }

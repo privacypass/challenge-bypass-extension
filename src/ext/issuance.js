@@ -11,26 +11,7 @@
 
 const ERR_PROOF_VERIFY = new Error("[privacy-pass]: Unable to verify DLEQ proof.");
 
-/**
- * Checks readystate == 4, this implies a successful response
- * @param {Number} readystate
- * @return {boolean}
- */
-function xhrDone(readystate) {
-    return readystate === 4;
-}
-
-/**
- * Checks a good HTTP response
- * @param {Number} status
- * @return {boolean}
- */
-function xhrGoodStatus(status) {
-    return status === 200;
-}
-
 const cachedCommitmentsKey = (id) => `cached-commitments-${id}`;
-const COMMITMENT_URL = "https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json";
 
 /**
  * Constructs an issue request for sending tokens in Cloudflare-friendly format
@@ -337,21 +318,16 @@ function validateAndStoreTokens(url, cfgId, tabId, tokens, issueResp) {
  * @return {XMLHttpRequest} XHR object for verifying server response
  */
 function createVerificationXHR(url, cfgId, tabId, tokens, issueResp, version) {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", COMMITMENT_URL, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function() {
-        if (xhrGoodStatus(xhr.status) && xhrDone(xhr.readyState)) {
-            const commitments = retrieveCommitments(cfgId, xhr, version);
-            if (!commitments.G || !commitments.H) {
-                throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + version);
-            }
-            // cache commitments since they were verified correctly
-            cacheCommitments(cfgId, version, commitments.G, commitments.H);
-            verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitments);
+    const callback = (config) => {
+        const commitments = retrieveCommitments(cfgId, config, version);
+        if (!commitments.G || !commitments.H) {
+            throw new Error("[privacy-pass]: Retrieved commitments are incorrectly specified: " + commitments + ", version: " + version);
         }
+        // cache commitments since they were verified correctly
+        cacheCommitments(cfgId, version, commitments.G, commitments.H);
+        verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitments);
     };
-    return xhr;
+    return retrieveConfiguration(cfgId, callback);
 }
 
 /**
@@ -398,15 +374,12 @@ function verifyProofAndStoreTokens(url, cfgId, tabId, tokens, issueResp, commitm
  * Retrieves the public commitments that are used for validating the
  * DLEQ proof
  * @param {Number} cfgId config ID driving request
- * @param {XMLHttpRequest} xhr XHR for retrieving the active EC commitments
+ * @param {Object} config JSON config retrieved over HTTP
  * @param {string} version commitment version string
  * @return {Object} Object containing commitment data
  */
-function retrieveCommitments(cfgId, xhr, version) {
-    const resp = JSON.parse(xhr.responseText);
-    const comms = resp[getConfigName(cfgId)];
-
-    const cmt = comms[version];
+function retrieveCommitments(cfgId, config, version) {
+    const cmt = config[version];
     if (typeof cmt === "undefined") {
         throw new Error("[privacy-pass]: Retrieved version: " + version + " not available.");
     }
@@ -417,8 +390,11 @@ function retrieveCommitments(cfgId, xhr, version) {
     if (cmt.sig === undefined) {
         throw new Error("[privacy-pass]: Signature field is missing.");
     }
-    verifyCommitments(cmt, getVerificationKey(cfgId));
-    return {G: cmt.G, H: cmt.H};
+
+    // throws error on bad signature verification
+    verifyConfiguration(cfgId, cmt);
+
+    return {G: sec1EncodeToBase64(getActiveECSettings().curve.G, false), H: cmt.H};
 }
 
 /**

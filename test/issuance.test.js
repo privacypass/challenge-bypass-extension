@@ -30,6 +30,7 @@ const parseIssueResp = workflow.__get__("parseIssueResp");
 const parseSigString = workflow.__get__("parseSigString");
 const setConfig = workflow.__get__("setConfig");
 const getCachedCommitments = workflow.__get__("getCachedCommitments");
+const getConfigName = workflow.__get__("getConfigName");
 const cachedCommitmentsKey = workflow.__get__("cachedCommitmentsKey");
 const cacheCommitments = workflow.__get__("cacheCommitments");
 const checkVersion = workflow.__get__("checkVersion");
@@ -86,36 +87,46 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
             test("version not available", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr, "-1.00")),
+                    jest.fn(() => retrieveCommitments(configId, config, "-1.00")),
                 ).toThrow("Retrieved version");
             });
 
             test("bad public key", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
                 workflow.__set__("getVerificationKey", () => "badPublicKey");
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-ok")),
+                    jest.fn(() => retrieveCommitments(configId, config, "2.0-sig-ok")),
                 ).toThrow("Failed on parsing public key");
             });
 
             test("version not available", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr)),
+                    jest.fn(() => retrieveCommitments(configId, config)),
                 ).toThrow("Retrieved version");
             });
 
             test("parse correctly (v1.0)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(configId, xhr, "1.0");
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
+                const commitments = retrieveCommitments(configId, config, "1.0");
                 expect(testG === commitments.G).toBeTruthy();
                 expect(testH === commitments.H).toBeTruthy();
             });
 
             test("parse correctly (sig-ok)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(configId, xhr, "2.0-sig-ok");
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
+                const commitments = retrieveCommitments(configId, config, "2.0-sig-ok");
                 expect(testSigG === commitments.G).toBeTruthy();
                 expect(testSigH === commitments.H).toBeTruthy();
             });
@@ -124,7 +135,9 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
                 workflow.__with__({dev: () => true})(() => {
                     const xhr = createVerificationXHR(); // this usually takes params
                     const version = checkVersion(configId, "1.1");
-                    const commitments = retrieveCommitments(configId, xhr, version);
+                    const provider = getConfigName(configId);
+                    const config = JSON.parse(xhr.responseText)[provider];
+                    const commitments = retrieveCommitments(configId, config, version);
                     expect(testDevG === commitments.G).toBeTruthy();
                     expect(testDevH === commitments.H).toBeTruthy();
                 });
@@ -132,7 +145,9 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
             test("parse correctly (hkdf)", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
-                const commitments = retrieveCommitments(configId, xhr, "hkdf");
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
+                const commitments = retrieveCommitments(configId, config, "hkdf");
                 expect(hkdfG === commitments.G).toBeTruthy();
                 expect(hkdfH === commitments.H).toBeTruthy();
             });
@@ -164,22 +179,28 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
 
             test("malformed commitments signature", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-bad")),
+                    jest.fn(() => retrieveCommitments(configId, config, "2.0-sig-bad")),
                 ).toThrow("Failed on parsing commitment signature");
             });
 
             test("signature doesn't verify", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-sig-fail")),
-                ).toThrow("Invalid commitment");
+                    jest.fn(() => retrieveCommitments(configId, config, "2.0-sig-fail")),
+                ).toThrow("Invalid configuration verification");
             });
 
             test("expired commitments", () => {
                 const xhr = createVerificationXHR(); // this usually takes params
+                const provider = getConfigName(configId);
+                const config = JSON.parse(xhr.responseText)[provider];
                 expect(
-                    jest.fn(() => retrieveCommitments(configId, xhr, "2.0-expired")),
+                    jest.fn(() => retrieveCommitments(configId, config, "2.0-expired")),
                 ).toThrow("Commitments expired in");
             });
         });
