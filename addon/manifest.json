@@ -2,7 +2,7 @@
   "description": "Handles passes containing cryptographically blinded tokens for bypassing internet challenge.",
   "manifest_version": 2,
   "name": "Privacy Pass",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "icons": {
     "48": "icons/ticket-48.png"
   },
