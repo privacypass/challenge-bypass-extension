@@ -48,6 +48,7 @@ let CURVE_H2C_LABEL;
 const INC_H2C_LABEL = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
 const SSWU_H2C_LABEL = "H2C-P256-SHA256-SSWU-";
 
+
 /**
  * Sets the curve parameters for the current session based on the contents of
  * activeConfig.h2c-params
@@ -67,11 +68,36 @@ function initECSettings(h2cParams) {
             CURVE = sjcl.ecc.curves.c256;
             CURVE_H2C_HASH = sjcl.hash.sha256;
             CURVE_H2C_METHOD = methodStr;
-            CURVE_H2C_LABEL = methodStr === "increment" ? INC_H2C_LABEL : SSWU_H2C_LABEL;
+            CURVE_H2C_LABEL = methodStr === "increment" ? INC_H2C_LABEL : SSWU_H2C_LABEL_P256;
             break;
+
+    	case "p384":
+            if (methodStr != "swu") {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
+            } else if (hashStr != "sha512") {
+                throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
+            }
+            CURVE = sjcl.ecc.curves.c384;
+            CURVE_H2C_HASH = sjcl.hash.sha512;
+            CURVE_H2C_METHOD = methodStr;
+            CURVE_H2C_LABEL = SSWU_H2C_LABEL;
+            break;
+
+		case "p521":
+            if (methodStr != "swu") {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
+            } else if (hashStr != "sha512") {
+                throw new Error("[privacy-pass]: Incompatible h2c hash: '" + hashStr + "', for curve " + curveStr);
+            }
+            CURVE = sjcl.ecc.curves.c521;
+            CURVE_H2C_HASH = sjcl.hash.sha512;
+            CURVE_H2C_METHOD = methodStr;
+            CURVE_H2C_LABEL = SSWU_H2C_LABEL;
+            break;
+		
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
-    }
+	}
 }
 
 /**

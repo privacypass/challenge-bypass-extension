@@ -153,11 +153,11 @@ Files for testing are found in `test/` folder. Some functions from the extension
 
 Cryptography is implemented using the elliptic-curve library
 [SJCL](https://github.com/bitwiseshiftleft/sjcl) and compression of points is
-done in accordance with the standard SEC1. This work uses the NIST standard P256
-elliptic curve for performing operations. Third-party implementers should note
-that the outputs of the hash-to-curve, key derivation, and point encoding
-functions must match their Go equivalents exactly for interaction with our
-server implementation. More information about this will be provided when the
+done in accordance with the standard SEC1. This work uses the NIST standard P256, 
+P384 and P521 elliptic curves for performing operations. Third-party implementers 
+should note that the outputs of the hash-to-curve, key derivation, and point 
+encoding functions must match their Go equivalents exactly for interaction with 
+our server implementation. More information about this will be provided when the
 edge implementation is open-sourced.
 
 ## Acknowledgements

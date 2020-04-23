@@ -112,8 +112,8 @@ function exampleConfig() {
             "unknown-error": "8", // error code sent by server in case of an unknown error occurring
         }, // generic error codes (can add more)
         "h2c-params": {// parameters for establishing which hash-to-curve setting the client wants to use
-            "curve": "p256", // elliptic curve that generated tokens should be mapped to
-            "hash": "sha256", // hash function for mapping bytes to base-field of elliptic curve
+            "curve": "p256", // elliptic curve that generated tokens should be mapped to; "p256", "p384", "p521"
+            "hash": "sha256", // hash function for mapping bytes to base-field of elliptic curve; "sha256", "sha512"
             "method": "increment", // specifies which hash-to-curve method we should use; "increment" = hash-and-increment (the original but deprecated method); "swu" = optimised affine SWU algorithm (new method)
         },
         "send-h2c-params": false, // specifies whether to send the additional h2c-params with issue requests
