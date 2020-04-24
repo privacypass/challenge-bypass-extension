@@ -178,6 +178,7 @@ function getCurveParams(curve) {
     switch (sjcl.ecc.curveName(curve)) {
         case "c256":
             curveParams = precomputedP256;
+			break;
 		case "c384":
             curveParams = precomputedP384;
             break;
