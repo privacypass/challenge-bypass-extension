@@ -46,7 +46,9 @@ let CURVE_H2C_LABEL;
 
 // 1.2.840.10045.3.1.7 point generation seed
 const INC_H2C_LABEL = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
-const SSWU_H2C_LABEL = "H2C-P256-SHA256-SSWU-";
+const SSWU_H2C_LABEL_P256 = "H2C-P256-SHA256-SSWU-";
+const SSWU_H2C_LABEL_P384 = "H2C-P384-SHA512-SSWU-";
+const SSWU_H2C_LABEL_P521 = "H2C-P521-SHA512-SSWU-";
 
 
 /**
@@ -80,7 +82,7 @@ function initECSettings(h2cParams) {
             CURVE = sjcl.ecc.curves.c384;
             CURVE_H2C_HASH = sjcl.hash.sha512;
             CURVE_H2C_METHOD = methodStr;
-            CURVE_H2C_LABEL = SSWU_H2C_LABEL;
+            CURVE_H2C_LABEL = SSWU_H2C_LABEL_P384;
             break;
 
 		case "p521":
@@ -92,7 +94,7 @@ function initECSettings(h2cParams) {
             CURVE = sjcl.ecc.curves.c521;
             CURVE_H2C_HASH = sjcl.hash.sha512;
             CURVE_H2C_METHOD = methodStr;
-            CURVE_H2C_LABEL = SSWU_H2C_LABEL;
+            CURVE_H2C_LABEL = SSWU_H2C_LABEL_P521;
             break;
 		
         default:
