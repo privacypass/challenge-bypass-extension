@@ -132,24 +132,24 @@ describe("hashing to p521", () => {
         ];
         const expected = [
             {
-                t: "f4bf932eec234a64399ba0f4aa4c07817bbf3d5e23b9efcf004631fb9d1ef60a",
-                X: "0b05ff942eaf3c02a8d3d1bc1c3df582849dde7fef1e3030465605ca47be8695",
-                Y: "35b74b59eed2eec5ddd2c98810f55db329acac55aecf735478e5c2c0d577f619",
+                t: "000023aa13930e718b0482bb568d5345ca5eaf0a88266e091e53a399a350ffe1e70370aa5ab3434a4b8eb957a6cdb1eda270d63a7a7c0702a1a8737ff216a392f248",
+                X: "00f3009572992148fb0330a00b8d90f0312204c56c99251e48d68415f778de554ccd95397920c5df56b8fdb73f652fde9eb69713d15bc3acf37eab4789471474bcbf",
+                Y: "00aafe542358a362aef3e2087d18a09e68b1c6f1f0c7cc59d079f1c3e0992726ff3bfc384c301338b4f95ac57fb6e1b4f98e6a9663044078fe1aae862e7497265c16",
             },
             {
-                t: "928fd78ea9288b1849d9129a923a67ab925ba22fd8ab6d20ecfd1bbb27972ae5",
-                X: "ebe93781c6da1f2e8c4f413ba513cc2e507b1cade03307cd11c6ce08427a2597",
-                Y: "5fb12aa35a6336df78b5adcdabd264556b2c1150431c0849d99dac80b9f53271",
+                t: "000035611bedc259213ba5905c48b2371bd36aef6fc05ef938c283065eff5fb90e6374a44227fc92067bd91f4b12a9290a45806e0ea45eae0044e02c138de459ea7f",
+                X: "0006381ec39367dbf2668277aaa924c68c34759c68c50011f66d5a2b1b6f8e30bddf5a5ab5f34882bfb84f1d45bca8819df6e9caa2524f1d5c76b307098015312f2c",
+                Y: "006871dd285028096a278902bffd68462419f87143b803d8e19375258bdef21a7a43e04608c85bc25cca53766dedbb32e6cec6252194a79cc2444fe1e5f564603bc9",
             },
             {
-                t: "f12ed3708b3e0ad507b1d562b4236b3c00232140b61e1a8fdcc244a88d5f3b07",
-                X: "d757d33753253ae290aa98071fd8ee5087617e8ce57542a5f4e1dcaddbd4cfed",
-                Y: "110e75d49490243b2e836a9d8b6c2f27cf75fbdbc73155dc6b453611cad284f1",
+                t: "0000f254e3b20eab7df9f80aa49f7c78a55f3cd2d03cd45f7f0822b09178efe67e80fc04de25c711bd9ef14d5d14e7b8b952ceeaf86910ce0d9539d8007abe1bcb17",
+                X: "0152059cfed17e165b4fed3d4801e27f5e5a37f7b7e38baab6e52aeb2f993da26dc90b552c48e128f5eddb7ec91caedd2bb8269bbbdd53b883c0cebc979d1f783d7d",
+                Y: "00da3153edb5f1df2453410846a298fffae41f45eeeb6ef56e5e4791cd4cf49fba49d4c365d9f8185034ad70c5c880b4106b5de833d2808f7fe93f20da5390833e20",
             },
             {
-                t: "7128b7ac4f9506e36831804ede26275e0b8f14491c45ca3eb172e179ebb5bb67",
-                X: "d38c479f260c3cce0d3a0442fe3378fd7af61750984f3d30963a9e6a553f5777",
-                Y: "51a3742c76246a7b293434b6133e3ee21db3c53eacd666be51c24ddf64694571",
+                t: "0000c3183151e83905174a89b5f12862fbb6463bd421ea915b29c92c2a0e62f97ea27384c281654232ebe0bf5d7d3f728868af5c113b891f5488a935a9fd0c990b3b",
+                X: "001a4794de39d045e0ffeddcbfe68031daf1297b7b1bb83836405c28b033e32454074272d6ce16eeac01077e8ba462e6cb96e5e6e3375b9edbaaa7b97ef2f7bf2c21",
+                Y: "009306576bb05d5da82237b79d2bf5708f26a37792072a74da29226f48a55867e50bac2cb40af8d5bb5079f89411b6911997eabda27f974233371f0b4604f0a2aae6",
             },
         ];
         for (let i = 0; i < testVectors.length; i++) {
@@ -188,17 +188,17 @@ describe("hashing to p521", () => {
             {
                 u: new params.baseField(0),
                 X: "000000", // sjcl truncates the length of X
-                Y: "66485c780e2f83d72433bd5d84a06bb6541c2af31dae871728bf856a174f93f4",
+                Y: "d20ec9fea6b577c10d26ca1bb446f40b299e648b1ad508aad068896fee3f8e614bc63054d5772bf01a65d412e0bcaa8e965d2f5d332d7f39f846d440ae001f4f87",
             },
             {
                 u: new params.baseField(1),
-                X: "8c6898b71c972408c406c0e383227dc133a0fdc5bbe41a5896bb41409d648a91",
-                Y: "022f57c5880ec13780670c6874cc9ccd7096fa95c841e7592bf4e95162aa89cd",
+                X: "013a2395c234d0a121f579cc9f75187e3fb07461d9e1776ef8aec26e7ccf7b04fcb4e34cece4b12b242c4de46a6b96c4c052ee2eb57d40f143af5ae8f563dc3a95aa",
+                Y: "ffd2fda3be9e4fadadcd97e3150ea648c023d14db5b2e63e3269738f1a0621c60db7c4a7b70bf1fa67c5330104ba2602d47f77eaeaf37b773c35a72dfc2f50edf9",
             },
             {
                 u: new params.baseField(-1),
-                X: "8c6898b71c972408c406c0e383227dc133a0fdc5bbe41a5896bb41409d648a91",
-                Y: "022f57c5880ec13780670c6874cc9ccd7096fa95c841e7592bf4e95162aa89cd",
+                X: "013a2395c234d0a121f579cc9f75187e3fb07461d9e1776ef8aec26e7ccf7b04fcb4e34cece4b12b242c4de46a6b96c4c052ee2eb57d40f143af5ae8f563dc3a95aa",
+                Y: "ffd2fda3be9e4fadadcd97e3150ea648c023d14db5b2e63e3269738f1a0621c60db7c4a7b70bf1fa67c5330104ba2602d47f77eaeaf37b773c35a72dfc2f50edf9",
             },
         ];
         testVectors.forEach((vector) => {
