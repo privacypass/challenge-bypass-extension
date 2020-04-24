@@ -20,7 +20,7 @@ build: addon/build.js
 .PHONY: sjcl
 sjcl:
 	cd ${SJCL_PATH}; ./configure --without-all --with-ecc --with-convenience \
-	--with-codecBytes --with-codecHex --compress=none
+	--with-codecBytes --with-codecHex --with-sha512 --compress=none
 	make -C ${SJCL_PATH} sjcl.js
 
 .PHONY: test
