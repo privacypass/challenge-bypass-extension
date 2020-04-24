@@ -109,8 +109,10 @@ describe("check curve parameters are correct", () => {
 // https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve.git
 // (tag: draft-irtf-cfrg-hash-to-curve-03)
 // (commit: 8150855f1529290e783bbd903dd7e4aef29c9b57)
+
+
 describe("hashing to p521", () => {
-    const byteLength = 32;
+    const byteLength = 64;
     const wordLength = byteLength / 4;
 
     describe("affine test vectors", () => {
@@ -164,9 +166,9 @@ describe("hashing to p521", () => {
                 expect(sjcl.codec.hex.fromBits(point.y.toBits())).toEqual(expected[i].Y);
                 expect(point.isValid()).toBeTruthy();
             });
+			
         }
     });
-
     test("affine random", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
@@ -178,6 +180,7 @@ describe("hashing to p521", () => {
             expect(runH2C).not.toThrowError();
         }
     });
+
 
     describe("exceptional cases", () => {
         const params = getCurveParams(sjcl.ecc.curves.c521);
@@ -207,24 +210,14 @@ describe("hashing to p521", () => {
         });
     });
 
-    test("hash-and-increment no errors", () => {
+    test("bad hash-and-increment", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
                 hashAndInc(rndBits, hash, label);
             };
-            expect(runH2C).not.toThrowError();
-        }
-    });
-    test("h2c with increment settings", () => {
-        for (let i = 0; i < 10; i++) {
-            const random = sjcl.random.randomWords(wordLength, 10);
-            const rndBits = sjcl.codec.bytes.toBits(random);
-            const runH2C = function run() {
-                h2Curve(rndBits, getActiveECSettings());
-            };
-            expect(runH2C).not.toThrowError();
+            expect(runH2C).toThrowError();
         }
     });
     test("h2c with swu settings", () => {
@@ -238,7 +231,10 @@ describe("hashing to p521", () => {
             expect(runH2C).not.toThrowError();
         }
     });
+	
 });
+
+
 
 describe("point encoding/decoding", () => {
     test("check bad tag fails for compressed encoding", () => {
