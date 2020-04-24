@@ -80,6 +80,7 @@ function h2Base(x, curve, hash, label) {
     h.update(label);
     h.update(sjcl.codec.bytes.toBits(i2osp(dataLen, 4)));
     h.update(x);
+	//console.log("h2b", label, sjcl.codec.bytes.toBits(i2osp(dataLen, 4)), x);
     const t = h.finalize();
     const y = curve.field.fromBits(t).cnormalize();
     return y;
@@ -98,6 +99,9 @@ function h2Curve(alpha, ecSettings) {
             point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, ecSettings.label);
             break;
         case "increment":
+			if (ecSettings.curve != "p256") {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + ecSettings.method + "', for curve " + ecSettings.curve);
+            }
             point = hashAndInc(alpha, ecSettings.hash, ecSettings.label);
             break;
         default:
