@@ -36,7 +36,7 @@ beforeEach(() => {
     curve = settings.curve;
     hash = settings.hash;
     label = settings.label;
-    activeCurveParams = {curve: "p384", hash: "sha512", method: "swu"};
+    activeCurveParams = {curve: "p256", hash: "sha256", method: "increment"};
 });
 
 describe("check curve initialisation", () => {
@@ -61,21 +61,12 @@ describe("check curve initialisation", () => {
         expect(run).toThrowError();
     });
     test("with bad hash", () => {
-        activeCurveParams["hash"] = "sha256";
+        activeCurveParams["hash"] = "sha512";
         function run() {
             return initECSettings(activeCurveParams);
         }
         expect(run).toThrowError();
     });
-	
-	test("with bad H2C method", () => {
-        activeCurveParams["method"] = "increment";
-        function run() {
-            return initECSettings(activeCurveParams);
-        }
-        expect(run).toThrowError();
-    });
-	
     test("with bad method", () => {
         activeCurveParams["method"] = "elligator";
         function run() {
@@ -86,15 +77,15 @@ describe("check curve initialisation", () => {
 });
 
 describe("check curve parameters are correct", () => {
-    test("p384", () => {
-        const curveP384 = sjcl.ecc.curves.c384;
+    test("p256", () => {
+        const curveP256 = sjcl.ecc.curves.c256;
         function run() {
             return getCurveParams(curve);
         }
         const cParams = run();
-        expect(curveP384.field.modulus === cParams.baseField.modulus).toBeTruthy();
-        expect(curveP384.a === cParams.A).toBeTruthy();
-        expect(curveP384.b === cParams.B).toBeTruthy();
+        expect(curveP256.field.modulus === cParams.baseField.modulus).toBeTruthy();
+        expect(curveP256.a === cParams.A).toBeTruthy();
+        expect(curveP256.b === cParams.B).toBeTruthy();
     });
     test("bad curve", () => {
         function run() {
@@ -109,10 +100,8 @@ describe("check curve parameters are correct", () => {
 // https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve.git
 // (tag: draft-irtf-cfrg-hash-to-curve-03)
 // (commit: 8150855f1529290e783bbd903dd7e4aef29c9b57)
-
-
-describe("hashing to p384", () => {
-    const byteLength = 64;
+describe("hashing to p256", () => {
+    const byteLength = 32;
     const wordLength = byteLength / 4;
 
     describe("affine test vectors", () => {
@@ -132,22 +121,22 @@ describe("hashing to p384", () => {
         ];
         const expected = [
             {
-                t: "53f46c6ae3188f49447f87374f909c0c473f09d59fc9bd62dbd2adf51375e63188d5f07e6133ef8125721a4fa9265f5e",
+                t: "f4bf932eec234a64399ba0f4aa4c07817bbf3d5e23b9efcf004631fb9d1ef60a",
                 X: "0b05ff942eaf3c02a8d3d1bc1c3df582849dde7fef1e3030465605ca47be8695",
                 Y: "35b74b59eed2eec5ddd2c98810f55db329acac55aecf735478e5c2c0d577f619",
             },
             {
-                t: "fbf18a436962b0e49f660f7dd5a662bf7437c4efef95e66749db54ce154889d6966f0a951f5b4c964d30ac62d0afa7ac",
+                t: "928fd78ea9288b1849d9129a923a67ab925ba22fd8ab6d20ecfd1bbb27972ae5",
                 X: "ebe93781c6da1f2e8c4f413ba513cc2e507b1cade03307cd11c6ce08427a2597",
                 Y: "5fb12aa35a6336df78b5adcdabd264556b2c1150431c0849d99dac80b9f53271",
             },
             {
-                t: "ce159a22b10ca2b0bfd297e7c3925f989112154c173ee881cd771fcf86ac1ce170322221425ddd49b4c6e62d217b1031",
+                t: "f12ed3708b3e0ad507b1d562b4236b3c00232140b61e1a8fdcc244a88d5f3b07",
                 X: "d757d33753253ae290aa98071fd8ee5087617e8ce57542a5f4e1dcaddbd4cfed",
                 Y: "110e75d49490243b2e836a9d8b6c2f27cf75fbdbc73155dc6b453611cad284f1",
             },
             {
-                t: "da595838c55f0ddaf8071c30fb425725b95e3fe3a20d8467b4cbbad00cb0d024ad90971c13a9122aebf947afc9d61415",
+                t: "7128b7ac4f9506e36831804ede26275e0b8f14491c45ca3eb172e179ebb5bb67",
                 X: "d38c479f260c3cce0d3a0442fe3378fd7af61750984f3d30963a9e6a553f5777",
                 Y: "51a3742c76246a7b293434b6133e3ee21db3c53eacd666be51c24ddf64694571",
             },
@@ -166,24 +155,24 @@ describe("hashing to p384", () => {
                 expect(sjcl.codec.hex.fromBits(point.y.toBits())).toEqual(expected[i].Y);
                 expect(point.isValid()).toBeTruthy();
             });
-			
         }
     });
+	
+
     test("affine random", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
-                const lbl = workflow.__get__("SSWU_H2C_LABEL_P384");
+                const lbl = workflow.__get__("SSWU_H2C_LABEL_P256");
                 simplifiedSWU(rndBits, curve, hash, lbl);
             };
             expect(runH2C).not.toThrowError();
         }
     });
 
-
     describe("exceptional cases", () => {
-        const params = getCurveParams(sjcl.ecc.curves.c384);
+        const params = getCurveParams(sjcl.ecc.curves.c256);
         const testVectors = [
             {
                 u: new params.baseField(0),
@@ -210,14 +199,24 @@ describe("hashing to p384", () => {
         });
     });
 
-    test("bad hash-and-increment", () => {
+    test("hash-and-increment no errors", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
                 hashAndInc(rndBits, hash, label);
             };
-            expect(runH2C).toThrowError();
+            expect(runH2C).not.toThrowError();
+        }
+    });
+    test("h2c with increment settings", () => {
+        for (let i = 0; i < 10; i++) {
+            const random = sjcl.random.randomWords(wordLength, 10);
+            const rndBits = sjcl.codec.bytes.toBits(random);
+            const runH2C = function run() {
+                h2Curve(rndBits, getActiveECSettings());
+            };
+            expect(runH2C).not.toThrowError();
         }
     });
     test("h2c with swu settings", () => {
@@ -231,9 +230,8 @@ describe("hashing to p384", () => {
             expect(runH2C).not.toThrowError();
         }
     });
-	
-});
 
+});
 
 
 describe("point encoding/decoding", () => {
