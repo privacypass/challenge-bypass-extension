@@ -99,7 +99,7 @@ function h2Curve(alpha, ecSettings) {
             point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, ecSettings.label);
             break;
         case "increment":
-			if (ecSettings.curve != "p256") {
+			if (ecSettings.curve != sjcl.ecc.curves.c256) {
                 throw new Error("[privacy-pass]: Incompatible h2c method: '" + ecSettings.method + "', for curve " + ecSettings.curve);
             }
             point = hashAndInc(alpha, ecSettings.hash, ecSettings.label);
