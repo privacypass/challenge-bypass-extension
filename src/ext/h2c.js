@@ -80,7 +80,6 @@ function h2Base(x, curve, hash, label) {
     h.update(label);
     h.update(sjcl.codec.bytes.toBits(i2osp(dataLen, 4)));
     h.update(x);
-	//console.log("h2b", label, sjcl.codec.bytes.toBits(i2osp(dataLen, 4)), x);
     const t = h.finalize();
     const y = curve.field.fromBits(t).cnormalize();
     return y;
@@ -140,6 +139,7 @@ function simplifiedSWU(alpha, activeCurve, hash, label) {
  */
 function computeSWUCoordinates(u, params) {
     const {A, B, baseField, c1, c2, sqrt} = params;
+	
     const p = baseField.modulus;
     const t1 = u.square().mul(-1); // steps 2-3
     const t2 = t1.square(); // step 4
@@ -153,21 +153,25 @@ function computeSWUCoordinates(u, params) {
     gx1 = gx1.mul(x1);
     gx1 = gx1.add(B);
     gx1 = gx1.mod(p);
-
+	
     const x2 = t1.mul(x1); // step 13
     let gx2 = x2.square().mod(p); // step 14-17
     gx2 = gx2.add(A);
     gx2 = gx2.mul(x2);
     gx2 = gx2.add(B);
     gx2 = gx2.mod(p);
-
-    const e = new baseField(gx1.montpowermod(c2, p)).equals(new sjcl.bn(1)); // step 18
+	
+    const e = new baseField(gx1.powermod(c2, p)).equals(new sjcl.bn(1)); // step 18
     const X = cmov(x2, x1, e, baseField); // step 19
-    const gx = cmov(gx2, gx1, e, baseField); // step 20
-    let y1 = gx.montpowermod(sqrt, p); // step 21
-    // choose the positive (the smallest) root
-    const r = c2.greaterEquals(y1);
-    let y2 = y1.mul(-1).mod(p);
+	
+	const gx = cmov(gx2, gx1, e, baseField); // step 20
+	
+	y1 = gx.powermod(sqrt, p); // step 21
+	
+	
+	// choose the positive (the smallest) root
+	const r = c2.greaterEquals(y1);
+	let y2 = y1.mul(-1).mod(p);
     const Y = cmov(y2, y1, r, baseField);
     return {X: X, Y: Y};
 }
