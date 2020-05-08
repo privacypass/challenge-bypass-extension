@@ -11,10 +11,10 @@ Before filing a new bug, verify if your request is already being tracked by anot
 
 --- 
 
-If you believe that this is a new bug, please proceed to create an issue. The issue will only be investigated after you have filled in the following information.
+If you believe that this is a new bug, please proceed to create an issue. The issue will be investigated after you have filled in the following information.
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+A clear and concise description of the bug.
 
 **To Reproduce**
 Steps to reproduce the behavior:
@@ -32,7 +32,7 @@ A clear and concise description of what you expected to happen.
  - Browser [e.g. chrome, firefox]
  - Browser Version [e.g. 79, 80, ]
  - Privacy Pass Version [e.g. 2.0.4, 2.0.5 ]
- - Did you installed Privacy Pass from this repository or from the browser store?
+ - Did you install Privacy Pass from this repository or from the browser store?
 
 **Additional context**
 Add any other context about the problem here.
