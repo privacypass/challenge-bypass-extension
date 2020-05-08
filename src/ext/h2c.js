@@ -133,10 +133,10 @@ function computeSWUCoordinates(u, params) {
     gx2 = gx2.add(B);
     gx2 = gx2.mod(p);
 
-    const e = new baseField(gx1.montpowermod(c2, p)).equals(new sjcl.bn(1)); // step 18
+    const e = new baseField(gx1.powermod(c2, p)).equals(new sjcl.bn(1)); // step 18
     const X = cmov(x2, x1, e, baseField); // step 19
     const gx = cmov(gx2, gx1, e, baseField); // step 20
-    let y1 = gx.montpowermod(sqrt, p); // step 21
+    let y1 = gx.powermod(sqrt, p); // step 21
     // choose the positive (the smallest) root
     const r = c2.greaterEquals(y1);
     let y2 = y1.mul(-1).mod(p);
