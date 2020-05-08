@@ -1,17 +1,17 @@
 ---
 name: New Bug
-about: Create a report to help us improve
+about: Create a report to help us improve the Privacy Pass browser extension
 title: ''
 labels: triage
 assignees: ''
 
 ---
 
-Before filing a new bug, verify if your request is currently tracked by another issue.
+Before filing a new bug, verify if your request is already being tracked by another issue here: https://github.com/privacypass/challenge-bypass-extension/issues.
 
 --- 
 
-If this is a new bug, proceed and fill the following information.
+If you believe that this is a new bug, please proceed to create an issue. The issue will only be investigated after you have filled in the following information.
 
 **Describe the bug**
 A clear and concise description of what the bug is.
