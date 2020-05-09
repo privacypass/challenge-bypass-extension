@@ -67,7 +67,7 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-    
+
     test("with bad H2C method", () => {
         activeCurveParams["method"] = "increment";
         function run() {
@@ -75,7 +75,7 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-    
+
     test("with bad method", () => {
         activeCurveParams["method"] = "elligator";
         function run() {
