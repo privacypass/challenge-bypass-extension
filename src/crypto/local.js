@@ -43,6 +43,7 @@ let CURVE;
 let CURVE_H2C_HASH;
 let CURVE_H2C_METHOD;
 let CURVE_H2C_LABEL;
+let CURVE_H2C_LEN;
 
 // 1.2.840.10045.3.1.7 point generation seed
 const INC_H2C_LABEL = sjcl.codec.hex.toBits("312e322e3834302e31303034352e332e312e3720706f696e742067656e65726174696f6e2073656564");
@@ -71,9 +72,10 @@ function initECSettings(h2cParams) {
             CURVE_H2C_HASH = sjcl.hash.sha256;
             CURVE_H2C_METHOD = methodStr;
             CURVE_H2C_LABEL = methodStr === "increment" ? INC_H2C_LABEL : SSWU_H2C_LABEL_P256;
+            CURVE_H2C_LEN = 32;
             break;
 
-    	case "p384":
+        case "p384":
             if (methodStr != "swu") {
                 throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
             } else if (hashStr != "sha512") {
@@ -83,9 +85,10 @@ function initECSettings(h2cParams) {
             CURVE_H2C_HASH = sjcl.hash.sha512;
             CURVE_H2C_METHOD = methodStr;
             CURVE_H2C_LABEL = SSWU_H2C_LABEL_P384;
+            CURVE_H2C_LEN = 48;
             break;
 
-		case "p521":
+        case "p521":
             if (methodStr != "swu") {
                 throw new Error("[privacy-pass]: Incompatible h2c method: '" + methodStr + "', for curve " + curveStr);
             } else if (hashStr != "sha512") {
@@ -95,11 +98,12 @@ function initECSettings(h2cParams) {
             CURVE_H2C_HASH = sjcl.hash.sha512;
             CURVE_H2C_METHOD = methodStr;
             CURVE_H2C_LABEL = SSWU_H2C_LABEL_P521;
+            CURVE_H2C_LEN = 66;            
             break;
-		
+        
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
-	}
+    }
 }
 
 /**
@@ -149,9 +153,8 @@ function unblindPoint(b, Q) {
  * hashing to the chosen curve.
  * @return {sjcl.ecc.point}
  */
-function newRandomPoint() {
-    const byteLength = 32;
-    const wordLength = byteLength / 4; // SJCL 4 bytes to a word
+function newRandomPoint() {    
+    const wordLength = CURVE_H2C_LEN / 4; // SJCL 4 bytes to a word
     const random = sjcl.random.randomWords(wordLength, 10); // TODO Use webcrypto instead.
 
     // Choose hash-to-curve method
