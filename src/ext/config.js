@@ -18,7 +18,7 @@
  * @return {string} Extension version
  */
 function extVersion() {
-    return browser.runtime.getManifest().version;
+    return chrome.runtime.getManifest().version;
 }
 
 /**
