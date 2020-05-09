@@ -232,8 +232,6 @@ describe("hashing to p384", () => {
     });
 });
 
-
-
 describe("point encoding/decoding", () => {
     test("check bad tag fails for compressed encoding", () => {
         function run() {

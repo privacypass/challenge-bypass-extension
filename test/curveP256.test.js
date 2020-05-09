@@ -157,7 +157,7 @@ describe("hashing to p256", () => {
             });
         }
     });
-    
+
 
     test("affine random", () => {
         for (let i = 0; i < 10; i++) {
@@ -231,7 +231,6 @@ describe("hashing to p256", () => {
         }
     });
 });
-
 
 describe("point encoding/decoding", () => {
     test("check bad tag fails for compressed encoding", () => {

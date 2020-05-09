@@ -67,7 +67,7 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-    
+
     test("with bad H2C method", () => {
         activeCurveParams["method"] = "increment";
         function run() {
@@ -75,7 +75,7 @@ describe("check curve initialisation", () => {
         }
         expect(run).toThrowError();
     });
-    
+
     test("with bad method", () => {
         activeCurveParams["method"] = "elligator";
         function run() {
@@ -231,8 +231,6 @@ describe("hashing to p521", () => {
         }
     });
 });
-
-
 
 describe("point encoding/decoding", () => {
     test("check bad tag fails for compressed encoding", () => {

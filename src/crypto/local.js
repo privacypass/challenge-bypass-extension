@@ -98,9 +98,9 @@ function initECSettings(h2cParams) {
             CURVE_H2C_HASH = sjcl.hash.sha512;
             CURVE_H2C_METHOD = methodStr;
             CURVE_H2C_LABEL = SSWU_H2C_LABEL_P521;
-            CURVE_H2C_LEN = 66;            
+            CURVE_H2C_LEN = 66;
             break;
-        
+
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen: " + curveStr);
     }
@@ -153,7 +153,7 @@ function unblindPoint(b, Q) {
  * hashing to the chosen curve.
  * @return {sjcl.ecc.point}
  */
-function newRandomPoint() {    
+function newRandomPoint() {
     const wordLength = CURVE_H2C_LEN / 4; // SJCL 4 bytes to a word
     const random = sjcl.random.randomWords(wordLength, 10); // TODO Use webcrypto instead.
 
