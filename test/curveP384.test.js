@@ -186,18 +186,18 @@ describe("hashing to p384", () => {
         const testVectors = [
             {
                 u: new params.baseField(0),
-                X: "000000", // sjcl truncates the length of X
-                Y: "3cf99ef04f51a5ea630ba3f9f960dd593a14c9be39fd2bd215d3b4b08aaaf86bbf927f2c46e52ab06fb742b8850e521e",
+                X: "e665ba8d4b6a4d4c32da01cea152b9b30809decfaa2b15b0abb1582fc55bd7c8421cbdd92e0f9b346381eda546a40e4f", // sjcl truncates the length of X
+                Y: "2aab956c0a80b350542ca946fc9fe8c86b21fe0a63e6a46ba6b33562e732de7045bdb894224bdfac59a5a6edb6fe4c5a",
             },
             {
                 u: new params.baseField(1),
-                X: "199a4572b495b2b3cd25fe315ead464cf7f6213055d4ea4f544ea7d03aa42836bde34225d1f064cb9c7e125bb95bf1b0",
-                Y: "6fe0457487694c4d19710d054d8e95a8889dffd38626f42b0caaed4ad6c84adc853f452a8a84cbed2d2f3446dc8d62b5",
+                X: "e665ba8d4b6a4d4c32da01cea152b9b30809decfaa2b15b0abb1582fc55bd7c8421cbdd92e0f9b346381eda546a40e4f",
+                Y: "2aab956c0a80b350542ca946fc9fe8c86b21fe0a63e6a46ba6b33562e732de7045bdb894224bdfac59a5a6edb6fe4c5a",
             },
             {
                 u: new params.baseField(-1),
-                X: "199a4572b495b2b3cd25fe315ead464cf7f6213055d4ea4f544ea7d03aa42836bde34225d1f064cb9c7e125bb95bf1b0",
-                Y: "6fe0457487694c4d19710d054d8e95a8889dffd38626f42b0caaed4ad6c84adc853f452a8a84cbed2d2f3446dc8d62b5",
+                X: "e665ba8d4b6a4d4c32da01cea152b9b30809decfaa2b15b0abb1582fc55bd7c8421cbdd92e0f9b346381eda546a40e4f",
+                Y: "2aab956c0a80b350542ca946fc9fe8c86b21fe0a63e6a46ba6b33562e732de7045bdb894224bdfac59a5a6edb6fe4c5a",
             },
         ];
         testVectors.forEach((vector) => {
