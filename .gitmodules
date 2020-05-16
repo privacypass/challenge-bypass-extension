@@ -1,6 +1,6 @@
 [submodule "src/crypto/sjcl"]
 	path = src/crypto/sjcl
-	url = git@github.com:bitwiseshiftleft/sjcl.git
+	url = https://github.com/bitwiseshiftleft/sjcl
 [submodule "src/crypto/asn1"]
 	path = src/crypto/asn1
 	url = https://git.coolaj86.com/coolaj86/asn1-parser.js.git
