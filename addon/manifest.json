@@ -1,8 +1,8 @@
 {
-  "description": "Handles passes containing cryptographically blinded tokens for bypassing internet challenge.",
+  "description": "Client support for Privacy Pass anonymous authorization protocol.",
   "manifest_version": 2,
   "name": "Privacy Pass",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "icons": {
     "32": "icons/ticket-32.png",
     "48": "icons/ticket-48.png",
@@ -15,10 +15,8 @@
     ]
   },
   "permissions": [
-    "alarms",
     "cookies",
     "<all_urls>",
-    "storage",
     "tabs",
     "webRequest",
     "webRequestBlocking",
