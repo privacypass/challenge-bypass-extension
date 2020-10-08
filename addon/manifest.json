@@ -4,7 +4,10 @@
   "name": "Privacy Pass",
   "version": "2.0.6",
   "icons": {
-    "48": "icons/ticket-48.png"
+    "32": "icons/ticket-32.png",
+    "48": "icons/ticket-48.png",
+    "64": "icons/ticket-64.png",
+    "128": "icons/ticket-128.png"
   },
   "background": {
     "scripts": [
