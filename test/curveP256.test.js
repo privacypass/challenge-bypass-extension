@@ -158,12 +158,13 @@ describe("hashing to p256", () => {
         }
     });
 
+
     test("affine random", () => {
         for (let i = 0; i < 10; i++) {
             const random = sjcl.random.randomWords(wordLength, 10);
             const rndBits = sjcl.codec.bytes.toBits(random);
             const runH2C = function run() {
-                const lbl = workflow.__get__("SSWU_H2C_LABEL");
+                const lbl = workflow.__get__("SSWU_H2C_LABEL_P256");
                 simplifiedSWU(rndBits, curve, hash, lbl);
             };
             expect(runH2C).not.toThrowError();

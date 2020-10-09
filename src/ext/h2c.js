@@ -21,6 +21,29 @@ const precomputedP256 = {
     sqrt: p256Curve.field.modulus.add(1).cnormalize().halveM().halveM(),
 };
 
+
+const p384Curve = sjcl.ecc.curves.c384;
+const precomputedP384 = {
+    A: p384Curve.a.fullReduce(),
+    B: p384Curve.b,
+    baseField: p384Curve.field,
+    c1: p384Curve.b.mul(-1).mul(p384Curve.a.inverseMod(p384Curve.field.modulus)),
+    c2: p384Curve.field.modulus.sub(1).cnormalize().halveM(),
+    sqrt: p384Curve.field.modulus.add(1).cnormalize().halveM().halveM(),
+};
+
+
+const p521Curve = sjcl.ecc.curves.c521;
+const precomputedP521 = {
+    A: p521Curve.a.fullReduce(),
+    B: p521Curve.b,
+    baseField: p521Curve.field,
+    c1: p521Curve.b.mul(-1).mul(p521Curve.a.inverseMod(p521Curve.field.modulus)),
+    c2: p521Curve.field.modulus.sub(1).cnormalize().halveM(),
+    sqrt: p521Curve.field.modulus.add(1).cnormalize().halveM().halveM(),
+};
+
+
 /**
  * Converts the number x into a byte array of length n
  * @param {Number} x
@@ -43,6 +66,7 @@ function i2osp(x, n) {
 /**
  * hashes bits to the base field (as described in
  * draft-irtf-cfrg-hash-to-curve)
+ * Serves as Random Oracle for SWU
  * @param {sjcl.bitArray} x bits of element to be translated
  * @param {sjcl.ecc.curve} curve elliptic curve
  * @param {sjcl.hash} hash hash function object
@@ -62,7 +86,7 @@ function h2Base(x, curve, hash, label) {
 }
 
 /**
- * hashes bits to the chosen elliptic curve
+ * hashes bits to the chosen elliptic curve (relies on a Random Oracle)
  * @param {sjcl.bitArray} alpha bits to be encoded onto curve
  * @param {Object} ecSettings the curve settings being used by the extension
  * @return {sjcl.ecc.point} point on curve
@@ -74,6 +98,9 @@ function h2Curve(alpha, ecSettings) {
             point = simplifiedSWU(alpha, ecSettings.curve, ecSettings.hash, ecSettings.label);
             break;
         case "increment":
+            if (ecSettings.curve != sjcl.ecc.curves.c256) {
+                throw new Error("[privacy-pass]: Incompatible h2c method: '" + ecSettings.method + "', for curve " + ecSettings.curve);
+            }
             point = hashAndInc(alpha, ecSettings.hash, ecSettings.label);
             break;
         default:
@@ -154,6 +181,12 @@ function getCurveParams(curve) {
     switch (sjcl.ecc.curveName(curve)) {
         case "c256":
             curveParams = precomputedP256;
+            break;
+        case "c384":
+            curveParams = precomputedP384;
+            break;
+        case "c521":
+            curveParams = precomputedP521;
             break;
         default:
             throw new Error("[privacy-pass]: Incompatible curve chosen for H2C: " + sjcl.ecc.curveName(curve));

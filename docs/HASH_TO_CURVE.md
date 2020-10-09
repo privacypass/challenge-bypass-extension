@@ -1,7 +1,7 @@
 # Deterministic methods for hashing bytes to elliptic curve points
 
 A central portion of our design relies on deterministically hashing bytes to a
-uniformly random point on an elliptic curve (we currently use the NIST P256
+uniformly random point on an elliptic curve (we currently use the NIST P256, P384, P521
 curve). There are two methods that we use that are controlled via the
 `hash-to-curve` config option.
 
@@ -29,4 +29,4 @@ In the new release of Privacy Pass we will move to supporting both the previous
 It is known as "affine" since it generates curve points in the affine
 representation rather than the Jacobian representation.
 
-The algorithm is described in <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>. The input is a field element `t` that is obtained by hashing the input bytes into GF(p) using the output of a random oracle (we use the hash function SHA-256). The output is a coordinate pair (x,y) for a point on the elliptic curve P-256.
+The algorithm is described in <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>. The input is a field element `t` that is obtained by hashing the input bytes into GF(p) using the output of a random oracle (we use the hash function SHA-256 or SHA-512 depending on the ciphersuite selected). The output is a coordinate pair (x,y) for a point on the elliptic curve (P-256, P-384, P-521).
