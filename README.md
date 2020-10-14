@@ -6,7 +6,7 @@ The Privacy Pass extension implements the Privacy Pass protocol for providing a
 private authentication mechanism during web browsing. Privacy Pass is
 currently supported by Cloudflare to allow users to redeem validly signed tokens
 instead of completing CAPTCHA solutions. The extension is compatible with
-[Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
+[Chrome](https://chrome.google.com/webstore/detail/privacy-pass/odniikpejlhbjandolpbjlpmhkhjmaba)
 and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 (v48+). An example server implementation that is compatible with this extension
 is available [here](https://github.com/privacypass/challenge-bypass-server).
@@ -53,7 +53,7 @@ of any issues that occur. Pull requests and reviews are welcome and encouraged.
 ## Stable Releases
 
 Download the latest stable release of the extension:
--   [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
+-   [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/odniikpejlhbjandolpbjlpmhkhjmaba)
 -   [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 
 ## Quickstart
