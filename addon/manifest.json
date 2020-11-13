@@ -17,7 +17,6 @@
   "permissions": [
     "cookies",
     "<all_urls>",
-    "tabs",
     "webRequest",
     "webRequestBlocking",
     "webNavigation"
