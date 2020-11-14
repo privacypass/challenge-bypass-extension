@@ -56,8 +56,6 @@ welcome and encouraged.
   - [FAQs](#faqs)
     - [What do I have to do to acquire new passes?](#what-do-i-have-to-do-to-acquire-new-passes)
     - [Are passes stored after a browser restart?](#are-passes-stored-after-a-browser-restart)
-    - [Are passes stored after a browser
-      restart?](#are-passes-stored-after-a-browser-restart)
 
 ## Stable Releases
 
