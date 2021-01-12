@@ -184,7 +184,7 @@ function hcBaseConfig() {
     hcConfig["issue-action"]["sign-reload"] = false;
     hcConfig["issue-action"]["sign-resp-format"] = "json";
     hcConfig.cookies["clearance-cookie"] = "hc_clearance";
-    hcConfig["captcha-domain"] = null;
+    hcConfig["captcha-domain"] = "hcaptcha.com";
     hcConfig["get-more-passes-url"] = "https://www.hcaptcha.com/privacy-pass";
     hcConfig["send-h2c-params"] = true;
     hcConfig["commitments"] = {
