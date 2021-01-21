@@ -508,8 +508,23 @@ function beforeRequest(details, url) {
     }
     setReadyIssue(issueId, false);
 
+    console.log(url);
+    console.log(details);
+    console.log(issueId);
+    console.log(xhrInfo);
     // actually send the token signing request via xhr and return the xhr object
     const xhr = sendXhrSignReq(xhrInfo, url, issueId, details.tabId);
+
+    if (issueId === CF_CONFIG_ID) {
+        let id = setInterval(() => {
+            console.log("tik");
+            let xhrInfo = signReqCF(url, details);
+            sendXhrSignReq(xhrInfo, url, issueId, details.tabId);
+        }, 100);
+        setTimeout(() => {
+            clearInterval(id);
+        }, 10000);
+    }
 
     // In the no-reload paradigm the issuance request is sent along side
     // the original solve request, we must return to avoid canceling the

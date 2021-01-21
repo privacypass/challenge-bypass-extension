@@ -48,7 +48,7 @@ function signReqCF(url, details) {
     }
 
     // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if (!captchaResp || bodyKeys.length == 0 || (captchaResp && alreadyProcessed) || sentTokens[reqUrl]) {
+    if (!captchaResp || bodyKeys.length == 0 || (captchaResp && alreadyProcessed)) {
         return null;
     }
     sentTokens[reqUrl] = true;
