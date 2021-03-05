@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:8.12-stretch
+      - image: circleci/node:14
     working_directory: ~/challenge-bypass-extension
     steps:
       - checkout
