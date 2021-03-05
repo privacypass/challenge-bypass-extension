@@ -1,5 +1,5 @@
 html, body {
-  height: 380px;
+  height: 390px;
   width: 260px;
   margin: 0;
   background-color: #fff;
@@ -28,12 +28,17 @@ a:hover, a:focus {
 
 h1 {
 /*Styles for the Privacy Pass title */
-	font-size: 23px;
+  font-size: 23px;
   color: #333333;
   font-weight: normal;
   margin-left: 93px;
   margin-bottom: 2px;
   margin-top: 41px;
+}
+
+.version-style {
+/*Style for Privacy Pass version*/
+  font-size: 13px;
 }
 
 .button-style {

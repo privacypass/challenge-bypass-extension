@@ -9,7 +9,7 @@ let background = chrome.extension.getBackgroundPage();
 if (background) {
     background.UpdateCallback = UpdatePopup;
     // update version text
-    document.getElementById("header-text").innerHTML = `<h1>Privacy Pass<br><font size="1">Version ${background.extVersion()}</font></h1>`;
+    document.getElementById("version-text").textContent = "Version " + background.extVersion();
 } else {
     browser.runtime.sendMessage({
         callback: UpdatePopup,
@@ -18,7 +18,7 @@ if (background) {
     browser.runtime.sendMessage({
         version: true,
     }).then((extVersion) => {
-        document.getElementById("header-text").innerHTML = `<h1>Privacy Pass<br><font size="1">Version ${extVersion}</font></h1>`;
+    	document.getElementById("version-text").textContent = "Version " + extVersion;
     });
 }
 
