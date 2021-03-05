@@ -18,7 +18,7 @@ if (background) {
     browser.runtime.sendMessage({
         version: true,
     }).then((extVersion) => {
-    	document.getElementById("version-text").textContent = "Version " + extVersion;
+        document.getElementById("version-text").textContent = "Version " + extVersion;
     });
 }
 

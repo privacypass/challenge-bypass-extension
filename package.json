@@ -1,6 +1,6 @@
 {
   "name": "PrivacyPass",
-  "version": "1.0.0",
+  "version": "2.0.7",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -11,16 +11,12 @@
     "@babel/preset-env": "^7.5.5",
     "atob": "^2.1.2",
     "babel-core": "^6.26.3",
-    "babel-jest": "^23.6.0",
+    "babel-jest": "^26.6.3",
     "babel-plugin-rewire": "^1.2.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-env": "^1.7.0",
     "btoa": "^1.2.1",
-    "eslint": "^6.1.0",
-    "eslint-config-google": "^0.12.0",
-    "jest": "24.8.0",
     "json": "^9.0.6",
-    "puppeteer": "^1.9.0",
     "regenerator-runtime": "^0.12.1",
     "rewire": "^4.0.1",
     "stringify": "^5.2.0"
@@ -34,6 +30,10 @@
     "lint": "eslint ."
   },
   "devDependencies": {
+    "puppeteer": "^1.9.0",
+    "eslint": "^6.1.0",
+    "eslint-config-google": "^0.12.0",
+    "jest": "24.8.0",
     "jest-each": "^24.5.0"
   }
 }
