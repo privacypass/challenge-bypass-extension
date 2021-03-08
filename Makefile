@@ -11,7 +11,7 @@ SOURCES= src/crypto/keccak/keccak.js \
 LISTENER=src/ext/listeners.js
 INIT=src/ext/init.js
 ASN1_PATH=node_modules/asn1-parser
-SJCL_PATH=src/crypto/sjcl
+SJCL_PATH=node_modules/sjcl
 
 all: build
 .PHONY: build
