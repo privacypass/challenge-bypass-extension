@@ -1319,6 +1319,11 @@ array-unique@^0.3.2:
   resolved "https://registry.yarnpkg.com/array-unique/-/array-unique-0.3.2.tgz#a894b75d4bc4f6cd679ef3244a9fd8f46ae2d428"
   integrity sha1-qJS3XUvE9s1nnvMkSp/Y9Gri1Cg=
 
+asn1-parser@^1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/asn1-parser/-/asn1-parser-1.1.8.tgz#f157fdb51e97d87f6d420beae8d85304cfd5519d"
+  integrity sha512-3aYtVA7yzCK7r+qbBzpvzcq53kz7IRfGWTObbAGZieTj+By8wbSGSncZO7TztQ5UXrHELCesUIlJGD4JJcUAsA==
+
 asn1@~0.2.3:
   version "0.2.4"
   resolved "https://registry.yarnpkg.com/asn1/-/asn1-0.2.4.tgz#8d2475dfab553bb33e77b54e59e880bb8ce23136"
