@@ -20,6 +20,7 @@
     "json": "^9.0.6",
     "regenerator-runtime": "^0.12.1",
     "rewire": "^4.0.1",
+    "sjcl": "^1.0.8",
     "stringify": "^5.2.0"
   },
   "scripts": {

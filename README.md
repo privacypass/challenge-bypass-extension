@@ -63,17 +63,22 @@ Download the latest stable release of the extension:
 -   [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
 -   [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 
-## Quickstart
+## Build instructions
+
+On a Unix environment, you need to install [make](https://www.gnu.org/software/make/), [git](https://git-scm.com/), [npm](https://www.npmjs.com/get-npm) and [yarn](https://classic.yarnpkg.com).
+
+To build and test, run these commmands:
 
 ```sh
 $ git clone https://github.com/privacypass/challenge-bypass-extension.git
 $ cd challenge-bypass-extension
-$ git submodule update --init
 $ make install
 $ make sjcl
 $ make build
 $ make test-all
 ```
+
+After that, the addons folder will contain all files required by the extension.
 
 ## Useful Documentation
 
@@ -92,7 +97,6 @@ Documentation for the protocol, workflow and extension components.
         -   `ext`: Source files that are specific to the extension.
         -   `crypto`: External source files that provide cryptographic
             functionality.
-            -   `sjcl`: Cryptographic library submodule.
             -   `keccak`: Browserified implementation of Keccak taken
                 from <https://github.com/cryptocoinjs/keccak>.
     -   `addon`: Extension directory.
