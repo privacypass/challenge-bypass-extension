@@ -43,7 +43,7 @@ welcome and encouraged.
 
 - [Challenge Bypass Extension](#challenge-bypass-extension)
   - [Stable Releases](#stable-releases)
-  - [Quickstart](#quickstart)
+  - [Build Instructions](#build-instructions)
   - [Useful Documentation](#useful-documentation)
   - [Development](#development)
     - [Firefox](#firefox)
@@ -63,11 +63,16 @@ Download the latest stable release of the extension:
 -   [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
 -   [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
 
-## Build instructions
+## Build Instructions
 
-On a Unix environment, you need to install [make](https://www.gnu.org/software/make/), [git](https://git-scm.com/), [npm](https://www.npmjs.com/get-npm) and [yarn](https://classic.yarnpkg.com).
+On a Unix environment, you need to install:
 
-To build and test, run these commmands:
+* [make](https://www.gnu.org/software/make/)
+* [git](https://git-scm.com/)
+* [npm](https://www.npmjs.com/get-npm)
+* [yarn](https://classic.yarnpkg.com).
+
+To build and test, run these commands:
 
 ```sh
 $ git clone https://github.com/privacypass/challenge-bypass-extension.git
@@ -117,7 +122,7 @@ Documentation for the protocol, workflow and extension components.
 
 ### Firefox
 
--   Run [Quickstart](#quickstart) instructions.
+-   Build by following the [Build Instructions](#build-instructions).
 -   Open Firefox and go to `about:debugging`.
 -   Click on 'Load Temporary Add-on' button.
 -   Select `manifest.json` from `addon/` folder.
