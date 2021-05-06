@@ -17,7 +17,7 @@
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-env": "^1.7.0",
     "btoa": "^1.2.1",
-    "json": "^9.0.6",
+    "json": "^10.0.0",
     "regenerator-runtime": "^0.12.1",
     "rewire": "^4.0.1",
     "sjcl": "^1.0.8",
