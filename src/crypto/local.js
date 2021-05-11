@@ -122,9 +122,7 @@ function unblindPoint(b, Q) {
  * @return {sjcl.ecc.point}
  */
 function newRandomPoint() {
-    const byteLength = 32;
-    const wordLength = byteLength / 4; // SJCL 4 bytes to a word
-    const random = sjcl.random.randomWords(wordLength, 10); // TODO Use webcrypto instead.
+    const random = crypto.getRandomValues(new Int32Array(8)); // TODO Use webcrypto instead.
 
     // Choose hash-to-curve method
     const point = h2Curve(random, getActiveECSettings());
