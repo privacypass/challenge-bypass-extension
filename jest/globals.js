@@ -4,6 +4,8 @@
  * @author Drazen Urch
  */
 
+import * as nodeCrypto from 'crypto';
+
 import createShake256 from "../src/crypto/keccak/keccak";
 import atob from "atob";
 import btoa from "btoa";
@@ -25,6 +27,7 @@ const consoleMock = {
     error: jest.fn(),
 };
 
+window.cryptoMock = { getRandomValues: function(x) { return nodeCrypto.randomFillSync(x); } };
 window.consoleMock = consoleMock;
 window.localStorageItems = localStorageItems;
 window.spentUrlMock = spentUrlMock;
@@ -91,6 +94,7 @@ window.workflowSet = () => {
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 
     workflow.__set__("console", consoleMock);
+    workflow.__set__("crypto", cryptoMock);
 
     const PEM = workflow.__get__("exports.PEM");
     const ASN1 = workflow.__get__("exports.ASN1");
