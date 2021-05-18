@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "strict": true,
+        "noEmitOnError": true,
+        "target": "es5",
+        "jsx": "react",
+        "allowJs": true,
+        "removeComments": true,
+        "moduleResolution": "node"
+    }
+}
