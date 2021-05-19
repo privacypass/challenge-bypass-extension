@@ -17,6 +17,12 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
+        alias: {
+            '@root': path.resolve(__dirname),
+            '@public': path.resolve(__dirname, 'public'),
+            '@background': path.resolve(__dirname, 'src/background'),
+            '@popup': path.resolve(__dirname, 'src/popup'),
+        },
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
