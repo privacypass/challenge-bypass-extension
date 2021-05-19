@@ -8,6 +8,12 @@
         "jsx": "react",
         "allowJs": true,
         "removeComments": true,
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "paths": {
+            "@root/*": ["./*"],
+            "@public/*": ["./public/*"],
+            "@background/*": ["./src/background/*"],
+            "@popup/*": ["./src/popup/*"]
+        }
     }
 }
