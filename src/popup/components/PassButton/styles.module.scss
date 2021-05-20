@@ -1,0 +1,21 @@
+@use '@popup/styles/buttons';
+@use '@popup/styles/colors';
+
+$font-size:   22px;
+$font-weight: 200;
+
+.button {
+    @include buttons.button;
+
+    background-color: colors.$light-grey;
+    font-size:   $font-size;
+    font-weight: $font-weight;
+}
+
+.content {
+    display: inline;
+}
+
+.value {
+    float: right;
+}
