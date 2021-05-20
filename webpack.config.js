@@ -13,6 +13,7 @@ module.exports = {
         rules: [
             { test: /\.tsx?$/, use: 'ts-loader', exclude: /node_modules/ },
             { test: /\.scss?$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
+            { test: /\.(png|jpe?g|gif|svg)$/, use: 'file-loader' },
         ],
     },
     resolve: {
