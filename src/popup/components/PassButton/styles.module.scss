@@ -1,15 +1,15 @@
 @use '@popup/styles/buttons';
 @use '@popup/styles/colors';
 
-$font-size:   22px;
-$font-weight: 200;
+$_font-size:   22px;
+$_font-weight: 200;
 
 .button {
     @include buttons.button;
 
     background-color: colors.$light-grey;
-    font-size:   $font-size;
-    font-weight: $font-weight;
+    font-size:   $_font-size;
+    font-weight: $_font-weight;
 }
 
 .content {

@@ -1,29 +1,29 @@
-$badge-height:    55px;
-$header-height:   100px;
-$big-font-size:   23px;
-$small-font-size: 13px;
-$margin:          10px;
+$_badge-height:    55px;
+$_header-height:   100px;
+$_big-font-size:   23px;
+$_small-font-size: 13px;
+$_margin:          10px;
 
 .badge {
-    height: $badge-height;
-    margin: $margin;
+    height: $_badge-height;
+    margin: $_margin;
 }
 
 .version {
-    font-size: $small-font-size;
+    font-size: $_small-font-size;
 }
 
 .header {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: $header-height;
+    height: $_header-height;
 }
 
 .detail {
-    margin: $margin;
+    margin: $_margin;
 }
 
 .title {
-    font-size: $big-font-size;
+    font-size: $_big-font-size;
 }

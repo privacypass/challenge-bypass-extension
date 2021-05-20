@@ -1,13 +1,13 @@
 @use '@popup/styles/colors';
 
-$border-width:  1px;
-$padding:       15px;
-$font-size:     14px;
+$_border-width:  1px;
+$_padding:       15px;
+$_font-size:     14px;
 
 @mixin button {
-    border:  $border-width solid colors.$medium-grey;
-    padding: $padding;
-    font-size:  $font-size;
+    border:  $_border-width solid colors.$medium-grey;
+    padding: $_padding;
+    font-size:  $_font-size;
     background-color: colors.$white;
 
     border-left:  none;
@@ -21,7 +21,7 @@ $font-size:     14px;
 }
 
 @mixin container {
-    border: $border-width solid colors.$medium-grey;
+    border: $_border-width solid colors.$medium-grey;
     border-left:  none;
     border-right: none;
 }
