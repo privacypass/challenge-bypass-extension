@@ -43,6 +43,7 @@ function patternToRegExp(pattern) {
     reString += "(:\\d+)?";
     reString += "\\/";
     reString += path.replace("*", ".*");
+    reString += "(\\?.*)?";
     reString += "$";
 
     return RegExp(reString);
