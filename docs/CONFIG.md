@@ -120,7 +120,8 @@ A JSON struct of configuration related to redeeming tokens.
 #### config\["spend-action"\]\["urls"\]
 
 URLs that activate WebRequest listeners for redemption, "`<all_urls>`"
-corresponds to matching all possible URLs.
+corresponds to matching all possible URLs. All the GET query strings will
+be ignored.
 
 #### config\["spend-action"\]\["redeem-method"\]
 
@@ -165,7 +166,8 @@ A JSON struct of configuration related to issuing tokens.
 #### config\["issue-action"\]\["urls"\]
 
 URLs that activate WebRequest listeners for issuance, "`<all_urls>`"
-corresponds to matching all possible URLs.
+corresponds to matching all possible URLs. All the GET query strings will
+be ignored.
 
 #### config\["issue-action"\]\["sign-reload"\]
 
