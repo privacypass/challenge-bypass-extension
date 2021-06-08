@@ -4,12 +4,18 @@
     "main": "index.js",
     "license": "BSD-3-Clause",
     "scripts": {
+        "prebuild": "cd node_modules/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
         "build": "webpack",
         "clean": "rimraf dist"
     },
     "dependencies": {
+        "buffer": "^6.0.3",
+        "crypto-browserify": "^3.12.0",
+        "keccak": "^3.0.1",
         "react": "^17.0.2",
-        "react-dom": "^17.0.2"
+        "react-dom": "^17.0.2",
+        "sjcl": "^1.0.8",
+        "stream-browserify": "^3.0.0"
     },
     "devDependencies": {
         "@types/chrome": "^0.0.140",
