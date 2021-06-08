@@ -18,6 +18,11 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
+        fallback: {
+            'buffer': require.resolve('buffer/'),
+            'crypto': require.resolve('crypto-browserify'),
+            'stream': require.resolve('stream-browserify'),
+        },
         alias: {
             '@root': path.resolve(__dirname),
             '@public': path.resolve(__dirname, 'public'),
@@ -42,4 +47,9 @@ module.exports = {
         }),
         new MiniCssExtractPlugin(),
     ],
+    performance: {
+        maxAssetSize: 600000,
+        maxEntrypointSize: 600000,
+        hints: 'error',
+    },
 };
