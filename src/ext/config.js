@@ -142,7 +142,7 @@ function cfBaseConfig() {
         "-----END PUBLIC KEY-----";
     cfConfig["spending-restrictions"]["status-code"] = [403];
     cfConfig["spend-action"]["redeem-method"] = "reload";
-    cfConfig["issue-action"]["tokens-per-request"] = 30;
+    cfConfig["issue-action"]["tokens-per-request"] = 5;
     cfConfig["issue-action"]["request-identifiers"]["query-param"] = "__cf_chl_captcha_tk__";
     cfConfig["issue-action"]["request-identifiers"]["body-param"] = ["g-recaptcha-response", "h-captcha-response", "cf_captcha_kind"];
     cfConfig["issue-action"]["request-identifiers"]["post-processed"] = "captcha-bypass";
