@@ -368,6 +368,11 @@ array-union@^2.1.0:
   resolved "https://registry.npmjs.org/array-union/-/array-union-2.1.0.tgz"
   integrity sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==
 
+asn1-parser@^1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/asn1-parser/-/asn1-parser-1.1.8.tgz#f157fdb51e97d87f6d420beae8d85304cfd5519d"
+  integrity sha512-3aYtVA7yzCK7r+qbBzpvzcq53kz7IRfGWTObbAGZieTj+By8wbSGSncZO7TztQ5UXrHELCesUIlJGD4JJcUAsA==
+
 asn1.js@^5.2.0:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/asn1.js/-/asn1.js-5.4.1.tgz#11a980b84ebb91781ce35b0fdc2ee294e3783f07"
