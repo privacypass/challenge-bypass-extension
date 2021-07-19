@@ -7,6 +7,8 @@ const ISSUE_HEADER_NAME          = 'cf-chl-bypass';
 const NUMBER_OF_REQUESTED_TOKENS = 30;
 const ISSUANCE_BODY_PARAM_NAME   = 'blinded-tokens';
 
+const COMMITMENT_URL = 'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
+
 const QUALIFIED_QUERY_PARAMS = [
     '__cf_chl_captcha_tk__',
     '__cf_chl_managed_tk__',
@@ -17,10 +19,17 @@ const QUALIFIED_BODY_PARAMS  = [
     'cf_captcha_kind',
 ];
 
+const VERIFICATION_KEY =
+`-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
+VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
+-----END PUBLIC KEY-----`;
+
 export default class Cloudflare {
     static readonly id: number = 1;
+    private storage: Storage;
 
-    constructor() {
+    constructor(storage: Storage) {
         // This changes the global state in the crypto module, which can be a side effect outside of this object.
         // It's better if we can refactor the crypto module to be in object-oriented concept.
         crypto.initECSettings({
@@ -28,6 +37,47 @@ export default class Cloudflare {
             'hash':   'sha256',
             'method': 'increment',
         });
+
+        this.storage = storage;
+    }
+
+    private async getCommitment(version: string): Promise<{ G: string, H: string }> {
+        const keyPrefix = 'commitment-';
+        const cached = this.storage.getItem(`${keyPrefix}${version}`);
+        if (cached !== null) {
+            return JSON.parse(cached);
+        }
+
+        interface Response {
+            CF: { [version: string]: { H: string, expiry: string, sig: string } },
+        }
+
+        // Download the commitment
+        const { data }   = await axios.get<Response>(COMMITMENT_URL);
+        const commitment = data.CF[version];
+        if (commitment === undefined) {
+            throw new Error(`No commitment for the version ${version} is found`);
+        }
+
+        // Check the expiry date.
+        const expiry = new Date(commitment.expiry);
+        if (Date.now() >= +expiry) {
+            throw new Error(`Commitments expired in ${expiry.toString()}`);
+        }
+
+        // This will throw an error on a bad signature.
+        crypto.verifyConfiguration(VERIFICATION_KEY, {
+            H: commitment.H,
+            expiry: commitment.expiry,
+        }, commitment.sig);
+
+        // Cache.
+        const item = {
+            G: crypto.sec1EncodeToBase64(crypto.getActiveECSettings().curve.G, false),
+            H: commitment.H,
+        };
+        this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
+        return item;
     }
 
     private async issue(url: string, formData: { [key: string]: string[] | string }) {

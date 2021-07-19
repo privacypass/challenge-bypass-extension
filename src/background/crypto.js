@@ -6,6 +6,7 @@
  */
 
 import sjcl from 'sjcl';
+import 'asn1-parser';
 
 let PEM;
 let ASN1;
@@ -336,11 +337,10 @@ function parsePublicKeyfromPEM(pemPublicKey) {
  * @return {boolean} True, if the commitment has valid signature and is not
  *                   expired; otherwise, throws an exception.
  */
-function verifyConfiguration(cfgId, config) {
-    const sig = parseSignaturefromPEM(config.sig);
-    delete config.sig;
+function verifyConfiguration(publicKey, config, signature) {
+    const sig = parseSignaturefromPEM(signature);
     const msg = JSON.stringify(config);
-    const pk = parsePublicKeyfromPEM(getVerificationKey(cfgId));
+    const pk = parsePublicKeyfromPEM(publicKey);
     const hmsg = sjcl.hash.sha256.hash(msg);
     try {
         return pk.verify(hmsg, sig);

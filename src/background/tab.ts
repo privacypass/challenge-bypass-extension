@@ -36,7 +36,7 @@ export default class Tab {
             .map   (header => header.value !== undefined && +header.value);
 
         if (providerId === Cloudflare.id) {
-            this.context = new Cloudflare();
+            this.context = new Cloudflare(window.localStorage);
         } else if (providerId === Hcaptcha.id && !(this.context instanceof Cloudflare)) {
             // Cloudflare has higher precedence than Hcaptcha.
             this.context = new Hcaptcha();
