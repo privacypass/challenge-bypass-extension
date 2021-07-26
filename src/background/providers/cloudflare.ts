@@ -131,6 +131,9 @@ export default class Cloudflare {
             throw new Error("DLEQ proof is invalid.");
         }
 
+        tokens.forEach((token, index) => {
+            token.setSignedPoint(returned.points[index]);
+        });
         // TODO Work on storing tokens
     }
 

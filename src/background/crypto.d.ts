@@ -22,6 +22,8 @@ declare namespace crypto {
     export function verifyConfiguration(publicKey: string, config: object, signature: string): boolean;
     // TODO Proof verification should be inside Token class.
     export function verifyProof(proof: string, tokens: unknown[], signatures: { points: Point[], compressed: boolean }, commitments, prngName);
+
+    export function unblindPoint(factor: BigNum, blindedPoint: Point): Point;
 }
 
 export default crypto;
