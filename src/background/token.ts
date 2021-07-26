@@ -1,11 +1,18 @@
 import crypto from '@background/crypto';
 
+interface SignedComponent {
+    blindedPoint:   crypto.Point,
+    unblindedPoint: crypto.Point,
+}
+
 export default class Token {
     private input:  crypto.Bytes;
     private factor: crypto.BigNum;
 
     private blindedPoint:   crypto.Point;
     private unblindedPoint: crypto.Point;
+
+    private signed: SignedComponent | null;
 
     constructor() {
         const { data:  input,  point: unblindedPoint } = crypto.newRandomPoint();
@@ -16,6 +23,18 @@ export default class Token {
 
         this.blindedPoint   = blindedPoint;
         this.unblindedPoint = unblindedPoint;
+
+        this.signed = null;
+    }
+
+    setSignedPoint(point: crypto.Point) {
+        const blindedPoint   = point;
+        const unblindedPoint = crypto.unblindPoint(this.factor, point);
+
+        this.signed = {
+            blindedPoint,
+            unblindedPoint,
+        };
     }
 
     getEncodedBlindedPoint(): string {
