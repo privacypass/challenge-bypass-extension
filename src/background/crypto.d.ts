@@ -14,9 +14,14 @@ declare namespace crypto {
 
     export function getActiveECSettings(): any;
     export function initECSettings(params: { curve: Curve, hash: Hash, method: HashMethod });
+
+    export function getCurvePoints(signatures: string[]): { points: Point[], compressed: boolean };
+
     export function sec1EncodeToBase64(point: Point, compressed: boolean): string;
 
     export function verifyConfiguration(publicKey: string, config: object, signature: string): boolean;
+    // TODO Proof verification should be inside Token class.
+    export function verifyProof(proof: string, tokens: unknown[], signatures: { points: Point[], compressed: boolean }, commitments, prngName);
 }
 
 export default crypto;

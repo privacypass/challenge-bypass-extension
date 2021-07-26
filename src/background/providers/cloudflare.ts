@@ -107,8 +107,31 @@ export default class Cloudflare {
         if (typeof signatures !== 'string') {
             throw new Error("The signatures parameter in the issuance response is not a string.");
         }
-        const json = JSON.parse(atob(signatures));
-        // TODO Work on the json response
+
+        interface SignaturesParam {
+            sigs: string[],
+            version: string,
+            proof: string,
+            prng: string,
+        }
+
+        const data: SignaturesParam = JSON.parse(atob(signatures));
+        const returned = crypto.getCurvePoints(data.sigs);
+
+        const commitment = await this.getCommitment(data.version);
+
+        const result = crypto.verifyProof(
+            data.proof,
+            tokens.map(token => token.toLegacy()),
+            returned,
+            commitment,
+            data.prng,
+        );
+        if (!result) {
+            throw new Error("DLEQ proof is invalid.");
+        }
+
+        // TODO Work on storing tokens
     }
 
     handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
