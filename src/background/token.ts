@@ -21,4 +21,8 @@ export default class Token {
     getEncodedBlindedPoint(): string {
         return crypto.sec1EncodeToBase64(this.blindedPoint, true); // true is for compression
     }
+
+    toLegacy(): { data: crypto.Bytes, point: crypto.Point, blind: crypto.BigNum } {
+        return { data: this.input, point: this.blindedPoint, blind: this.factor };
+    }
 }
