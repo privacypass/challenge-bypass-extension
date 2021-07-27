@@ -832,12 +832,17 @@ function cmov(x, y, b, field) {
     return z.mod(field.modulus);
 }
 
+function newBigNum(s) {
+    return new sjcl.bn(s);
+}
+
 export default {
     blindPoint,
     getActiveECSettings,
     getBigNumFromBytes,
     getCurvePoints,
     initECSettings,
+    newBigNum,
     newRandomPoint,
     sec1DecodeFromBase64,
     sec1DecodeFromBytes,
