@@ -27,6 +27,25 @@ export default class Token {
         this.signed = null;
     }
 
+    static fromString(str: string): Token {
+        const json = JSON.parse(str);
+
+        const token: Token = Object.create(Token.prototype);
+
+        token.input  = json.input;
+        token.factor = crypto.newBigNum(json.factor);
+
+        token.blindedPoint   = crypto.sec1DecodeFromBase64(json.blindedPoint);
+        token.unblindedPoint = crypto.sec1DecodeFromBase64(json.unblindedPoint);
+
+        token.signed = json.signed !== null ? {
+            blindedPoint:   crypto.sec1DecodeFromBase64(json.signed.blindedPoint),
+            unblindedPoint: crypto.sec1DecodeFromBase64(json.signed.unblindedPoint),
+        } : null;
+
+        return token;
+    }
+
     setSignedPoint(point: crypto.Point) {
         const blindedPoint   = point;
         const unblindedPoint = crypto.unblindPoint(this.factor, point);
@@ -43,5 +62,21 @@ export default class Token {
 
     toLegacy(): { data: crypto.Bytes, point: crypto.Point, blind: crypto.BigNum } {
         return { data: this.input, point: this.blindedPoint, blind: this.factor };
+    }
+
+    toString(): string {
+        const signed = this.signed !== null ? {
+            blindedPoint:   crypto.sec1EncodeToBase64(this.signed.blindedPoint, false),
+            unblindedPoint: crypto.sec1EncodeToBase64(this.signed.unblindedPoint, false),
+        } : null;
+
+        const json = {
+            input:  this.input,
+            factor: this.factor.toString(),
+            blindedPoint:   crypto.sec1EncodeToBase64(this.blindedPoint, false),
+            unblindedPoint: crypto.sec1EncodeToBase64(this.unblindedPoint, false),
+            signed,
+        };
+        return JSON.stringify(json);
     }
 }

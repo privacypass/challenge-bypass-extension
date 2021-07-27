@@ -80,7 +80,7 @@ export default class Cloudflare {
         return item;
     }
 
-    private async issue(url: string, formData: { [key: string]: string[] | string }) {
+    private async issue(url: string, formData: { [key: string]: string[] | string }): Promise<Token[]> {
         const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token());
         const issuance = {
             type: "Issue",
@@ -134,7 +134,8 @@ export default class Cloudflare {
         tokens.forEach((token, index) => {
             token.setSignedPoint(returned.points[index]);
         });
-        // TODO Work on storing tokens
+
+        return tokens;
     }
 
     handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
@@ -164,7 +165,25 @@ export default class Cloudflare {
             }
         }
 
-        this.issue(details.url, flattenFormData);
+        (async () => {
+            // Issue tokens.
+            const tokens = await this.issue(details.url, flattenFormData);
+
+            // Store tokens.
+            const key = 'tokens';
+
+            const cached: Token[] = (() => {
+                const stored = this.storage.getItem(key);
+                if (stored === null) {
+                    return [];
+                } else {
+                    const tokens: string[] = JSON.parse(stored);
+                    return tokens.map(token => Token.fromString(token));
+                }
+            })();
+
+            this.storage.setItem(key, JSON.stringify(cached.concat(tokens).map(token => token.toString())));
+        })();
 
         return {
             cancel: true,
