@@ -25,6 +25,8 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
 
+const TOKEN_STORE_KEY = 'tokens';
+
 export default class Cloudflare {
     static readonly id: number = 1;
     private storage: Storage;
@@ -39,6 +41,20 @@ export default class Cloudflare {
         });
 
         this.storage = storage;
+    }
+
+    private getStoredTokens(): Token[] {
+        const stored = this.storage.getItem(TOKEN_STORE_KEY);
+        if (stored === null) {
+            return [];
+        } else {
+            const tokens: string[] = JSON.parse(stored);
+            return tokens.map(token => Token.fromString(token));
+        }
+    }
+
+    private setStoredTokens(tokens: Token[]) {
+        this.storage.setItem(TOKEN_STORE_KEY, JSON.stringify(tokens.map(token => token.toString())));
     }
 
     private async getCommitment(version: string): Promise<{ G: string, H: string }> {
@@ -168,21 +184,9 @@ export default class Cloudflare {
         (async () => {
             // Issue tokens.
             const tokens = await this.issue(details.url, flattenFormData);
-
             // Store tokens.
-            const key = 'tokens';
-
-            const cached: Token[] = (() => {
-                const stored = this.storage.getItem(key);
-                if (stored === null) {
-                    return [];
-                } else {
-                    const tokens: string[] = JSON.parse(stored);
-                    return tokens.map(token => Token.fromString(token));
-                }
-            })();
-
-            this.storage.setItem(key, JSON.stringify(cached.concat(tokens).map(token => token.toString())));
+            const cached = this.getStoredTokens();
+            this.setStoredTokens(cached.concat(tokens));
         })();
 
         return {
