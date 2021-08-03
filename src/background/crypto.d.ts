@@ -32,6 +32,11 @@ declare namespace crypto {
     export function unblindPoint(factor: BigNum, blindedPoint: Point): Point;
 
     export function newBigNum(encoded: string): BigNum;
+    export function deriveKey(point: Point, input: Bytes): Bytes;
+    export function getBytesFromString(str: string): Bytes;
+    export function getBase64FromString(str: string): string;
+    export function getBase64FromBytes(bytes: Bytes): string;
+    export function createRequestBinding(key: Bytes, bindingData: Bytes[]): string;
 }
 
 export default crypto;

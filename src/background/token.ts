@@ -65,6 +65,17 @@ export default class Token {
         return { data: this.input, point: this.blindedPoint, blind: this.factor };
     }
 
+    getMacKey(): crypto.Bytes {
+        if (this.signed === null) {
+            throw new Error('Unsigned token is used to derive a MAC key');
+        }
+        return crypto.deriveKey(this.signed.unblindedPoint, this.input);
+    }
+
+    getInput(): crypto.Bytes {
+        return this.input;
+    }
+
     toString(): string {
         const signed = this.signed !== null ? {
             blindedPoint:   crypto.sec1EncodeToBase64(this.signed.blindedPoint, false),

@@ -836,10 +836,75 @@ function newBigNum(s) {
     return new sjcl.bn(s);
 }
 
+/**
+ * Derives the shared key used for redemption MACs
+ * @param {sjcl.ecc.point} N Signed curve point associated with token
+ * @param {Object} token client-generated token data
+ * @return {sjcl.codec.bytes} bytes of derived key
+ */
+function deriveKey(N, token) {
+    // the exact bits of the string "hash_derive_key"
+    const tagBits = sjcl.codec.hex.toBits("686173685f6465726976655f6b6579");
+    const hash = getActiveECSettings().hash;
+    const h = new sjcl.misc.hmac(tagBits, hash);
+
+    // Always compute derived key using uncompressed point bytes
+    const encodedPoint = sec1Encode(N, false);
+    const tokenBits = sjcl.codec.bytes.toBits(token);
+    const pointBits = sjcl.codec.bytes.toBits(encodedPoint);
+
+    h.update(tokenBits);
+    h.update(pointBits);
+
+    const keyBytes = sjcl.codec.bytes.fromBits(h.digest());
+    return keyBytes;
+}
+
+function getBytesFromString(str) {
+    const bits = sjcl.codec.utf8String.toBits(str);
+    const bytes = sjcl.codec.bytes.fromBits(bits);
+    return bytes;
+}
+
+function getBase64FromBytes(bytes) {
+    const bits = sjcl.codec.bytes.toBits(bytes);
+    const encoded = sjcl.codec.base64.fromBits(bits);
+    return encoded;
+}
+
+function getBase64FromString(str) {
+    const bits = sjcl.codec.utf8String.toBits(str);
+    const encoded = sjcl.codec.base64.fromBits(bits);
+    return encoded;
+}
+
+function createRequestBinding(key, data) {
+    // the exact bits of the string "hash_request_binding"
+    const tagBits = sjcl.codec.utf8String.toBits("hash_request_binding");
+    const keyBits = sjcl.codec.bytes.toBits(key);
+    const hash = getActiveECSettings().hash;
+
+    const h = new sjcl.misc.hmac(keyBits, hash);
+    h.update(tagBits);
+
+    let dataBits = null;
+    for (let i = 0; i < data.length; i++) {
+        dataBits = sjcl.codec.bytes.toBits(data[i]);
+        h.update(dataBits);
+    }
+
+    return sjcl.codec.base64.fromBits(h.digest());
+}
+
 module.exports = {
     blindPoint,
+    deriveKey,
+    createRequestBinding,
     getActiveECSettings,
     getBigNumFromBytes,
+    getBase64FromBytes,
+    getBase64FromString,
+    getBytesFromString,
     getCurvePoints,
     initECSettings,
     newBigNum,
