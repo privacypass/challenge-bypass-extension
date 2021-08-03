@@ -3,4 +3,10 @@ export default class Hcaptcha {
 
     handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
     }
+
+    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+    }
+
+    handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
+    }
 }

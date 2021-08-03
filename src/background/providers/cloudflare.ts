@@ -19,6 +19,9 @@ const QUALIFIED_BODY_PARAMS  = [
     'cf_captcha_kind',
 ];
 
+const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
+const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
+
 const VERIFICATION_KEY =
 `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
@@ -27,9 +30,16 @@ VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 
 const TOKEN_STORE_KEY = 'tokens';
 
+interface RedeemInfo {
+    requestId: string,
+    token: Token,
+}
+
 export default class Cloudflare {
     static readonly id: number = 1;
     private storage: Storage;
+
+    private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage) {
         // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
@@ -41,16 +51,17 @@ export default class Cloudflare {
         });
 
         this.storage = storage;
+        this.redeemInfo = null;
     }
 
     private getStoredTokens(): Token[] {
         const stored = this.storage.getItem(TOKEN_STORE_KEY);
         if (stored === null) {
             return [];
-        } else {
-            const tokens: string[] = JSON.parse(stored);
-            return tokens.map(token => Token.fromString(token));
         }
+
+        const tokens: string[] = JSON.parse(stored);
+        return tokens.map(token => Token.fromString(token));
     }
 
     private setStoredTokens(tokens: Token[]) {
@@ -154,6 +165,44 @@ export default class Cloudflare {
         return tokens;
     }
 
+    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
+            return;
+        }
+
+        const url = new URL(details.url);
+
+        const token = this.redeemInfo!.token;
+        // Clear the redeem info to indicate that we are already redeeming the token.
+        this.redeemInfo = null;
+
+        const key = token.getMacKey();
+        const binding = crypto.createRequestBinding(key, [
+            crypto.getBytesFromString(url.hostname),
+            crypto.getBytesFromString(details.method + ' ' + url.pathname),
+        ]);
+
+        const contents = [
+            crypto.getBase64FromBytes(token.getInput()),
+            binding,
+            crypto.getBase64FromString(JSON.stringify({
+                // TODO There should be a better way to retrieve this info.
+                // Currently I just copied this from the old code base.
+                'curve': 'p256',
+                'hash': 'sha256',
+                'method': 'increment',
+            })),
+        ];
+        const redemption = btoa(JSON.stringify({ type: "Redeem", contents }));
+
+        const headers = details.requestHeaders ?? [];
+        headers.push({ name: 'challenge-bypass-token', value: redemption });
+
+        return {
+            requestHeaders: headers,
+        };
+    }
+
     handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
         const url = new URL(details.url);
 
@@ -191,6 +240,42 @@ export default class Cloudflare {
 
         return {
             cancel: true,
+        };
+    }
+
+    handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
+        // Don't redeem a token in the issuing website.
+        const url = new URL(details.url);
+        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
+            return;
+        }
+
+        // Check if it's the response of the request that we should insert a token.
+        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
+            return;
+        }
+        const hasSupportHeader = details.responseHeaders.some(header => {
+            return header.name.toLowerCase() === CHL_BYPASS_SUPPORT && header.value !== undefined && +header.value === Cloudflare.id;
+        });
+        if (!hasSupportHeader) {
+            return;
+        }
+
+        // Let's try to redeem.
+
+        // Get one token.
+        const tokens = this.getStoredTokens();
+        const token  = tokens.shift();
+        this.setStoredTokens(tokens);
+
+        if (token === undefined) {
+            return;
+        }
+
+        this.redeemInfo = { requestId: details.requestId, token };
+        // Redirect to resend the request attached with the token.
+        return {
+            redirectUrl: details.url,
         };
     }
 }

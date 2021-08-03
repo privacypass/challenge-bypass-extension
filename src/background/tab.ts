@@ -22,6 +22,15 @@ export default class Tab {
         return result;
     }
 
+    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+        let result;
+        if (this.context !== null) {
+            result = this.context.handleBeforeSendHeaders(details);
+        }
+
+        return result;
+    }
+
     handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
         if (details.responseHeaders === undefined) {
             return;
@@ -41,5 +50,12 @@ export default class Tab {
         } else if (providerId === Hcaptcha.id && !(this.context instanceof Cloudflare) && !(this.context instanceof Hcaptcha)) {
             this.context = new Hcaptcha();
         }
+
+        let result;
+        if (this.context !== null) {
+            result = this.context.handleHeadersReceived(details);
+        }
+
+        return result;
     }
 }

@@ -19,6 +19,12 @@ chrome.webRequest.onBeforeRequest.addListener(
     ['requestBody', 'blocking'],
 );
 
+chrome.webRequest.onBeforeSendHeaders.addListener(
+    webRequest.handleBeforeSendHeaders,
+    {urls: ['<all_urls>']},
+    ['requestHeaders', 'blocking'],
+);
+
 chrome.webRequest.onHeadersReceived.addListener(
     webRequest.handleHeadersReceived,
     {urls: ['<all_urls>']},
