@@ -19,11 +19,6 @@ export default class Tab {
             result = this.context.handleBeforeRequest(details);
         }
 
-        if (details.type === 'main_frame') {
-            // The page in the tab is changed, so the context should change.
-            this.context = null;
-        }
-
         return result;
     }
 
@@ -35,10 +30,15 @@ export default class Tab {
             .filter(header => header.name.toLowerCase() === CHL_BYPASS_SUPPORT)
             .map   (header => header.value !== undefined && +header.value);
 
-        if (providerId === Cloudflare.id) {
+        if (details.type === 'main_frame') {
+            // The page in the tab is changed, so the context should change.
+            this.context = null;
+        }
+
+        // Cloudflare has higher precedence than Hcaptcha.
+        if (providerId === Cloudflare.id && !(this.context instanceof Cloudflare)) {
             this.context = new Cloudflare(window.localStorage);
-        } else if (providerId === Hcaptcha.id && !(this.context instanceof Cloudflare)) {
-            // Cloudflare has higher precedence than Hcaptcha.
+        } else if (providerId === Hcaptcha.id && !(this.context instanceof Cloudflare) && !(this.context instanceof Hcaptcha)) {
             this.context = new Hcaptcha();
         }
     }
