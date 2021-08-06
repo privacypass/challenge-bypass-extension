@@ -4,10 +4,11 @@
         "esModuleInterop": true,
         "strict": true,
         "noEmitOnError": true,
-        "target": "es5",
+        "target": "es2020",
         "jsx": "react",
         "allowJs": true,
         "removeComments": true,
+        "module": "es2020",
         "moduleResolution": "node",
         "paths": {
             "@root/*": ["./*"],
