@@ -5,8 +5,8 @@
  * @author: Alex Davidson
  */
 
-import sjcl from 'sjcl';
-import 'asn1-parser';
+const sjcl = require('sjcl');
+require('asn1-parser');
 
 let PEM;
 let ASN1;
@@ -836,7 +836,7 @@ function newBigNum(s) {
     return new sjcl.bn(s);
 }
 
-export default {
+module.exports = {
     blindPoint,
     getActiveECSettings,
     getBigNumFromBytes,
