@@ -30,7 +30,7 @@ export default class Cloudflare {
     private storage: Storage;
 
     constructor(storage: Storage) {
-        // This changes the global state in the crypto module, which can be a side effect outside of this object.
+        // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
         // It's better if we can refactor the crypto module to be in object-oriented concept.
         crypto.initECSettings({
             'curve':  'p256',
@@ -149,7 +149,7 @@ export default class Cloudflare {
             return url.searchParams.has(param);
         });
         const hasBodyParams  = QUALIFIED_BODY_PARAMS.some(param => {
-            return param in details.requestBody.formData!;
+            return details.requestBody !== null && param in details.requestBody.formData!;
         });
         if (!hasQueryParams || !hasBodyParams) {
             return;

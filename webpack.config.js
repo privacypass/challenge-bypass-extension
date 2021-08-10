@@ -48,8 +48,8 @@ module.exports = {
         new MiniCssExtractPlugin(),
     ],
     performance: {
-        maxAssetSize: 600000,
-        maxEntrypointSize: 600000,
+        maxAssetSize: 700000,
+        maxEntrypointSize: 700000,
         hints: 'error',
     },
 };
