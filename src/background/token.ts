@@ -56,6 +56,7 @@ export default class Token {
         };
     }
 
+    // TODO This should be implemented in a new Point class.
     getEncodedBlindedPoint(): string {
         return crypto.sec1EncodeToBase64(this.blindedPoint, true); // true is for compression
     }
