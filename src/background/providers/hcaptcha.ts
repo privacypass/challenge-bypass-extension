@@ -1,6 +1,10 @@
 export default class Hcaptcha {
     static readonly id: number = 2;
 
+    getBadgeText(): string {
+        return "N/A";
+    }
+
     handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
     }
 
