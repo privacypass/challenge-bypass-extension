@@ -30,6 +30,12 @@ VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 
 const TOKEN_STORE_KEY = 'tokens';
 
+type Event = 'issue' | 'redeem';
+
+interface EventListener {
+    (): void,
+}
+
 interface RedeemInfo {
     requestId: string,
     token: Token,
@@ -39,6 +45,10 @@ export default class Cloudflare {
     static readonly id: number = 1;
     private storage: Storage;
 
+    private listeners: {
+        issue:  EventListener[],
+        redeem: EventListener[],
+    };
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage) {
@@ -52,6 +62,7 @@ export default class Cloudflare {
 
         this.storage = storage;
         this.redeemInfo = null;
+        this.listeners = { issue: [], redeem: [] };
     }
 
     private getStoredTokens(): Token[] {
@@ -165,6 +176,18 @@ export default class Cloudflare {
         return tokens;
     }
 
+    private fireEvent(event: Event) {
+        this.listeners[event].forEach(callback => callback());
+    }
+
+    getBadgeText(): string {
+        return this.getStoredTokens().length.toString();
+    }
+
+    addEventListener(event: Event, callback: EventListener) {
+        this.listeners[event].push(callback);
+    }
+
     handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
         if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
             return;
@@ -197,6 +220,8 @@ export default class Cloudflare {
 
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
+
+        this.fireEvent('redeem');
 
         return {
             requestHeaders: headers,
@@ -236,6 +261,8 @@ export default class Cloudflare {
             // Store tokens.
             const cached = this.getStoredTokens();
             this.setStoredTokens(cached.concat(tokens));
+
+            this.fireEvent('issue');
         })();
 
         return {

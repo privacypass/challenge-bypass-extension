@@ -1,6 +1,10 @@
 import tabs       from '@background/listeners/tabs';
 import webRequest from '@background/listeners/web-request';
 
+chrome.tabs.onActivated.addListener(
+    tabs.handleActivated,
+);
+
 chrome.tabs.onCreated.addListener(
     tabs.handleCreated,
 );
