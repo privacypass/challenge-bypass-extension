@@ -3,11 +3,17 @@
 ## Build Instruction
 
 ```sh
-$ yarn install
-$ yarn build
+$ npm install
+$ npm run build
 ```
 
 After that, the `dist` folder will contain all files required by the extension.
+
+## Test Instruction
+```sh
+$ npm install
+$ npm test
+```
 
 ## Directory Structure
 
