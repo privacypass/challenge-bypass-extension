@@ -1,17 +1,34 @@
-const path = require('path');
-const CopyWebpackPlugin = require("copy-webpack-plugin");
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import path from 'path';
 
-module.exports = {
+// import buffer from "buffer";
+// import streamBrowserify from "stream-browserify";
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
+export default {
     entry: {
-        popup:'./src/popup/index.tsx',
-        background: './src/background/index.ts',
+        popup: path.resolve('src/popup/index.tsx'),
+        background: path.resolve('src/background/index.ts'),
     },
+    output: {
+        path: path.resolve('dist'),
+    },
+    context: __dirname,
     mode: 'production',
     module: {
         rules: [
-            { test: /\.tsx?$/, use: 'ts-loader', exclude: /node_modules/ },
+            {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                loader: 'ts-loader',
+                options: {
+                    transpileOnly: true,
+                    projectReferences: true,
+                },
+            },
             { test: /\.scss?$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] },
             { test: /\.(png|jpe?g|gif|svg)$/, use: 'file-loader' },
         ],
@@ -19,26 +36,19 @@ module.exports = {
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
         fallback: {
-            'buffer': require.resolve('buffer/'),
-            'crypto': require.resolve('crypto-browserify'),
-            'stream': require.resolve('stream-browserify'),
+            // 'buffer': buffer,
+            // 'stream': streamBrowserify,
         },
         alias: {
             '@root': path.resolve(__dirname),
             '@public': path.resolve(__dirname, 'public'),
-            '@background': path.resolve(__dirname, 'src/background'),
             '@popup': path.resolve(__dirname, 'src/popup'),
         },
     },
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-    },
+    externals: { crypto: 'null' },
     plugins: [
         new CopyWebpackPlugin({
-            patterns: [
-                { from: 'public/icons', to: 'icons' },
-                { from: 'public/manifest.json' },
-            ],
+            patterns: [{ from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
         }),
         new HtmlWebpackPlugin({
             chunks: ['popup'],
@@ -47,9 +57,7 @@ module.exports = {
         }),
         new MiniCssExtractPlugin(),
     ],
-    performance: {
-        maxAssetSize: 700000,
-        maxEntrypointSize: 700000,
-        hints: 'error',
+    optimization: {
+        minimize: false,
     },
 };

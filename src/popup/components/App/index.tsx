@@ -1,12 +1,11 @@
+import { Button } from '@popup/components/Button';
+import { Container } from '@popup/components/Container';
+import { Header } from '@popup/components/Header';
+import { PassButton } from '@popup/components/PassButton';
 import React from 'react';
 import styles from './styles.module.scss';
 
-import Header     from '@popup/components/Header';
-import Button     from '@popup/components/Button';
-import Container  from '@popup/components/Container';
-import PassButton from '@popup/components/PassButton';
-
-function App() {
+export function App(): JSX.Element {
     return (
         <div className={styles.app}>
             <Header />
@@ -20,5 +19,3 @@ function App() {
         </div>
     );
 }
-
-export default App;

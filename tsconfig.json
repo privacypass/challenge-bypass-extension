@@ -1,20 +1,37 @@
 {
     "compilerOptions": {
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "strict": true,
-        "noEmitOnError": true,
         "target": "es2020",
-        "jsx": "react",
-        "allowJs": true,
-        "removeComments": true,
         "module": "es2020",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "composite": true,
+        "incremental": true,
+        "removeComments": true,
+        "isolatedModules": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "noEmitOnError": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
         "moduleResolution": "node",
-        "paths": {
-            "@root/*": ["./*"],
-            "@public/*": ["./public/*"],
-            "@background/*": ["./src/background/*"],
-            "@popup/*": ["./src/popup/*"]
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "allowSyntheticDefaultImports": true,
+        "rootDir": ".",
+        "outDir": "lib"
+    },
+    "files": [],
+    "include": [],
+    "references": [
+        {
+            "path": "./src/background"
+        },
+        {
+            "path": "./src/popup"
         }
-    }
+    ]
 }

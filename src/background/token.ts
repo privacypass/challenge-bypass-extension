@@ -1,27 +1,27 @@
-import crypto from '@background/crypto';
+import * as voprf from './voprf';
 
 interface SignedComponent {
-    blindedPoint:   crypto.Point,
-    unblindedPoint: crypto.Point,
+    blindedPoint: voprf.Point;
+    unblindedPoint: voprf.Point;
 }
 
 export default class Token {
-    private input:  crypto.Bytes;
-    private factor: crypto.BigNum;
+    private input: voprf.Bytes;
+    private factor: voprf.BigNum;
 
-    private blindedPoint:   crypto.Point;
-    private unblindedPoint: crypto.Point;
+    private blindedPoint: voprf.Point;
+    private unblindedPoint: voprf.Point;
 
     private signed: SignedComponent | null;
 
     constructor() {
-        const { data:  input,  point: unblindedPoint } = crypto.newRandomPoint();
-        const { blind: factor, point: blindedPoint   } = crypto.blindPoint(unblindedPoint);
+        const { data: input, point: unblindedPoint } = voprf.newRandomPoint();
+        const { blind: factor, point: blindedPoint } = voprf.blindPoint(unblindedPoint);
 
-        this.input  = input;
+        this.input = input;
         this.factor = factor;
 
-        this.blindedPoint   = blindedPoint;
+        this.blindedPoint = blindedPoint;
         this.unblindedPoint = unblindedPoint;
 
         this.signed = null;
@@ -32,23 +32,26 @@ export default class Token {
 
         const token: Token = Object.create(Token.prototype);
 
-        token.input  = json.input;
-        token.factor = crypto.newBigNum(json.factor);
+        token.input = json.input;
+        token.factor = voprf.newBigNum(json.factor);
 
-        token.blindedPoint   = crypto.sec1DecodeFromBase64(json.blindedPoint);
-        token.unblindedPoint = crypto.sec1DecodeFromBase64(json.unblindedPoint);
+        token.blindedPoint = voprf.sec1DecodeFromBase64(json.blindedPoint);
+        token.unblindedPoint = voprf.sec1DecodeFromBase64(json.unblindedPoint);
 
-        token.signed = json.signed !== null ? {
-            blindedPoint:   crypto.sec1DecodeFromBase64(json.signed.blindedPoint),
-            unblindedPoint: crypto.sec1DecodeFromBase64(json.signed.unblindedPoint),
-        } : null;
+        token.signed =
+            json.signed !== null
+                ? {
+                      blindedPoint: voprf.sec1DecodeFromBase64(json.signed.blindedPoint),
+                      unblindedPoint: voprf.sec1DecodeFromBase64(json.signed.unblindedPoint),
+                  }
+                : null;
 
         return token;
     }
 
-    setSignedPoint(point: crypto.Point) {
-        const blindedPoint   = point;
-        const unblindedPoint = crypto.unblindPoint(this.factor, point);
+    setSignedPoint(point: voprf.Point): void {
+        const blindedPoint = point;
+        const unblindedPoint = voprf.unblindPoint(this.factor, point);
 
         this.signed = {
             blindedPoint,
@@ -58,35 +61,42 @@ export default class Token {
 
     // TODO This should be implemented in a new Point class.
     getEncodedBlindedPoint(): string {
-        return crypto.sec1EncodeToBase64(this.blindedPoint, true); // true is for compression
+        return voprf.sec1EncodeToBase64(this.blindedPoint, true); // true is for compression
     }
 
-    toLegacy(): { data: crypto.Bytes, point: crypto.Point, blind: crypto.BigNum } {
-        return { data: this.input, point: this.blindedPoint, blind: this.factor };
+    toLegacy(): { data: voprf.Bytes; point: voprf.Point; blind: voprf.BigNum } {
+        return {
+            data: this.input,
+            point: this.blindedPoint,
+            blind: this.factor,
+        };
     }
 
-    getMacKey(): crypto.Bytes {
+    getMacKey(): voprf.Bytes {
         if (this.signed === null) {
             throw new Error('Unsigned token is used to derive a MAC key');
         }
-        return crypto.deriveKey(this.signed.unblindedPoint, this.input);
+        return voprf.deriveKey(this.signed.unblindedPoint, this.input);
     }
 
-    getInput(): crypto.Bytes {
+    getInput(): voprf.Bytes {
         return this.input;
     }
 
     toString(): string {
-        const signed = this.signed !== null ? {
-            blindedPoint:   crypto.sec1EncodeToBase64(this.signed.blindedPoint, false),
-            unblindedPoint: crypto.sec1EncodeToBase64(this.signed.unblindedPoint, false),
-        } : null;
+        const signed =
+            this.signed !== null
+                ? {
+                      blindedPoint: voprf.sec1EncodeToBase64(this.signed.blindedPoint, false),
+                      unblindedPoint: voprf.sec1EncodeToBase64(this.signed.unblindedPoint, false),
+                  }
+                : null;
 
         const json = {
-            input:  this.input,
+            input: this.input,
             factor: this.factor.toString(),
-            blindedPoint:   crypto.sec1EncodeToBase64(this.blindedPoint, false),
-            unblindedPoint: crypto.sec1EncodeToBase64(this.unblindedPoint, false),
+            blindedPoint: voprf.sec1EncodeToBase64(this.blindedPoint, false),
+            unblindedPoint: voprf.sec1EncodeToBase64(this.unblindedPoint, false),
             signed,
         };
         return JSON.stringify(json);

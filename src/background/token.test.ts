@@ -1,12 +1,12 @@
-import crypto from '@background/crypto';
-import Token  from '@background/token';
+import Token from './token';
+import { initECSettings } from './voprf';
 
 beforeAll(() => {
-    // TODO This shouldn't be needed after refactoring the crypto module.
-    crypto.initECSettings({
-        'curve':  'p256',
-        'hash':   'sha256',
-        'method': 'increment',
+    // TODO This shouldn't be needed after refactoring the voprf module.
+    initECSettings({
+        curve: 'p256',
+        hash: 'sha256',
+        method: 'increment',
     });
 });
 

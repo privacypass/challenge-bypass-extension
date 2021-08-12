@@ -1,12 +1,18 @@
-/** @type {import('@ts-jest/dist/types').InitialOptionsTsJest} */
-module.exports = {
-    preset: 'ts-jest',
+export default {
+    preset: 'ts-jest/presets/js-with-ts-esm',
     setupFiles: ['./jest.setup.ts'],
+    globals: {
+        'ts-jest': {
+            useESM: true,
+        },
+    },
+    transform: {},
+    transformIgnorePatterns: ['.js'],
     testEnvironment: 'jsdom',
     moduleNameMapper: {
-        "^@root/(.*)": "<rootDir>/$1",
-        "^@public/(.*)": "<rootDir>/public/$1",
-        "^@background/(.*)": "<rootDir>/src/background/$1",
-        "^@popup/(.*)": "<rootDir>/src/popup/$1"
+        '^@root/(.*)': '<rootDir>/$1',
+        '^@public/(.*)': '<rootDir>/public/$1',
+        '^@popup/(.*)': '<rootDir>/src/popup/$1',
     },
-};
+    verbose: true,
+}

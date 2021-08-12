@@ -1,29 +1,24 @@
-import axios  from 'axios';
-import qs     from 'qs';
-import crypto from '@background/crypto';
-import Token  from '@background/token';
+import * as voprf from '../voprf';
 
-const ISSUE_HEADER_NAME          = 'cf-chl-bypass';
+import { Provider } from '.';
+import Token from '../token';
+import axios from 'axios';
+import qs from 'qs';
+
+const ISSUE_HEADER_NAME = 'cf-chl-bypass';
 const NUMBER_OF_REQUESTED_TOKENS = 30;
-const ISSUANCE_BODY_PARAM_NAME   = 'blinded-tokens';
+const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
 
-const COMMITMENT_URL = 'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
+const COMMITMENT_URL =
+    'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_QUERY_PARAMS = [
-    '__cf_chl_captcha_tk__',
-    '__cf_chl_managed_tk__',
-];
-const QUALIFIED_BODY_PARAMS  = [
-    'g-recaptcha-response',
-    'h-captcha-response',
-    'cf_captcha_kind',
-];
+const QUALIFIED_QUERY_PARAMS = ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'];
+const QUALIFIED_BODY_PARAMS = ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
 
-const VERIFICATION_KEY =
-`-----BEGIN PUBLIC KEY-----
+const VERIFICATION_KEY = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
@@ -33,32 +28,28 @@ const TOKEN_STORE_KEY = 'tokens';
 type Event = 'issue' | 'redeem';
 
 interface EventListener {
-    (): void,
+    (): void;
 }
 
 interface RedeemInfo {
-    requestId: string,
-    token: Token,
+    requestId: string;
+    token: Token;
 }
 
-export default class Cloudflare {
-    static readonly id: number = 1;
+export class CloudflareProvider implements Provider {
+    static readonly ID: number = 1;
     private storage: Storage;
 
     private listeners: {
-        issue:  EventListener[],
-        redeem: EventListener[],
+        issue: EventListener[];
+        redeem: EventListener[];
     };
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage) {
         // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
         // It's better if we can refactor the crypto module to be in object-oriented concept.
-        crypto.initECSettings({
-            'curve':  'p256',
-            'hash':   'sha256',
-            'method': 'increment',
-        });
+        voprf.initECSettings(voprf.defaultECSettings);
 
         this.storage = storage;
         this.redeemInfo = null;
@@ -72,14 +63,21 @@ export default class Cloudflare {
         }
 
         const tokens: string[] = JSON.parse(stored);
-        return tokens.map(token => Token.fromString(token));
+        return tokens.map((token) => Token.fromString(token));
     }
 
     private setStoredTokens(tokens: Token[]) {
-        this.storage.setItem(TOKEN_STORE_KEY, JSON.stringify(tokens.map(token => token.toString())));
+        this.storage.setItem(
+            TOKEN_STORE_KEY,
+            JSON.stringify(tokens.map((token) => token.toString())),
+        );
     }
 
-    private async getCommitment(version: string): Promise<{ G: string, H: string }> {
+    getID(): number {
+        return CloudflareProvider.ID;
+    }
+
+    private async getCommitment(version: string): Promise<{ G: string; H: string }> {
         const keyPrefix = 'commitment-';
         const cached = this.storage.getItem(`${keyPrefix}${version}`);
         if (cached !== null) {
@@ -87,11 +85,11 @@ export default class Cloudflare {
         }
 
         interface Response {
-            CF: { [version: string]: { H: string, expiry: string, sig: string } },
+            CF: { [version: string]: { H: string; expiry: string; sig: string } };
         }
 
         // Download the commitment
-        const { data }   = await axios.get<Response>(COMMITMENT_URL);
+        const { data } = await axios.get<Response>(COMMITMENT_URL);
         const commitment = data.CF[version];
         if (commitment === undefined) {
             throw new Error(`No commitment for the version ${version} is found`);
@@ -104,69 +102,76 @@ export default class Cloudflare {
         }
 
         // This will throw an error on a bad signature.
-        crypto.verifyConfiguration(VERIFICATION_KEY, {
-            H: commitment.H,
-            expiry: commitment.expiry,
-        }, commitment.sig);
+        voprf.verifyConfiguration(
+            VERIFICATION_KEY,
+            {
+                H: commitment.H,
+                expiry: commitment.expiry,
+            },
+            commitment.sig,
+        );
 
         // Cache.
         const item = {
-            G: crypto.sec1EncodeToBase64(crypto.getActiveECSettings().curve.G, false),
+            G: voprf.sec1EncodeToBase64(voprf.getActiveECSettings().curve.G, false),
             H: commitment.H,
         };
         this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
         return item;
     }
 
-    private async issue(url: string, formData: { [key: string]: string[] | string }): Promise<Token[]> {
+    private async issue(
+        url: string,
+        formData: { [key: string]: string[] | string },
+    ): Promise<Token[]> {
         const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token());
         const issuance = {
-            type: "Issue",
-            contents: tokens.map(token => token.getEncodedBlindedPoint()),
+            type: 'Issue',
+            contents: tokens.map((token) => token.getEncodedBlindedPoint()),
         };
         const param = btoa(JSON.stringify(issuance));
 
-        const body  = qs.stringify({
+        const body = qs.stringify({
             ...formData,
             [ISSUANCE_BODY_PARAM_NAME]: param,
         });
 
         const headers = {
             'content-type': 'application/x-www-form-urlencoded',
-            [ISSUE_HEADER_NAME]: Cloudflare.id,
+            [ISSUE_HEADER_NAME]: CloudflareProvider.ID,
         };
 
         const response = await axios.post<string>(url, body, { headers, responseType: 'text' });
 
         const { signatures } = qs.parse(response.data);
         if (signatures === undefined) {
-            throw new Error("There is no signatures parameter in the issuance response.");
+            throw new Error('There is no signatures parameter in the issuance response.');
         }
         if (typeof signatures !== 'string') {
-            throw new Error("The signatures parameter in the issuance response is not a string.");
+            throw new Error('The signatures parameter in the issuance response is not a string.');
         }
 
         interface SignaturesParam {
-            sigs: string[],
-            version: string,
-            proof: string,
-            prng: string,
+            sigs: string[];
+            version: string;
+            proof: string;
+            prng: string;
         }
 
         const data: SignaturesParam = JSON.parse(atob(signatures));
-        const returned = crypto.getCurvePoints(data.sigs);
+        const returned = voprf.getCurvePoints(data.sigs);
 
         const commitment = await this.getCommitment(data.version);
 
-        const result = crypto.verifyProof(
+        const result = voprf.verifyProof(
             data.proof,
-            tokens.map(token => token.toLegacy()),
+            tokens.map((token) => token.toLegacy()),
             returned,
             commitment,
             data.prng,
         );
         if (!result) {
-            throw new Error("DLEQ proof is invalid.");
+            throw new Error('DLEQ proof is invalid.');
         }
 
         tokens.forEach((token, index) => {
@@ -176,19 +181,21 @@ export default class Cloudflare {
         return tokens;
     }
 
-    private fireEvent(event: Event) {
-        this.listeners[event].forEach(callback => callback());
+    private fireEvent(event: Event): void {
+        this.listeners[event].forEach((callback) => callback());
     }
 
     getBadgeText(): string {
         return this.getStoredTokens().length.toString();
     }
 
-    addEventListener(event: Event, callback: EventListener) {
+    addEventListener(event: Event, callback: EventListener): void {
         this.listeners[event].push(callback);
     }
 
-    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+    handleBeforeSendHeaders(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
             return;
         }
@@ -200,23 +207,17 @@ export default class Cloudflare {
         this.redeemInfo = null;
 
         const key = token.getMacKey();
-        const binding = crypto.createRequestBinding(key, [
-            crypto.getBytesFromString(url.hostname),
-            crypto.getBytesFromString(details.method + ' ' + url.pathname),
+        const binding = voprf.createRequestBinding(key, [
+            voprf.getBytesFromString(url.hostname),
+            voprf.getBytesFromString(details.method + ' ' + url.pathname),
         ]);
 
         const contents = [
-            crypto.getBase64FromBytes(token.getInput()),
+            voprf.getBase64FromBytes(token.getInput()),
             binding,
-            crypto.getBase64FromString(JSON.stringify({
-                // TODO There should be a better way to retrieve this info.
-                // Currently I just copied this from the old code base.
-                'curve': 'p256',
-                'hash': 'sha256',
-                'method': 'increment',
-            })),
+            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
         ];
-        const redemption = btoa(JSON.stringify({ type: "Redeem", contents }));
+        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
 
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
@@ -228,17 +229,23 @@ export default class Cloudflare {
         };
     }
 
-    handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
+    handleBeforeRequest(
+        details: chrome.webRequest.WebRequestBodyDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         const url = new URL(details.url);
 
-        if (details.requestBody === null || details.requestBody === undefined || details.requestBody.formData === undefined) {
+        if (
+            details.requestBody === null ||
+            details.requestBody === undefined ||
+            details.requestBody.formData === undefined
+        ) {
             return;
         }
 
-        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some(param => {
+        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some((param) => {
             return url.searchParams.has(param);
         });
-        const hasBodyParams  = QUALIFIED_BODY_PARAMS.some(param => {
+        const hasBodyParams = QUALIFIED_BODY_PARAMS.some((param) => {
             return details.requestBody !== null && param in details.requestBody.formData!;
         });
         if (!hasQueryParams || !hasBodyParams) {
@@ -246,9 +253,9 @@ export default class Cloudflare {
         }
 
         const flattenFormData: { [key: string]: string[] | string } = {};
-        for(const key in details.requestBody.formData) {
+        for (const key in details.requestBody.formData) {
             if (details.requestBody.formData[key].length == 1) {
-                const [value]        = details.requestBody.formData[key];
+                const [value] = details.requestBody.formData[key];
                 flattenFormData[key] = value;
             } else {
                 flattenFormData[key] = details.requestBody.formData[key];
@@ -265,12 +272,12 @@ export default class Cloudflare {
             this.fireEvent('issue');
         })();
 
-        return {
-            cancel: true,
-        };
+        return { cancel: true };
     }
 
-    handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
+    handleHeadersReceived(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         // Don't redeem a token in the issuing website.
         const url = new URL(details.url);
         if (url.host === DEFAULT_ISSUING_HOSTNAME) {
@@ -281,8 +288,12 @@ export default class Cloudflare {
         if (details.statusCode !== 403 || details.responseHeaders === undefined) {
             return;
         }
-        const hasSupportHeader = details.responseHeaders.some(header => {
-            return header.name.toLowerCase() === CHL_BYPASS_SUPPORT && header.value !== undefined && +header.value === Cloudflare.id;
+        const hasSupportHeader = details.responseHeaders.some((header) => {
+            return (
+                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
+                header.value !== undefined &&
+                +header.value === CloudflareProvider.ID
+            );
         });
         if (!hasSupportHeader) {
             return;
@@ -292,7 +303,7 @@ export default class Cloudflare {
 
         // Get one token.
         const tokens = this.getStoredTokens();
-        const token  = tokens.shift();
+        const token = tokens.shift();
         this.setStoredTokens(tokens);
 
         if (token === undefined) {
