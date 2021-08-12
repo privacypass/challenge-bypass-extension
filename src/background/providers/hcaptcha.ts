@@ -1,16 +1,29 @@
-export default class Hcaptcha {
-    static readonly id: number = 2;
+import { Provider } from '.';
+
+export class HcaptchaProvider implements Provider {
+    static readonly ID: number = 2;
+
+    getID(): number {
+        return HcaptchaProvider.ID;
+    }
 
     getBadgeText(): string {
-        return "N/A";
+        return 'N/A';
     }
 
-    handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
+    handleBeforeRequest(
+        _details: chrome.webRequest.WebRequestBodyDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        return;
     }
-
-    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+    handleBeforeSendHeaders(
+        _details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        return;
     }
-
-    handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
+    handleHeadersReceived(
+        _details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        return;
     }
 }

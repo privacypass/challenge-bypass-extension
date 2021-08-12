@@ -3,7 +3,7 @@ import badge from '@public/images/gold-badge.svg';
 import packageJson from '@root/package.json';
 import styles from './styles.module.scss';
 
-function Header() {
+export function Header(): JSX.Element {
     return (
         <div className={styles.header}>
             <img className={styles.badge} src={badge} />
@@ -14,5 +14,3 @@ function Header() {
         </div>
     );
 }
-
-export default Header;

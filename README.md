@@ -1,9 +1,9 @@
-# Challenge Bypass Extension
+# Privacy Pass Extension
 
 ## Build Instruction
 
 ```sh
-$ npm install
+$ npm ci
 $ npm run build
 ```
 
@@ -11,7 +11,7 @@ After that, the `dist` folder will contain all files required by the extension.
 
 ## Test Instruction
 ```sh
-$ npm install
+$ npm ci
 $ npm test
 ```
 

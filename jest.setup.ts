@@ -1,9 +1,6 @@
-import crypto from 'crypto';
+// Mocking crypto with Node webcrypto API.
+import { webcrypto } from 'crypto';
 
-Object.assign(window, {
-    crypto: {
-        getRandomValues: (buffer: Int32Array) => {
-            return crypto.randomFillSync(buffer);
-        },
-    },
-});
+if (typeof crypto === 'undefined') {
+    global.crypto = (webcrypto as unknown) as Crypto
+}

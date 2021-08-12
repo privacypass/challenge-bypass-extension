@@ -1,13 +1,12 @@
-import Cloudflare from '@background/providers/cloudflare';
-import Hcaptcha   from '@background/providers/hcaptcha';
+import { CloudflareProvider, HcaptchaProvider, Provider } from './providers';
 
 // Header from server to indicate that Privacy Pass is supported.
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 
-export default class Tab {
-    private context: Cloudflare | Hcaptcha | null;
-    private chromeTabId: number;
-    private active: boolean;
+export class Tab {
+    private context: Provider | null;
+    /* private */ chromeTabId: number;
+    /* private */ active: boolean;
 
     constructor(tabId: number) {
         this.context = null;
@@ -15,7 +14,7 @@ export default class Tab {
         this.active = false;
     }
 
-    private updateIcon() {
+    private updateIcon(): void {
         if (this.context !== null) {
             const text = this.context.getBadgeText();
             chrome.browserAction.setIcon({ path: 'icons/32/gold.png' });
@@ -26,16 +25,18 @@ export default class Tab {
         }
     }
 
-    handleActivated() {
+    handleActivated(): void {
         this.active = true;
         this.updateIcon();
     }
 
-    handleDeactivated() {
+    handleDeactivated(): void {
         this.active = false;
     }
 
-    handleBeforeRequest(details: chrome.webRequest.WebRequestBodyDetails) {
+    handleBeforeRequest(
+        details: chrome.webRequest.WebRequestBodyDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         let result;
         if (this.context !== null) {
             result = this.context.handleBeforeRequest(details);
@@ -44,7 +45,9 @@ export default class Tab {
         return result;
     }
 
-    handleBeforeSendHeaders(details: chrome.webRequest.WebRequestHeadersDetails) {
+    handleBeforeSendHeaders(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         let result;
         if (this.context !== null) {
             result = this.context.handleBeforeSendHeaders(details);
@@ -53,13 +56,15 @@ export default class Tab {
         return result;
     }
 
-    handleHeadersReceived(details: chrome.webRequest.WebResponseHeadersDetails) {
+    handleHeadersReceived(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
         if (details.responseHeaders === undefined) {
             return;
         }
         const [providerId] = details.responseHeaders
-            .filter(header => header.name.toLowerCase() === CHL_BYPASS_SUPPORT)
-            .map   (header => header.value !== undefined && +header.value);
+            .filter((header) => header.name.toLowerCase() === CHL_BYPASS_SUPPORT)
+            .map((header) => header.value !== undefined && +header.value);
 
         if (details.type === 'main_frame') {
             // The page in the tab is changed, so the context should change.
@@ -68,17 +73,20 @@ export default class Tab {
         }
 
         // Cloudflare has higher precedence than Hcaptcha.
-        if (providerId === Cloudflare.id && !(this.context instanceof Cloudflare)) {
-            const context = new Cloudflare(window.localStorage);
+        if (providerId === CloudflareProvider.ID && !(this.context instanceof CloudflareProvider)) {
+            const context = new CloudflareProvider(window.localStorage);
 
             // Update the toolbar icon, after issuances and redemptions.
-            context.addEventListener('issue',  () => this.active && this.updateIcon());
+            context.addEventListener('issue', () => this.active && this.updateIcon());
             context.addEventListener('redeem', () => this.active && this.updateIcon());
             this.context = context;
             this.active && this.updateIcon();
-
-        } else if (providerId === Hcaptcha.id && !(this.context instanceof Cloudflare) && !(this.context instanceof Hcaptcha)) {
-            this.context = new Hcaptcha();
+        } else if (
+            providerId === HcaptchaProvider.ID &&
+            !(this.context instanceof CloudflareProvider) &&
+            !(this.context instanceof HcaptchaProvider)
+        ) {
+            this.context = new HcaptchaProvider();
             this.active && this.updateIcon();
         }
 

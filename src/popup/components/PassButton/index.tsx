@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+
 import styles from './styles.module.scss';
 
-function PassButton(props: Props) {
+export function PassButton(props: Props): JSX.Element {
     const [mouseover, setMouseover] = useState(false);
 
     function onEnter() {
@@ -12,10 +13,15 @@ function PassButton(props: Props) {
         setMouseover(false);
     }
 
-    const element = mouseover ? "Get more passes!" : props.children;
+    const element = mouseover ? 'Get more passes!' : props.children;
 
     return (
-        <div className={styles.button} onClick={props.onClick} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+        <div
+            className={styles.button}
+            onClick={props.onClick}
+            onMouseEnter={onEnter}
+            onMouseLeave={onLeave}
+        >
             <div className={styles.content}>{element}</div>
             <div className={styles.value}>{props.value}</div>
         </div>
@@ -23,9 +29,7 @@ function PassButton(props: Props) {
 }
 
 interface Props {
-    value: number,
-    children: string,
-    onClick?: () => void,
+    value: number;
+    children: string;
+    onClick?: () => void;
 }
-
-export default PassButton;
