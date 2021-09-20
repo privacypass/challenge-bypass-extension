@@ -1,5 +1,5 @@
-import { handleBeforeRequest, handleHeadersReceived } from './listeners/webRequestListener';
-import { handleCreated, handleRemoved, handleReplaced } from './listeners/tabListener';
+import { handleBeforeRequest, handleBeforeSendHeaders, handleHeadersReceived } from './listeners/webRequestListener';
+import { handleActivated, handleCreated, handleRemoved, handleReplaced } from './listeners/tabListener';
 
 import { Tab } from './tab';
 
@@ -7,13 +7,17 @@ import { Tab } from './tab';
 
 declare global {
     interface Window {
+        ACTIVE_TAB_ID: number;
         TABS: Map<number, Tab>;
     }
 }
 
+window.ACTIVE_TAB_ID = chrome.tabs.TAB_ID_NONE;
 window.TABS = new Map<number, Tab>();
 
 /* Listeners for navigator */
+
+chrome.tabs.onActivated.addListener(handleActivated);
 
 chrome.tabs.onCreated.addListener(handleCreated);
 
@@ -31,8 +35,21 @@ chrome.tabs.query({}, function (existingTabs: chrome.tabs.Tab[]) {
     });
 });
 
+// Finds which tab is currently active.
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs: chrome.tabs.Tab[]) {
+    const [tab] = tabs;
+    if (tab !== undefined && tab.id !== undefined) {
+        window.ACTIVE_TAB_ID = tab.id;
+    }
+});
+
 chrome.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<all_urls>'] }, [
     'requestBody',
+    'blocking',
+]);
+
+chrome.webRequest.onBeforeSendHeaders.addListener(handleBeforeSendHeaders, { urls: ['<all_urls>'] }, [
+    'requestHeaders',
     'blocking',
 ]);
 
