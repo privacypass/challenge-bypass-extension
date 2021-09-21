@@ -24,9 +24,8 @@
     "stringify": "^5.2.0"
   },
   "scripts": {
-    "all": "yarn lint && yarn build && yarn test-all",
     "build": "make build",
-    "test": "make test-ext && jest",
+    "test": "jest --ci",
     "test-all": "make test-all",
     "dist": "make dist",
     "lint": "eslint ."

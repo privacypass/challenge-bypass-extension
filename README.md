@@ -78,7 +78,6 @@ To build and test, run these commands:
 $ git clone https://github.com/privacypass/challenge-bypass-extension.git
 $ cd challenge-bypass-extension
 $ make install
-$ make sjcl
 $ make build
 $ make test-all
 ```

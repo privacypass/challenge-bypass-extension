@@ -14,8 +14,9 @@ ASN1_PATH=node_modules/asn1-parser
 SJCL_PATH=node_modules/sjcl
 
 all: build
+
 .PHONY: build
-build: addon/build.js
+build: sjcl addon/build.js
 
 .PHONY: sjcl
 sjcl:
@@ -24,11 +25,8 @@ sjcl:
 	make -C ${SJCL_PATH} sjcl.js
 
 .PHONY: test
-test: test-ext
+test: jest/globals.js addon/test.js
 	yarn test
-
-.PHONY: test-ext
-test-ext: jest/globals.js addon/test.js
 
 .PHONY: test-all
 test-all: test-sjcl test
