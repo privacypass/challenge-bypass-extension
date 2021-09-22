@@ -308,9 +308,9 @@ function processHeaders(details, url) {
         }
     }
 
-    if (details.responseHeaders.length === 0
-        && spendStatusCode().includes(details.statusCode)
-        && emptyRespHeaders().includes("direct-request")) {
+    if (details.responseHeaders.length === 0 &&
+        spendStatusCode().includes(details.statusCode) &&
+        emptyRespHeaders().includes("direct-request")) {
         // There is some weirdness with Chrome whereby some resources return empty
         // responseHeaders but where a spend *should* occur. If this happens then we
         // send a direct request to an endpoint that determines whether a CAPTCHA
@@ -530,9 +530,9 @@ function beforeRequest(details, url) {
 function committedNavigation(details, url) {
     const redirect = details.transitionQualifiers[0];
     const tabId = details.tabId;
-    if (!badNav().includes(details.transitionType)
-        && (!checkBadTransition(url.href, redirect, details.transitionType))
-        && !isNewTab(url.href)
+    if (!badNav().includes(details.transitionType) &&
+        (!checkBadTransition(url.href, redirect, details.transitionType)) &&
+        !isNewTab(url.href)
     ) {
         const id = getTabId(tabId);
         setTarget(id, url.href);

@@ -363,9 +363,9 @@ function applicablePatch(pv) {
                 // supports up to 4 so we should check for this. If the
                 // lengths differ and they are equal up to this point
                 // then just return true.
-                extVersion.length === 4
-                && arr.length === 4
-                && extVersion[2] === arr[2]
+                extVersion.length === 4 &&
+                arr.length === 4 &&
+                extVersion[2] === arr[2]
             ) {
                 if (extVersion[3] < arr[3]) {
                     return false;

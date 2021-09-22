@@ -5,8 +5,6 @@
  * @author: Drazen Urch
  */
 
-import each from "jest-each";
-
 const workflow = workflowSet();
 
 /**
@@ -205,191 +203,189 @@ CAPTCHA_KEYS.forEach((captchaKey) => {
             });
         });
 
-        each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
-            .describe("config_id = %i signing request is cancelled", (configId) => {
-                test("signing off", () => {
-                    workflow.__with__({doSign: () => false})(() => {
-                        const b = beforeRequest(details, url);
-                        expect(b).toBeFalsy();
-                    });
-                });
-                test("signing not activated", () => {
-                    setReadyIssue(configId, false);
-                    const b = beforeRequest(details, url);
-                    expect(b).toBeFalsy();
-                });
-                test("url is not captcha request", () => {
-                    const b = beforeRequest(details, url);
-                    expect(b).toBeFalsy();
-                });
-                test("variables are reset", () => {
-                    setSpentHostsMock(url.host, true);
-                    setTimeSinceLastResp(0);
-                    const b = beforeRequest(details, url);
-                    expect(getSpentHostsMock(url.host)).toBeFalsy();
-                    expect(b).toBeFalsy();
-                });
-                test("body does not contain CAPTCHA solution", () => {
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
-                    details.requestBody = {};
-                    const b = beforeRequest(details, newUrl);
-                    expect(b).toBeFalsy();
-                });
-                test("already processed", () => {
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
-                    const b = beforeRequest(details, newUrl);
-                    expect(b).toBeFalsy();
-                });
-                test("already sent", () => {
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    setSpentHostsMock(newUrl.host, true);
+        describe.each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))("config_id = %i signing request is cancelled", (configId) => {
+            test("signing off", () => {
+                workflow.__with__({doSign: () => false})(() => {
                     const b = beforeRequest(details, url);
                     expect(b).toBeFalsy();
                 });
             });
+            test("signing not activated", () => {
+                setReadyIssue(configId, false);
+                const b = beforeRequest(details, url);
+                expect(b).toBeFalsy();
+            });
+            test("url is not captcha request", () => {
+                const b = beforeRequest(details, url);
+                expect(b).toBeFalsy();
+            });
+            test("variables are reset", () => {
+                setSpentHostsMock(url.host, true);
+                setTimeSinceLastResp(0);
+                const b = beforeRequest(details, url);
+                expect(getSpentHostsMock(url.host)).toBeFalsy();
+                expect(b).toBeFalsy();
+            });
+            test("body does not contain CAPTCHA solution", () => {
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
+                details.requestBody = {};
+                const b = beforeRequest(details, newUrl);
+                expect(b).toBeFalsy();
+            });
+            test("already processed", () => {
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX + CAPTCHA_BYPASS_SUFFIX);
+                const b = beforeRequest(details, newUrl);
+                expect(b).toBeFalsy();
+            });
+            test("already sent", () => {
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                setSpentHostsMock(newUrl.host, true);
+                const b = beforeRequest(details, url);
+                expect(b).toBeFalsy();
+            });
+        });
 
-        each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
-            .describe("config_id = %i, test sending sign requests", (configId) => {
-                beforeEach(() => {
-                    const validIds = PPConfigs().map((config) => config.id);
-                    validIds.forEach((id) => {
-                        if (id !== configId) {
-                            setReadyIssue(id, false);
-                        } else {
-                            setReadyIssue(id, true);
-                        }
-                    });
-                });
-
-                test("incorrect config id", () => {
-                    function tryRun() {
-                        workflow.__with__({CONFIG_ID: () => 3})(() => {
-                            beforeRequest(details, newUrl);
-                        });
+        describe.each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))("config_id = %i, test sending sign requests", (configId) => {
+            beforeEach(() => {
+                const validIds = PPConfigs().map((config) => config.id);
+                validIds.forEach((id) => {
+                    if (id !== configId) {
+                        setReadyIssue(id, false);
+                    } else {
+                        setReadyIssue(id, true);
                     }
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    expect(tryRun).toThrowError("Incorrect config ID specified");
                 });
+            });
 
-                test("test that true is returned", () => {
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+            test("incorrect config id", () => {
+                function tryRun() {
+                    workflow.__with__({CONFIG_ID: () => 3})(() => {
+                        beforeRequest(details, newUrl);
+                    });
+                }
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                expect(tryRun).toThrowError("Incorrect config ID specified");
+            });
+
+            test("test that true is returned", () => {
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                const b = beforeRequest(details, newUrl);
+                if (configId === 1) {
+                    expect(b).toBeTruthy();
+                    expect(b.xhr).toBeTruthy();
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    if (captchaKey == "h-captcha-response") {
+                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
+                    }
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                } else {
+                    expect(b).toBeFalsy();
+                }
+            });
+
+            test("test that true is returned with old example suffix also", () => {
+                const newUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
+                const b = beforeRequest(details, newUrl);
+                if (configId === 1) {
+                    expect(b).toBeTruthy();
+                    expect(b.xhr).toBeTruthy();
+                    expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                    if (captchaKey == "h-captcha-response") {
+                        expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
+                    }
+                    expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                } else {
+                    expect(b).toBeFalsy();
+                }
+            });
+
+            test("bad status does not sign", () => {
+                setTimeSinceLastResp(0); // reset the variables
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                workflow.__with__({XMLHttpRequest: mockXHRBadStatus})(() => {
                     const b = beforeRequest(details, newUrl);
                     if (configId === 1) {
                         expect(b).toBeTruthy();
                         expect(b.xhr).toBeTruthy();
-                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                        const xhr = b.xhr;
+                        expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
                         if (captchaKey == "h-captcha-response") {
-                            expect(b.xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
+                            expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                         }
-                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        xhr.onreadystatechange();
+                        expect(validateRespMock).not.toBeCalled();
+                        expect(updateIconMock).toBeCalledTimes(1);
+                        expect(updateBrowserTabMock).not.toBeCalled();
                     } else {
                         expect(b).toBeFalsy();
                     }
                 });
+            });
 
-                test("test that true is returned with old example suffix also", () => {
-                    const newUrl = new URL(EXAMPLE_HREF + OLD_EXAMPLE_SUFFIX);
+            test("bad readyState does not sign", () => {
+                setTimeSinceLastResp(0); // reset the variables
+                const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                workflow.__with__({XMLHttpRequest: mockXHRBadReadyState})(() => {
                     const b = beforeRequest(details, newUrl);
                     if (configId === 1) {
                         expect(b).toBeTruthy();
                         expect(b.xhr).toBeTruthy();
-                        expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
+                        const xhr = b.xhr;
+                        expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
                         if (captchaKey == "h-captcha-response") {
-                            expect(b.xhr.send).not.toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
+                            expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
                         }
-                        expect(b.xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
+                        xhr.onreadystatechange();
+                        expect(validateRespMock).not.toBeCalled();
+                        expect(updateIconMock).toBeCalledTimes(1);
+                        expect(updateBrowserTabMock).not.toBeCalled();
                     } else {
                         expect(b).toBeFalsy();
                     }
                 });
+            });
 
-                test("bad status does not sign", () => {
-                    setTimeSinceLastResp(0); // reset the variables
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    workflow.__with__({XMLHttpRequest: mockXHRBadStatus})(() => {
-                        const b = beforeRequest(details, newUrl);
-                        if (configId === 1) {
-                            expect(b).toBeTruthy();
-                            expect(b.xhr).toBeTruthy();
-                            const xhr = b.xhr;
-                            expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
-                            if (captchaKey == "h-captcha-response") {
-                                expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
-                            }
-                            expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
-                            xhr.onreadystatechange();
-                            expect(validateRespMock).not.toBeCalled();
-                            expect(updateIconMock).toBeCalledTimes(1);
-                            expect(updateBrowserTabMock).not.toBeCalled();
-                        } else {
-                            expect(b).toBeFalsy();
-                        }
-                    });
-                });
-
-                test("bad readyState does not sign", () => {
-                    setTimeSinceLastResp(0); // reset the variables
-                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                    workflow.__with__({XMLHttpRequest: mockXHRBadReadyState})(() => {
-                        const b = beforeRequest(details, newUrl);
-                        if (configId === 1) {
-                            expect(b).toBeTruthy();
-                            expect(b.xhr).toBeTruthy();
-                            const xhr = b.xhr;
-                            expect(xhr.send).toBeCalledWith(expect.stringContaining(`${captchaKey}=${EXAMPLE_RECAPTCHA_RESPONSE}`));
-                            if (captchaKey == "h-captcha-response") {
-                                expect(xhr.send).toBeCalledWith(expect.stringContaining("cf_captcha_kind=h"));
-                            }
-                            expect(xhr.send).toBeCalledWith(expect.stringContaining("blinded-tokens="));
-                            xhr.onreadystatechange();
-                            expect(validateRespMock).not.toBeCalled();
-                            expect(updateIconMock).toBeCalledTimes(1);
-                            expect(updateBrowserTabMock).not.toBeCalled();
-                        } else {
-                            expect(b).toBeFalsy();
-                        }
-                    });
-                });
-
-                test("too many tokens does not sign", () => {
-                    // Always test CF here due to mock data being available
-                    if (configId === 1) {
-                        workflow.__with__({XMLHttpRequest: mockXHRGood})(() => {
-                            function run() {
-                                const b = beforeRequest(details, newUrl);
-                                expect(b).toBeTruthy();
-                                const xhr = b.xhr;
-                                xhr.onreadystatechange();
-                            }
-                            setTimeSinceLastResp(0); // reset the variables
-                            setMock(bypassTokensCount(configId), 400);
-                            const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                            expect(run).toThrowError("upper bound");
-                            expect(validateRespMock).not.toBeCalled();
-                            expect(updateIconMock).toBeCalledTimes(1);
-                            expect(updateBrowserTabMock).not.toBeCalled();
-                        });
-                    }
-                });
-
-                test("correct XHR response triggers validation", () => {
-                    workflow.__with__({"validateResponse": validateRespMock, "XMLHttpRequest": mockXHRGood})(() => {
+            test("too many tokens does not sign", () => {
+                // Always test CF here due to mock data being available
+                if (configId === 1) {
+                    workflow.__with__({XMLHttpRequest: mockXHRGood})(() => {
                         function run() {
-                            const request = "";
-                            const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
-                            const xhr = sendXhrSignReq(xhrInfo, newUrl, configId, details.tabId);
-                            xhr.responseText = "";
+                            const b = beforeRequest(details, newUrl);
+                            expect(b).toBeTruthy();
+                            const xhr = b.xhr;
                             xhr.onreadystatechange();
                         }
                         setTimeSinceLastResp(0); // reset the variables
-                        setMock(bypassTokensCount(configId), 0);
+                        setMock(bypassTokensCount(configId), 400);
                         const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
-                        expect(run).not.toThrow();
-                        expect(validateRespMock).toBeCalled();
+                        expect(run).toThrowError("upper bound");
+                        expect(validateRespMock).not.toBeCalled();
                         expect(updateIconMock).toBeCalledTimes(1);
+                        expect(updateBrowserTabMock).not.toBeCalled();
                     });
+                }
+            });
+
+            test("correct XHR response triggers validation", () => {
+                workflow.__with__({"validateResponse": validateRespMock, "XMLHttpRequest": mockXHRGood})(() => {
+                    function run() {
+                        const request = "";
+                        const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: ""};
+                        const xhr = sendXhrSignReq(xhrInfo, newUrl, configId, details.tabId);
+                        xhr.responseText = "";
+                        xhr.onreadystatechange();
+                    }
+                    setTimeSinceLastResp(0); // reset the variables
+                    setMock(bypassTokensCount(configId), 0);
+                    const newUrl = new URL(EXAMPLE_HREF + EXAMPLE_SUFFIX);
+                    expect(run).not.toThrow();
+                    expect(validateRespMock).toBeCalled();
+                    expect(updateIconMock).toBeCalledTimes(1);
                 });
             });
+        });
 
         describe("test validating response", () => {
             describe("test response format errors", () => {
@@ -772,6 +768,6 @@ function parseRespString(respText) {
 }
 
 function getSpentHostsMock(key) {
-    const spentHosts = workflow.__get__("spentHosts", spentHosts);
+    const spentHosts = workflow.__get__("spentHosts");
     return spentHosts[key];
 }

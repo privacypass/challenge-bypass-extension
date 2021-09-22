@@ -4,8 +4,6 @@
  * @author: Drazen Urch
  */
 
-import each from "jest-each";
-
 const workflow = workflowSet();
 
 const PPConfigs = workflow.__get__("PPConfigs");
@@ -13,39 +11,38 @@ const getConfigId = workflow.__get__("getConfigId");
 
 let activeConfig = () => PPConfigs()[getConfigId()];
 
-each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))
-    .describe("CONFIG_ID = %i", (configId) => {
-        beforeEach(() => {
-            workflow.__set__("CONFIG_ID", configId);
-        });
-
-        test("ensure `get-more-passes-url` is a valid URL", () => {
-            new URL(activeConfig()["get-more-passes-url"]);
-        });
-
-        test("ensure config `get-more-passes-url` value is correct", () => {
-            const url = activeConfig()["get-more-passes-url"];
-            let correctValue;
-            switch (configId) {
-                case 1:
-                    correctValue = "https://captcha.website";
-                    break;
-                case 2:
-                    correctValue = "https://www.hcaptcha.com/privacy-pass";
-                    break;
-            }
-            expect(url === correctValue).toBeTruthy();
-        });
+describe.each(PPConfigs().filter((config) => config.id > 0).map((config) => [config.id]))("CONFIG_ID = %i", (configId) => {
+    beforeEach(() => {
+        workflow.__set__("CONFIG_ID", configId);
     });
+
+    test("ensure `get-more-passes-url` is a valid URL", () => {
+        new URL(activeConfig()["get-more-passes-url"]);
+    });
+
+    test("ensure config `get-more-passes-url` value is correct", () => {
+        const url = activeConfig()["get-more-passes-url"];
+        let correctValue;
+        switch (configId) {
+            case 1:
+                correctValue = "https://captcha.website";
+                break;
+            case 2:
+                correctValue = "https://www.hcaptcha.com/privacy-pass";
+                break;
+        }
+        expect(url === correctValue).toBeTruthy();
+    });
+});
 
 // For testing configuration patching
 const MOCK_EXT_VERSION = "2.0.5"; // fixed version for testing
 workflow.__set__("extVersion", () => MOCK_EXT_VERSION);
 const extVersionAsArray = workflow.__get__("extVersionAsArray");
 const testConfigPubKey = "-----BEGIN PUBLIC KEY-----\n" +
-"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4cdRphWFxgqeSpVRLbtnl66fJNvQ\n" +
-"skXKm9Ww8il9LPp1rZRu2D/VJd95AZ6+1nEagVBeEnRmiOM9P++EOwVfxw==\n" +
-"-----END PUBLIC KEY-----";
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4cdRphWFxgqeSpVRLbtnl66fJNvQ\n" +
+    "skXKm9Ww8il9LPp1rZRu2D/VJd95AZ6+1nEagVBeEnRmiOM9P++EOwVfxw==\n" +
+    "-----END PUBLIC KEY-----";
 const sig10 = "MEUCIQCJKxh/Ik5jrs47VYBby4OZyXxLxgOhnAkyTmnB//jbiAIgODqfuqjwTrXiRorkdluPpxmYQV2Dz5dXDOXMf3GVzCI=";
 const sig11 = "MEUCIEB5r7N+DKA9vwACSa/HISyWuXUKghGACNxu6a2WTwCFAiEAwFjngF7Z2GEhESBu3pR7J9aEOi1toPJz50/oPDRZWjs=";
 const sig20 = "MEYCIQChW7U+1thCKm3akMkz8903q/4K7gdMIBe95Ev0zrZbDQIhALJZG412wRCrIq4/v8kqDPbAOVeVSSA3p6GQDlwomtvO";

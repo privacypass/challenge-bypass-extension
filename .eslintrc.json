@@ -8,7 +8,7 @@
         "ecmaVersion": 8,
         "sourceType": "script"
     },
-    "extends": ["eslint:recommended", "./node_modules/eslint-config-google/index.js"],
+    "extends": ["eslint:recommended", "google"],
     "globals": {
         "activeConfig": true,
         "assert": true,

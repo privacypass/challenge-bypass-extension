@@ -4,12 +4,12 @@
  * @author Drazen Urch
  */
 
-import * as nodeCrypto from 'crypto';
+const nodeCrypto = require('crypto');
 
-import createShake256 from "../src/crypto/keccak/keccak";
-import atob from "atob";
-import btoa from "btoa";
-import rewire from "rewire";
+const createShake256 = require("../src/crypto/keccak/keccak");
+const atob = require("atob");
+const btoa = require("btoa");
+const rewire = require("rewire");
 
 let localStorageItems = new Map();
 let spentUrlMock = new Map();
@@ -89,7 +89,7 @@ window.workflowSet = () => {
     workflow.__set__("setSpentHosts", setSpentHostsMock);
     workflow.__set__("getSpentHosts", getSpentHostsMock);
 
-    workflow.__set__("shake256", () => {return createShake256();});
+    workflow.__set__("shake256", () => { return createShake256(); });
     workflow.__set__("clearCachedCommitments", clearCachedCommitmentsMock);
     workflow.__set__("timeSinceLastResp", timeSinceLastResp);
 
@@ -111,7 +111,7 @@ window.workflowSet = () => {
     window.sec1DecodeFromBase64 = workflow.__get__("sec1DecodeFromBase64");
 
     window.hkdfTestKey = sjcl.bn.fromBits(sjcl.codec.bytes.toBits([248, 78, 25, 124, 139, 113, 44, 223, 69, 45, 44, 255, 82, 222, 193, 189, 150, 34, 14, 215, 185, 166, 246, 110, 210, 140, 103, 80, 58, 230, 33, 51]));
-//  // Test points generated in a response from CF backend
+    //  // Test points generated in a response from CF backend
     const testWorkerPoints = [
         "A3GFH/iDZMTTUuOmC9ATszHN40lp07BTyRYLhp0wnw5P",
         "Apl2KJiDa6MA24bIN+nvP2pg9g8Bx0Ac3RIHf1m1GWvX",
@@ -125,11 +125,11 @@ window.workflowSet = () => {
         "AgUyp8cbk8KF3NGwOn8Jwf15Bys6bhilmE3nS3bSC+ML"
     ];
     window.testTokensWorker = [];
-    for (let i=0; i<testWorkerPoints.length; i++) {
+    for (let i = 0; i < testWorkerPoints.length; i++) {
         const token = {};
         // random data/blind
-        token.data = [237,20,250,80,161,8,37,128,78,147,159,160,227,23,161,220,22,137,228,182,45,72,175,25,57,126,251,158,253,246,209,1];
-        token.blind = [73,107,72,26,128,56,94,59,31,54,94,206,126,83,177,12,153,141,232,123,254,182,63,221,56,148,42,62,220,173,4,134];
+        token.data = [237, 20, 250, 80, 161, 8, 37, 128, 78, 147, 159, 160, 227, 23, 161, 220, 22, 137, 228, 182, 45, 72, 175, 25, 57, 126, 251, 158, 253, 246, 209, 1];
+        token.blind = [73, 107, 72, 26, 128, 56, 94, 59, 31, 54, 94, 206, 126, 83, 177, 12, 153, 141, 232, 123, 254, 182, 63, 221, 56, 148, 42, 62, 220, 173, 4, 134];
         token.point = sec1Encode(sec1DecodeFromBase64(testWorkerPoints[i]));
         window.testTokensWorker[i] = token;
     }
@@ -338,13 +338,13 @@ window.testTokensHkdfCompressed = JSON.parse(`[{"data":[237,20,250,80,161,8,37,1
 window.workersG = window.p256G;
 window.workersH = "BPivZ+bqrAZzBHZtROY72/E4UGVKAanNoHL1Oteg25oTPRUkrYeVcYGfkOr425NzWOTLRfmB8cgnlUfAeN2Ikmg=";
 window.testPubKey = "-----BEGIN PUBLIC KEY-----\n" +
-"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
-"Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
-"-----END PUBLIC KEY-----";
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEthZThU2xhR0PNTsoxJ4JiydsOTGD\n" +
+    "Pwy6mSLemoF0D0La+XTG06QK9UbUW7id5m8WQYjHw+A8mvoL40eaHf5Riw==\n" +
+    "-----END PUBLIC KEY-----";
 window.prodPubKey = "-----BEGIN PUBLIC KEY-----\n" +
-"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF\n" +
-"VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==\n" +
-"-----END PUBLIC KEY-----";
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF\n" +
+    "VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==\n" +
+    "-----END PUBLIC KEY-----";
 
 window.goodResponses = [
     {
