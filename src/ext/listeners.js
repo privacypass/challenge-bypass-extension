@@ -71,15 +71,15 @@ chrome.cookies.onChanged.addListener(function(changeInfo) {
     const cookieDomain = changeInfo.cookie.domain;
     const cookieName = changeInfo.cookie.name;
     if (!changeInfo.removed) {
-        if (cookieDomain === "." + chlCaptchaDomain() // cookies have dots prepended
-            && cookieName === chlClearanceCookie()) {
+        if (cookieDomain === "." + chlCaptchaDomain() && // cookies have dots prepended
+            cookieName === chlClearanceCookie()) {
             chrome.cookies.remove({url: "http://" + chlCaptchaDomain(), name: chlClearanceCookie()});
         } else if (cookieName === chlClearanceCookie()) {
             reloadTabForCookie(cookieDomain);
         }
-    } else if (changeInfo.removed
-        && cookieName === chlClearanceCookie()
-        && cookieDomain !== "." + chlCaptchaDomain()) {
+    } else if (changeInfo.removed &&
+        cookieName === chlClearanceCookie() &&
+        cookieDomain !== "." + chlCaptchaDomain()) {
         resetSpendVars();
     }
 });
