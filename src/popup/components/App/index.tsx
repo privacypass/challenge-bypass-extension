@@ -1,5 +1,6 @@
 import { Button } from '@popup/components/Button';
 import { Container } from '@popup/components/Container';
+import { ClearButton } from '@popup/components/ClearButton';
 import { CloudflareButton } from '@popup/components/CloudflareButton';
 import { HcaptchaButton } from '@popup/components/HcaptchaButton';
 import { Header } from '@popup/components/Header';
@@ -14,7 +15,7 @@ export function App(): JSX.Element {
                 <CloudflareButton />
                 <HcaptchaButton />
                 <Button>Log CF Redemption to Console</Button>
-                <Button>Clear All Passes</Button>
+                <ClearButton />
                 <Button>View on Github</Button>
             </Container>
         </div>

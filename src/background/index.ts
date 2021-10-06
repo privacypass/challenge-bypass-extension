@@ -61,6 +61,11 @@ chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: [
 // TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
 // common data between the popup and the background script.
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    if (request.clear === true) {
+        window.localStorage.clear();
+        return;
+    }
+
     if (request.key !== undefined && typeof request.key === 'string') {
         sendResponse(window.localStorage.getItem(request.key));
     }
