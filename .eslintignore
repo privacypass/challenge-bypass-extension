@@ -1,8 +1,0 @@
-src/crypto/asn1/*
-src/crypto/sjcl/*
-src/crypto/keccak/*
-jest/*
-addon/*
-coverage/*
-jest.config.js
-!addon/popup/
