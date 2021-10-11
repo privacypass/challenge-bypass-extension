@@ -22,14 +22,6 @@ const cachedCommitmentsKey = (id) => `cached-commitments-${id}`;
 function signReqCF(url, details) {
     const reqUrl = url.href;
 
-    // if the old workflow is still being used then just return this
-    // should return null if the checks fail
-    const ret = signReqCFOld(reqUrl);
-    if (ret) {
-        return ret;
-    }
-
-    // otherwise try something new
     const captchaResp = url.searchParams.has(requestIdentifiers(CF_CONFIG_ID)["query-param"]);
     const alreadyProcessed = url.searchParams.has(requestIdentifiers(CF_CONFIG_ID)["post-processed"]);
     const captchaKeys = requestIdentifiers(CF_CONFIG_ID)["body-param"];
@@ -68,35 +60,6 @@ function signReqCF(url, details) {
         bodyCaptcha += `${bodyKeys[i]}=${encodeURIComponent(bodyValues[i])}`;
     }
     const xhrInfo = {newUrl: newUrl, requestBody: `${bodyCaptcha}&blinded-tokens=${btRequest}`, tokens: tokens};
-
-    return xhrInfo;
-}
-
-/**
- * OLD METHOD: currently being phased out by Cloudflare
- * Constructs an issue request for sending tokens in Cloudflare-friendly format
- * @param {string} reqUrl URL object for request
- * @return {XMLHttpRequest} XHR info for asynchronous token issuance
- */
-function signReqCFOld(reqUrl) {
-    const manualChallenge = reqUrl.includes("manual_challenge");
-    const captchaResp = reqUrl.includes("g-recaptcha-response");
-    const alreadyProcessed = reqUrl.includes("&captcha-bypass=true");
-
-    // We're only interested in CAPTCHA solution requests that we haven't already altered.
-    if ((captchaResp && alreadyProcessed) || (!manualChallenge && !captchaResp) || sentTokens[reqUrl]) {
-        return null;
-    }
-    sentTokens[reqUrl] = true;
-
-    // Generate tokens and create a JSON request for signing
-    const tokens = GenerateNewTokens(tokensPerRequest(CF_CONFIG_ID));
-    const request = BuildIssueRequest(tokens);
-
-    // Tag the URL of the new request to prevent an infinite loop (see above)
-    const newUrl = markSignUrl(reqUrl);
-    // Construct info for xhr signing request
-    const xhrInfo = {newUrl: newUrl, requestBody: "blinded-tokens=" + request, tokens: tokens};
 
     return xhrInfo;
 }
