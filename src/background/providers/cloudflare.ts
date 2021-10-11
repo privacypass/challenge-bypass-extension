@@ -38,6 +38,7 @@ interface RedeemInfo {
 
 export class CloudflareProvider implements Provider {
     static readonly ID: number = 1;
+    private chromeTabId: number;
     private storage: Storage;
 
     private listeners: {
@@ -46,7 +47,7 @@ export class CloudflareProvider implements Provider {
     };
     private redeemInfo: RedeemInfo | null;
 
-    constructor(storage: Storage) {
+    constructor(chromeTabId: number, storage: Storage) {
         // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
         // It's better if we can refactor the crypto module to be in object-oriented concept.
         voprf.initECSettings(voprf.defaultECSettings);
@@ -54,6 +55,7 @@ export class CloudflareProvider implements Provider {
         this.storage = storage;
         this.redeemInfo = null;
         this.listeners = { issue: [], redeem: [] };
+        this.chromeTabId = chromeTabId;
     }
 
     private getStoredTokens(): Token[] {
@@ -269,9 +271,17 @@ export class CloudflareProvider implements Provider {
             const cached = this.getStoredTokens();
             this.setStoredTokens(cached.concat(tokens));
 
+            // TODO The provider should not have a direct access to the browser API.
+            // Reload the tab without the query params.
+            chrome.tabs.update(this.chromeTabId, { url: `${url.origin}${url.pathname}` });
+
             this.fireEvent('issue');
         })();
 
+        // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue
+        // cancelling the request. However, it seems that we can use image/* except image/svg+html. Let's figure how to
+        // use image data URL later.
+        // https://blog.mozilla.org/security/2017/11/27/blocking-top-level-navigations-data-urls-firefox-59/
         return { cancel: true };
     }
 
