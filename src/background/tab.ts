@@ -74,7 +74,7 @@ export class Tab {
 
         // Cloudflare has higher precedence than Hcaptcha.
         if (providerId === CloudflareProvider.ID && !(this.context instanceof CloudflareProvider)) {
-            const context = new CloudflareProvider(window.localStorage);
+            const context = new CloudflareProvider(this.chromeTabId, window.localStorage);
 
             // Update the toolbar icon, after issuances and redemptions.
             context.addEventListener('issue', () => this.active && this.updateIcon());
