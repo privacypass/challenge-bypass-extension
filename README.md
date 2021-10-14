@@ -1,5 +1,34 @@
 # Privacy Pass Extension
 
+**The Privacy Pass protocol is now being standardised by the
+[privacypass](https://datatracker.ietf.org/wg/privacypass/about/) IETF
+working group. All contributions are welcome! See the [GitHub
+page](https://github.com/ietf-wg-privacypass) for more details.**
+
+The Privacy Pass browser extension implements the Privacy Pass protocol
+for providing a private authentication mechanism during web browsing.
+Privacy Pass is currently supported by Cloudflare to allow users to
+redeem validly signed tokens instead of completing CAPTCHA solutions.
+The extension is compatible with
+[Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
+and
+[Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
+(v48+). An example server implementation that is compatible with this
+extension is available
+[here](https://github.com/privacypass/challenge-bypass-server).
+
+The protocol we use is based on a realization of a 'Verifiable,
+Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki
+et al.](https://eprint.iacr.org/2014/650.pdf). We
+also detail the entire protocol and results from this deployment in a
+[research
+paper](https://content.sciendo.com/view/journals/popets/2018/3/article-p164.xml)
+that appeared at PETS 2018 (Issue 3).
+
+In October 2021, we announced a new major version (v3) as mentioned in the
+[blog post](https://blog.cloudflare.com/privacy-pass-v3) which makes the code
+base more resilient, extensible, and maintainable.
+
 ## Build Instruction
 
 ```sh
@@ -8,6 +37,33 @@ $ npm run build
 ```
 
 After that, the `dist` folder will contain all files required by the extension.
+
+## Development Installation
+
+### Firefox
+
+-   Build by following the [Build Instructions](#build-instructions).
+-   Open Firefox and go to `about:debugging`.
+-   Click on 'Load Temporary Add-on' button.
+-   Select `manifest.json` from `dist` folder.
+-   Check extension logo appears in the top-right corner and 0 passes
+    are stored (by clicking on it).
+-   Go to a web page supporting Privacy Pass where internet challenges
+    are   displayed (e.g. <https://captcha.website>)
+-   Solve CAPTCHA and check that some passes are stored in the extension
+    now.
+    -   captcha.website cannot be bypassed (this is only for gaining
+        passes)
+-   Go to a new website supporting Privacy Pass that ordinarily displays
+    a challenge.
+-   Check that the website is displayed correctly without human
+    interaction (more than one pass may be spent).
+    -   No interaction with a CAPTCHA page should occur, for instance.
+
+### Chrome
+
+Same as above, except the extension should be loaded at
+`chrome://extensions` instead.
 
 ## Test Instruction
 ```sh
@@ -32,3 +88,47 @@ $ npm test
       - `components`: Contains all the React components
       - `styles`: Contains all the style sheets which are shared among the React components
       - `types.d.ts`: Global Typescript declaration
+
+## Cryptography
+
+Cryptography is implemented using the elliptic-curve library
+[SJCL](https://github.com/bitwiseshiftleft/sjcl) and compression of
+points is done in accordance with the standard SEC1. This work uses the
+NIST standard P256 elliptic curve for performing operations. Third-party
+implementers should note that the outputs of the hash-to-curve, key
+derivation, and point encoding functions must match their Go equivalents
+exactly for interaction with our server implementation. More information
+about this will be provided when the edge implementation is
+open-sourced.
+
+## Acknowledgements
+
+The creation of the Privacy Pass protocol was a joint effort by the team
+made up of George Tankersley, Ian Goldberg, Nick Sullivan, Filippo
+Valsorda and Alex Davidson.
+
+We would also like to thank Eric Tsai for creating the logo and
+extension design, Dan Boneh for helping us develop key parts of the
+protocol, as well as Peter Wu and Blake Loring for their helpful code
+reviews. We would also like to acknowledge Sharon Goldberg, Christopher
+Wood, Peter Eckersley, Brian Warner, Zaki Manian, Tony Arcieri, Prateek
+Mittal, Zhuotao Liu, Isis Lovecruft, Henry de Valence, Mike Perry,
+Trevor Perrin, Zi Lin, Justin Paine, Marek Majkowski, Eoin Brady, Aaran
+McGuire, and many others who were involved in one way or another and
+whose efforts are appreciated.
+
+## FAQs
+
+### What do I have to do to acquire new passes?
+
+*   Click "Get More Passes" in the extension pop-up (or navigate to
+    <https://captcha.website>).
+*   Solve the CAPTCHA that is presented on the webpage
+*   Your extension should be populated with new passes.
+
+### Are passes stored after a browser restart?
+
+Depending on your browser settings, the local storage of your browser
+may be cleared when it is restarted. Privacy Pass stores passes in local
+storage and so these will also be cleared. This behavior may also be
+observed if you clear out the cache of your browser.
