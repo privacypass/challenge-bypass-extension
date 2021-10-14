@@ -1,0 +1,27 @@
+@use '@popup/styles/colors';
+
+$_border-width:  1px;
+$_padding:       15px;
+$_font-size:     14px;
+
+@mixin button {
+    border:  $_border-width solid colors.$medium-grey;
+    padding: $_padding;
+    font-size:  $_font-size;
+    background-color: colors.$white;
+
+    border-left:  none;
+    border-right: none;
+
+    &:hover {
+        color: colors.$white;
+        cursor: pointer;
+        background-color: colors.$dark-grey;
+    }
+}
+
+@mixin container {
+    border: $_border-width solid colors.$medium-grey;
+    border-left:  none;
+    border-right: none;
+}
