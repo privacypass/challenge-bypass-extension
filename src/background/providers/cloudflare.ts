@@ -1,6 +1,7 @@
 import * as voprf from '../voprf';
 
 import { Provider } from '.';
+import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
 import qs from 'qs';
