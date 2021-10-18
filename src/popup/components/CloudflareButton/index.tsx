@@ -1,19 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useSelector } from 'react-redux';
 
 import { PassButton } from '@popup/components/PassButton';
 
 export function CloudflareButton(): JSX.Element {
-    const [tokens, setTokens] = useState([]);
-
-    useEffect(() => {
-        // TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
-        // common data between the popup and the background script.
-        chrome.runtime.sendMessage({ key: 'tokens' }, (response) => {
-            if (response !== undefined && typeof response === 'string') {
-                setTokens(JSON.parse(response));
-            }
-        });
-    }, []);
+    const tokens: string[] = useSelector((state: { ['cf-tokens']?: string[] } | undefined) => {
+        if (state !== undefined && state['cf-tokens'] !== undefined) {
+            return state['cf-tokens'];
+        }
+        return [];
+    });
 
     const openHomePage = () => {
         chrome.tabs.create({ url: 'https://captcha.website' });
