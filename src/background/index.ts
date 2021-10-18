@@ -1,5 +1,14 @@
-import { handleBeforeRequest, handleBeforeSendHeaders, handleHeadersReceived } from './listeners/webRequestListener';
-import { handleActivated, handleCreated, handleRemoved, handleReplaced } from './listeners/tabListener';
+import {
+    handleBeforeRequest,
+    handleBeforeSendHeaders,
+    handleHeadersReceived,
+} from './listeners/webRequestListener';
+import {
+    handleActivated,
+    handleCreated,
+    handleRemoved,
+    handleReplaced,
+} from './listeners/tabListener';
 
 import { Tab } from './tab';
 
@@ -48,10 +57,11 @@ chrome.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<al
     'blocking',
 ]);
 
-chrome.webRequest.onBeforeSendHeaders.addListener(handleBeforeSendHeaders, { urls: ['<all_urls>'] }, [
-    'requestHeaders',
-    'blocking',
-]);
+chrome.webRequest.onBeforeSendHeaders.addListener(
+    handleBeforeSendHeaders,
+    { urls: ['<all_urls>'] },
+    ['requestHeaders', 'blocking'],
+);
 
 chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: ['<all_urls>'] }, [
     'responseHeaders',
@@ -80,7 +90,11 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 // TODO It's better to move this to the provider class. Let's figure out how to do it later.
 // Removes cookies for captcha.website to enable getting more tokens in the future.
 chrome.cookies.onChanged.addListener((changeInfo) => {
-    if (!changeInfo.removed && changeInfo.cookie.domain === '.captcha.website' && changeInfo.cookie.name === 'cf_clearance') {
+    if (
+        !changeInfo.removed &&
+        changeInfo.cookie.domain === '.captcha.website' &&
+        changeInfo.cookie.name === 'cf_clearance'
+    ) {
         chrome.cookies.remove({ url: 'https://captcha.website', name: 'cf_clearance' });
     }
 });
