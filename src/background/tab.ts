@@ -15,7 +15,7 @@ export class Tab {
         this.active = false;
     }
 
-    private updateIcon(): void {
+    updateIcon(): void {
         if (this.context !== null) {
             const text = this.context.getBadgeText();
             chrome.browserAction.setIcon({ path: 'icons/32/gold.png' });
