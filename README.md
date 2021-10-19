@@ -42,8 +42,8 @@ After that, the `dist` folder will contain all files required by the extension.
 
 ### Firefox
 
--   Build by following the [Build Instructions](#build-instructions).
--   Open Firefox and go to `about:debugging`.
+-   Build by following the [Build Instruction](#build-instruction).
+-   Open Firefox and go to `about:debugging#/runtime/this-firefox`.
 -   Click on 'Load Temporary Add-on' button.
 -   Select `manifest.json` from `dist` folder.
 -   Check extension logo appears in the top-right corner and 0 passes
@@ -62,8 +62,14 @@ After that, the `dist` folder will contain all files required by the extension.
 
 ### Chrome
 
-Same as above, except the extension should be loaded at
-`chrome://extensions` instead.
+-   Build by following the [Build Instruction](#build-instruction).
+-   Open Chrome and go to `chrome://extensions`.
+-   Turn on the Developer mode on the top-right corner.
+-   Click on 'Load unpacked' button.
+-   Select the `dist` folder.
+-   Check extension logo appears in the top-right corner and follow
+    the same instruction as in Firefox. (If you cannot see the extension logo,
+    it's probably just not pinned to the toolbar yest)
 
 ## Test Instruction
 ```sh
