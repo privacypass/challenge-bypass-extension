@@ -63,6 +63,12 @@ chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: [
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.clear === true) {
         window.localStorage.clear();
+
+        // Update the browser action icon after clearing the tokens.
+        const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
+        if (activeTab !== undefined) {
+            activeTab.updateIcon();
+        }
         return;
     }
 
