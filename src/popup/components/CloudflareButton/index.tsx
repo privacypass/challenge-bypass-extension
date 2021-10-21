@@ -15,5 +15,9 @@ export function CloudflareButton(): JSX.Element {
         chrome.tabs.create({ url: 'https://captcha.website' });
     };
 
-    return <PassButton value={tokens.length} onClick={openHomePage}>Cloudflare</PassButton>;
+    return (
+        <PassButton value={tokens.length} onClick={openHomePage}>
+            Cloudflare
+        </PassButton>
+    );
 }
