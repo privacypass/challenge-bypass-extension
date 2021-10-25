@@ -1,11 +1,11 @@
 # Challenge Bypass Extension
 
+[![Privacy Pass](https://github.com/privacypass/challenge-bypass-extension/actions/workflows/action.yml/badge.svg)](https://github.com/privacypass/challenge-bypass-extension/actions)
+
 **The Privacy Pass protocol is now being standardised by the
 [privacypass](https://datatracker.ietf.org/wg/privacypass/about/) IETF
 working group. All contributions are welcome! See the [GitHub
 page](https://github.com/ietf-wg-privacypass) for more details.**
-
-[![CircleCI](https://circleci.com/gh/privacypass/challenge-bypass-extension.svg?style=svg)](https://circleci.com/gh/privacypass/challenge-bypass-extension)
 
 The Privacy Pass browser extension implements the Privacy Pass protocol
 for providing a private authentication mechanism during web browsing.
