@@ -1,6 +1,6 @@
 import * as voprf from '../voprf';
 
-import { Provider } from '.';
+import { Callbacks, Provider } from '.';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
@@ -26,12 +26,6 @@ VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 
 const TOKEN_STORE_KEY = 'tokens';
 
-type Event = 'issue' | 'redeem';
-
-interface EventListener {
-    (): void;
-}
-
 interface RedeemInfo {
     requestId: string;
     token: Token;
@@ -39,24 +33,19 @@ interface RedeemInfo {
 
 export class CloudflareProvider implements Provider {
     static readonly ID: number = 1;
-    private chromeTabId: number;
+    private callbacks: Callbacks;
     private storage: Storage;
 
-    private listeners: {
-        issue: EventListener[];
-        redeem: EventListener[];
-    };
     private redeemInfo: RedeemInfo | null;
 
-    constructor(chromeTabId: number, storage: Storage) {
+    constructor(storage: Storage, callbacks: Callbacks) {
         // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
         // It's better if we can refactor the crypto module to be in object-oriented concept.
         voprf.initECSettings(voprf.defaultECSettings);
 
+        this.callbacks = callbacks;
         this.storage = storage;
         this.redeemInfo = null;
-        this.listeners = { issue: [], redeem: [] };
-        this.chromeTabId = chromeTabId;
     }
 
     private getStoredTokens(): Token[] {
@@ -187,16 +176,16 @@ export class CloudflareProvider implements Provider {
         return tokens;
     }
 
-    private fireEvent(event: Event): void {
-        this.listeners[event].forEach((callback) => callback());
-    }
-
-    getBadgeText(): string {
+    private getBadgeText(): string {
         return this.getStoredTokens().length.toString();
     }
 
-    addEventListener(event: Event, callback: EventListener): void {
-        this.listeners[event].push(callback);
+    forceUpdateIcon(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
+    }
+
+    handleActivated(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
     }
 
     handleBeforeSendHeaders(
@@ -228,7 +217,7 @@ export class CloudflareProvider implements Provider {
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
 
-        this.fireEvent('redeem');
+        this.callbacks.updateIcon(this.getBadgeText());
 
         return {
             requestHeaders: headers,
@@ -275,11 +264,7 @@ export class CloudflareProvider implements Provider {
             const cached = this.getStoredTokens();
             this.setStoredTokens(cached.concat(tokens));
 
-            // TODO The provider should not have a direct access to the browser API.
-            // Reload the tab without the query params.
-            chrome.tabs.update(this.chromeTabId, { url: `${url.origin}${url.pathname}` });
-
-            this.fireEvent('issue');
+            this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
         })();
 
         // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue

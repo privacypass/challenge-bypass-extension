@@ -13,22 +13,50 @@ export class Tab {
         this.context = null;
         this.chromeTabId = tabId;
         this.active = false;
+
+        this.updateIcon = this.updateIcon.bind(this);
+        this.navigateUrl = this.navigateUrl.bind(this);
     }
 
-    updateIcon(): void {
-        if (this.context !== null) {
-            const text = this.context.getBadgeText();
-            chrome.browserAction.setIcon({ path: 'icons/32/gold.png' });
-            chrome.browserAction.setBadgeText({ text });
-        } else {
+    private updateIcon(text: string): void {
+        if (this.active) {
+            if (this.context !== null) {
+                chrome.browserAction.setIcon({ path: 'icons/32/gold.png' });
+                chrome.browserAction.setBadgeText({ text });
+            } else {
+                this.clearIcon();
+            }
+        }
+    }
+
+    private clearIcon(): void {
+        if (this.active) {
             chrome.browserAction.setIcon({ path: 'icons/32/grey.png' });
             chrome.browserAction.setBadgeText({ text: '' });
         }
     }
 
+    forceUpdateIcon(): void {
+        if (this.active) {
+            if (this.context !== null) {
+                this.context.forceUpdateIcon();
+            } else {
+                this.clearIcon();
+            }
+        }
+    }
+
+    private navigateUrl(url: string): void {
+        chrome.tabs.update(this.chromeTabId, { url });
+    }
+
     handleActivated(): void {
         this.active = true;
-        this.updateIcon();
+        if (this.context !== null) {
+            this.context.handleActivated();
+        } else {
+            this.clearIcon();
+        }
     }
 
     handleDeactivated(): void {
@@ -70,25 +98,28 @@ export class Tab {
         if (details.type === 'main_frame') {
             // The page in the tab is changed, so the context should change.
             this.context = null;
-            this.active && this.updateIcon();
+            this.clearIcon();
         }
 
         // Cloudflare has higher precedence than Hcaptcha.
         if (providerId === CloudflareProvider.ID && !(this.context instanceof CloudflareProvider)) {
-            const context = new CloudflareProvider(this.chromeTabId, new Storage('cf'));
+            const context = new CloudflareProvider(new Storage('cf'), {
+                updateIcon: this.updateIcon,
+                navigateUrl: this.navigateUrl,
+            });
 
-            // Update the toolbar icon, after issuances and redemptions.
-            context.addEventListener('issue', () => this.active && this.updateIcon());
-            context.addEventListener('redeem', () => this.active && this.updateIcon());
             this.context = context;
-            this.active && this.updateIcon();
+            this.context.handleActivated();
         } else if (
             providerId === HcaptchaProvider.ID &&
             !(this.context instanceof CloudflareProvider) &&
             !(this.context instanceof HcaptchaProvider)
         ) {
-            this.context = new HcaptchaProvider();
-            this.active && this.updateIcon();
+            this.context = new HcaptchaProvider({
+                updateIcon: this.updateIcon,
+                navigateUrl: this.navigateUrl,
+            });
+            this.context.handleActivated();
         }
 
         let result;

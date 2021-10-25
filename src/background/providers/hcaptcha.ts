@@ -1,14 +1,27 @@
-import { Provider } from '.';
+import { Callbacks, Provider } from '.';
 
 export class HcaptchaProvider implements Provider {
     static readonly ID: number = 2;
+    private callbacks: Callbacks;
+
+    constructor(callbacks: Callbacks) {
+        this.callbacks = callbacks;
+    }
 
     getID(): number {
         return HcaptchaProvider.ID;
     }
 
-    getBadgeText(): string {
+    private getBadgeText(): string {
         return 'N/A';
+    }
+
+    forceUpdateIcon(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
+    }
+
+    handleActivated(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
     }
 
     handleBeforeRequest(
