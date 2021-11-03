@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         // Update the browser action icon after clearing the tokens.
         const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
         if (activeTab !== undefined) {
-            activeTab.updateIcon();
+            activeTab.forceUpdateIcon();
         }
         return;
     }
