@@ -1,5 +1,5 @@
 import { CloudflareProvider, HcaptchaProvider, Provider } from './providers';
-import { Storage } from './storage';
+import { LocalStorage } from './storage';
 
 // Header from server to indicate that Privacy Pass is supported.
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
@@ -103,7 +103,7 @@ export class Tab {
 
         // Cloudflare has higher precedence than Hcaptcha.
         if (providerId === CloudflareProvider.ID && !(this.context instanceof CloudflareProvider)) {
-            const context = new CloudflareProvider(new Storage('cf'), {
+            const context = new CloudflareProvider(new LocalStorage('cf'), {
                 updateIcon: this.updateIcon,
                 navigateUrl: this.navigateUrl,
             });
