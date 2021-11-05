@@ -1,4 +1,4 @@
-export class Storage {
+export class LocalStorage {
     private prefix: string;
 
     constructor(prefix: string) {
@@ -12,4 +12,9 @@ export class Storage {
     setItem(key: string, value: string): void {
         window.localStorage.setItem(`${this.prefix}-${key}`, value);
     }
+}
+
+export interface Storage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
 }
