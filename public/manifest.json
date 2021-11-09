@@ -18,8 +18,7 @@
         "<all_urls>",
         "cookies",
         "webRequest",
-        "webRequestBlocking",
-        "webNavigation"
+        "webRequestBlocking"
     ],
     "browser_action": {
         "default_icon": "icons/32/grey.png",
