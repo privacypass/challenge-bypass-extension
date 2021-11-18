@@ -1,0 +1,29 @@
+$_badge-height:    55px;
+$_header-height:   100px;
+$_big-font-size:   23px;
+$_small-font-size: 13px;
+$_margin:          10px;
+
+.badge {
+    height: $_badge-height;
+    margin: $_margin;
+}
+
+.version {
+    font-size: $_small-font-size;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: $_header-height;
+}
+
+.detail {
+    margin: $_margin;
+}
+
+.title {
+    font-size: $_big-font-size;
+}

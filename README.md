@@ -1,4 +1,4 @@
-# Challenge Bypass Extension
+# Privacy Pass Extension
 
 [![Privacy Pass](https://github.com/privacypass/challenge-bypass-extension/actions/workflows/action.yml/badge.svg)](https://github.com/privacypass/challenge-bypass-extension/actions)
 
@@ -21,110 +21,33 @@ extension is available
 
 The protocol we use is based on a realization of a 'Verifiable,
 Oblivious Pseudorandom Function' (VOPRF) first established by [Jarecki
-et al.](https://eprint.iacr.org/2014/650.pdf). For a technical
-description of the protocol see the [PROTOCOL.md](docs/PROTOCOL.md). We
+et al.](https://eprint.iacr.org/2014/650.pdf). We
 also detail the entire protocol and results from this deployment in a
 [research
 paper](https://content.sciendo.com/view/journals/popets/2018/3/article-p164.xml)
 that appeared at PETS 2018 (Issue 3).
 
-__The protocol has received extensive review, but this extension is a
-work-in-progress and we regard all components as beta releases. In
-particular in v1.0 of the extension some features are not fully
-implemented (e.g. DLEQ proof verification).__
+In October 2021, we announced a new major version (v3) as mentioned in the
+[blog post](https://blog.cloudflare.com/privacy-pass-v3) which makes the code
+base more resilient, extensible, and maintainable.
 
-__We hope to address a significant number of existing issues in a future
-release of the extension. Users can also install the latest branch of
-master into their browser to use a newer version.__
-
-We welcome contributions from the wider community. Also feel free to
-notify us of any issues that occur. Pull requests and reviews are
-welcome and encouraged.
-
-- [Challenge Bypass Extension](#challenge-bypass-extension)
-  - [Stable Releases](#stable-releases)
-  - [Build Instructions](#build-instructions)
-  - [Useful Documentation](#useful-documentation)
-  - [Development](#development)
-    - [Firefox](#firefox)
-    - [Chrome](#chrome)
-  - [Plugin Overview](#plugin-overview)
-  - [Team](#team)
-  - [Design](#design)
-  - [Cryptography](#cryptography)
-  - [Acknowledgements](#acknowledgements)
-  - [FAQs](#faqs)
-    - [What do I have to do to acquire new passes?](#what-do-i-have-to-do-to-acquire-new-passes)
-    - [Are passes stored after a browser restart?](#are-passes-stored-after-a-browser-restart)
-
-## Stable Releases
-
-Download the latest stable release of the extension:
--   [Chrome](https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi)
--   [Firefox](https://addons.mozilla.org/en-US/firefox/addon/privacy-pass/)
-
-## Build Instructions
-
-On a Unix environment, you need to install:
-
-* [make](https://www.gnu.org/software/make/)
-* [git](https://git-scm.com/)
-* [npm](https://www.npmjs.com/get-npm)
-* [yarn](https://classic.yarnpkg.com).
-
-To build and test, run these commands:
+## Build Instruction
 
 ```sh
-$ git clone https://github.com/privacypass/challenge-bypass-extension.git
-$ cd challenge-bypass-extension
-$ make install
-$ make build
-$ make test-all
+$ npm ci
+$ npm run build
 ```
 
-After that, the addons folder will contain all files required by the extension.
+After that, the `dist` folder will contain all files required by the extension.
 
-## Useful Documentation
-
-Documentation for the protocol, workflow and extension components.
-
-*   [Protocol](docs/PROTOCOL.md)
-*   [Extension implementation](docs/EXT_PROTOCOL_IMPL.md)
-*   [Configuration options](docs/CONFIG.md)
-*   [Supported hash-to-curve algorithms](docs/HASH_TO_CURVE.md)
-
-## Development
-
-*   Directory:
-    -   `src`: The source files that are used for establishing the
-        extension.
-        -   `ext`: Source files that are specific to the extension.
-        -   `crypto`: External source files that provide cryptographic
-            functionality.
-            -   `keccak`: Browserified implementation of Keccak taken
-                from <https://github.com/cryptocoinjs/keccak>.
-    -   `addon`: Extension directory.
-    -   `test`: Test scripts for using the jest integration test
-        framework.
-    -   `docs`: Documentation.
--   Commands:
-    -   `make install`: Installs all dependencies.
-    -   `make sjcl`: Configures and builds the SJCL source code.
-    -   `make build`: Builds all source files and compiles them into
-        unminified source file at `addon/build.js`.
-    -   `make test`: Builds all source files (except
-        `src/ext/listeners.js`) into a single file and then runs the
-        jest testing framework on this file.
-    -   `make test-all`: Same as `make test` and runs the sjcl tests.
-    -   `make lint`: Lints the source files.
-    -   `make dist`: Package the extension files into a `ext.zip` file.
+## Development Installation
 
 ### Firefox
 
--   Build by following the [Build Instructions](#build-instructions).
--   Open Firefox and go to `about:debugging`.
+-   Build by following the [Build Instruction](#build-instruction).
+-   Open Firefox and go to `about:debugging#/runtime/this-firefox`.
 -   Click on 'Load Temporary Add-on' button.
--   Select `manifest.json` from `addon/` folder.
+-   Select `manifest.json` from `dist` folder.
 -   Check extension logo appears in the top-right corner and 0 passes
     are stored (by clicking on it).
 -   Go to a web page supporting Privacy Pass where internet challenges
@@ -141,54 +64,38 @@ Documentation for the protocol, workflow and extension components.
 
 ### Chrome
 
-Same as above, except the extension should be loaded at
-`chrome://extensions` instead.
+-   Build by following the [Build Instruction](#build-instruction).
+-   Open Chrome and go to `chrome://extensions`.
+-   Turn on the Developer mode on the top-right corner.
+-   Click on 'Load unpacked' button.
+-   Select the `dist` folder.
+-   Check extension logo appears in the top-right corner and follow
+    the same instruction as in Firefox. (If you cannot see the extension logo,
+    it's probably just not pinned to the toolbar yest)
 
-## Plugin Overview
+## Test Instruction
+```sh
+$ npm ci
+$ npm test
+```
 
-The following script files are used for the workflow of Privacy Pass and
-are found in `addon/` folder. They are compiled into a single file
-(`build.js`) that is then loaded into the browser.
+## Directory Structure
 
-*   src/ext/
-    -   listeners.js: Initialises the listener functions that are used
-        for the webRequest and webNavigation frameworks.
-    -   background.js: Determines the bulk of the browser-based workflow
-        for Privacy Pass. Decides whether to initiate the token issuance
-        and redemption phases of the protocols.
-    -   browserUtils.js: General utility functions that are used by
-        background.js. We separate them so that we separate the specific
-        browser API calls from the actual workflow.
-    -   config.js: Config file that decides the workflow for Privacy
-        Pass.
-    -   token.js: Token generation and storage procedures.
-    -   issuance.js: Specific functions for handling token issuance
-        requests from the extension and corresponding server responses.
-    -   redemption.js: Specific functions for construction redemption
-        requests.
-*   src/crypto/
-    -   local.js: Wrapper for extension-specific cryptographic
-        operations.
-    -   sjcl/: Local copy of SJCL library.
-    -   keccak/: Local implementation of the Keccak hash function (taken
-        from <https://github.com/cryptocoinjs/keccak>).
-
-Files for testing are found in `test/` folder. Some functions from the
-extension files are mocked during test execution. The tests are run on a
-separate file in `addon/test.js` that has the same contents as
-`build.js` but with the HTTP listeners removed.
-
-## Team
-
-*   [Alex Davidson](https://alxdavids.xyz)
-*   [Ian Goldberg](https://cs.uwaterloo.ca/~iang/)
-*   [Nick Sullivan](https://github.com/grittygrease)
-*   [George Tankersley](https://gtank.cc)
-*   [Filippo Valsorda](https://github.com/filosottile)
-
-## Design
-
-*   [Eric Tsai](https://github.com/eetom)
+- `public`: Contains all the assets which are neither the business logic files nor the style sheets
+- `src`: Contains all the business logic files and the style sheets
+  - `background`: The business logic for the extension background process
+      - `listeners`: Contains all the listeners which listen on all the events happened in the browser
+          - `tabListener.ts`: The listeners which listen on all the tab related events [API](https://developer.chrome.com/docs/extensions/reference/tabs/)
+          - `webRequestListener.ts`: The listeners which listen on all the web request related events [API](https://developer.chrome.com/docs/extensions/reference/webRequest/)
+      - `providers`: Contains the provider-specific code of all the Privacy Pass providers in the extension. Currently we have only Cloudflare and hCaptcha
+      - `voprf.js`: Legacy crypto code which is still in Vanilla JavaScript
+      - `voprf.d.ts`: TypeScript declaration file for the legacy crypto code
+      - `tab.ts`: Tab class to represent a tab and encapsulate everything which is Tab specific
+      - `token.ts`: Token class to represent a token and contain all the code related to tokens
+  - `popup`: The web app for the popup in the browser toolbar
+      - `components`: Contains all the React components
+      - `styles`: Contains all the style sheets which are shared among the React components
+      - `types.d.ts`: Global Typescript declaration
 
 ## Cryptography
 

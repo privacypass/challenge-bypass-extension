@@ -1,12 +1,4 @@
-.DS_Store
-.*.sw?
-.sw?
-node_modules/
-yarn-error.log
-coverage-final.json
-lcov.info
-coverage/
-dist/
-*.zip
-build.js
-test.js
+*.swp
+/node_modules
+/dist
+/lib

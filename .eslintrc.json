@@ -1,140 +1,45 @@
 {
-    "env": {
-        "browser": true,
-        "es6": true,
-        "jest": true
-    },
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 8,
-        "sourceType": "script"
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
     },
-    "extends": ["eslint:recommended", "google"],
-    "globals": {
-        "activeConfig": true,
-        "assert": true,
-        "ASN1": true,
-        "attemptRedeem": true,
-        "beforeRequest": true,
-        "beforeSendHeaders": true,
-        "blindPoint": true,
-        "browser": true,
-        "Buffer": true,
-        "BuildRedeemHeader": true,
-        "cachedCommitmentsKey": true,
-        "CF_CONFIG_ID": true,
-        "checkCookies": true,
-        "CHL_BYPASS_RESPONSE": true,
-        "CHL_BYPASS_SUPPORT": true,
-        "chlCaptchaDomain": true,
-        "chlClearanceCookie": true,
-        "chrome": true,
-        "clearCachedCommitments": true,
-        "clear": true,
-        "commitmentsKey": true,
-        "committedNavigation": true,
-        "CONFIG_ID": true,
-        "CONFIGURATION_URL": true,
-        "countStoredTokens": true,
-        "createShake256": true,
-        "dev": true,
-        "extVersion": true,
-        "futureReload": true,
-        "GenerateNewTokens": true,
-        "getActiveECSettings": true,
-        "getBigNumFromBytes": true,
-        "getVerificationKey": true,
-        "getConfigForId": true,
-        "getConfigId": true,
-        "getConfigName": true,
-        "getCurvePoints": true,
-        "getSpendFlag": true,
-        "getTabId": true,
-        "getTarget": true,
-        "get": true,
-        "h2cParams": true,
-        "h2Curve": true,
-        "handleCompletion": true,
-        "handleMessage": true,
-        "HC_CONFIG_ID": true,
-        "initECSettings": true,
-        "isErrorPage": true,
-        "isFaviconUrl": true,
-        "issueActionUrls": true,
-        "LISTENER_URLS": true,
-        "loadTokens": true,
-        "maxTokens": true,
-        "newRandomPoint": true,
-        "parseKeys": true,
-        "patternToRegExp": true,
-        "PEM": true,
-        "PPConfigs": true,
-        "processConfigPatches": true,
-        "processHeaders": true,
-        "processRedirect": true,
-        "redeemMethod": true,
-        "reloadBrowserTab": true,
-        "reloadOnSign": true,
-        "reloadTabForCookie": true,
-        "requestIdentifiers": true,
-        "resetSpendVars": true,
-        "retrieveConfiguration": true,
-        "sec1DecodeFromBase64": true,
-        "sec1DecodeFromBytes": true,
-        "sec1EncodeToBase64": true,
-        "sec1Encode": true,
-        "sendH2CParams": true,
-        "sendXhrSignReq": true,
-        "sentTokens": true,
-        "setFutureReload": true,
-        "setSpendFlag": true,
-        "set": true,
-        "signReqCF": true,
-        "signReqHC": true,
-        "signResponseFMT": true,
-        "spentTab": true,
-        "storageKeyCount": true,
-        "storageKeyTokens": true,
-        "storedCommitments": true,
-        "storeNewTokens": true,
-        "storeTokens": true,
-        "timeSinceLastResp": true,
-        "tokensPerRequest": true,
-        "unblindPoint": true,
-        "updateBrowserTab": true,
-        "UpdateCallback": true,
-        "updateIcon": true,
-        "validConfigIds": true,
-        "validRedemptionMethods": true,
-        "verifyConfiguration": true,
-        "verifyProof": true,
-        "xhrDone": true,
-        "xhrGoodStatus": true
-    },
+    "plugins": [
+        "@typescript-eslint",
+        "security",
+        "prettier"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:security/recommended",
+        "plugin:prettier/recommended",
+        "prettier"
+    ],
     "rules": {
-        "new-cap": 0,
-        "no-trailing-spaces": "error",
-        "linebreak-style": [
-            "error",
-            "unix"
+        "@typescript-eslint/member-delimiter-style": 0,
+        "@typescript-eslint/no-namespace": [
+            "warn"
         ],
-        "quotes": [
+        "@typescript-eslint/no-unused-vars": [
             "error",
-            "double",
-            { "allowTemplateLiterals": true }
-        ],
-        "no-unused-vars": [
-            "error", {
-                "args": "none"
+            {
+                "argsIgnorePattern": "^_"
             }
         ],
+        "no-case-declarations": 0,
         "no-console": [
-            "error", {
-                "allow": ["error", "warn"]
+            "error",
+            {
+                "allow": [
+                    "warn",
+                    "error"
+                ]
             }
-        ],
-        "indent": ["error", 4, {"SwitchCase": 1}],
-        "max-len": 0,
-        "no-redeclare": 0,
-        "prefer-const": 0
+        ]
     }
 }

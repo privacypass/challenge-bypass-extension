@@ -3,9 +3,9 @@ name: PrivacyPass Challenge Extension
 
 on:
   push:
-    branches: [ master ]
+    branches: [ v3-rc ]
   pull_request:
-    branches: [ master ]
+    branches: [ v3-rc ]
 
 jobs:
   testing:
@@ -21,10 +21,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Installing
-      run: make install
+      run: npm ci
     - name: Linting
-      run: make lint
+      run: npm run lint
     - name: Building
-      run: make build
+      run: npm run build
     - name: Testing
-      run: make test-all
+      run: npm test

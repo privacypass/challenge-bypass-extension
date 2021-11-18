@@ -1,29 +1,62 @@
 {
-  "name": "PrivacyPass",
-  "version": "2.0.9",
-  "license": "BSD-3-Clause",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/privacypass/challenge-bypass-extension"
-  },
-  "dependencies": {
-    "asn1-parser": "^1.1.8",
-    "atob": "^2.1.2",
-    "btoa": "^1.2.1",
-    "sjcl": "^1.0.8"
-  },
-  "scripts": {
-    "build": "make build",
-    "test": "jest --ci",
-    "test-all": "make test-all",
-    "dist": "make dist",
-    "lint": "eslint ."
-  },
-  "devDependencies": {
-    "eslint": "^7.32.0",
-    "eslint-config-google": "^0.14.0",
-    "jest": "^27.2.1",
-    "jest-each": "^27.2.0",
-    "rewire": "^5.0.0"
-  }
+    "name": "privacy-pass",
+    "version": "3.0.0",
+    "contributors": [
+        "Suphanat Chunhapanya <pop@cloudflare.com>",
+        "Armando Faz <armfazh@cloudflare.com>"
+    ],
+    "main": "index.js",
+    "license": "BSD-3-Clause",
+    "type": "module",
+    "scripts": {
+        "sjcl": "cd node_modules/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
+        "prebuild": "npm run sjcl",
+        "build": "webpack",
+        "pretest": "npm run sjcl",
+        "test": "node --experimental-vm-modules node_modules/.bin/jest",
+        "lint": "eslint ./src/**/*.{ts,tsx}",
+        "clean": "rimraf dist"
+    },
+    "dependencies": {
+        "asn1-parser": "^1.1.8",
+        "axios": "^0.23.0",
+        "buffer": "^6.0.3",
+        "keccak": "^3.0.1",
+        "qs": "^6.10.1",
+        "react": "^17.0.2",
+        "react-dom": "^17.0.2",
+        "react-redux": "^7.2.5",
+        "redux": "^4.1.1",
+        "sjcl": "^1.0.8",
+        "stream-browserify": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.0.159",
+        "@types/jest": "^27.0.2",
+        "@types/qs": "^6.9.6",
+        "@types/react": "^17.0.5",
+        "@types/react-dom": "^17.0.5",
+        "@typescript-eslint/eslint-plugin": "^5.1.0",
+        "@typescript-eslint/parser": "^5.1.0",
+        "copy-webpack-plugin": "^8.1.1",
+        "css-loader": "^5.2.4",
+        "eslint": "^7.32.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "eslint-plugin-security": "^1.4.0",
+        "file-loader": "^6.2.0",
+        "html-webpack-plugin": "^5.3.1",
+        "jest": "^27.0.6",
+        "mini-css-extract-plugin": "^1.6.0",
+        "prettier": "^2.3.2",
+        "rimraf": "^3.0.2",
+        "sass": "^1.32.13",
+        "sass-loader": "^11.1.1",
+        "ts-jest": "^27.0.7",
+        "ts-loader": "^9.2.6",
+        "tsconfig-paths-webpack-plugin": "^3.5.1",
+        "typescript": "^4.3.5",
+        "webpack": "^5.37.0",
+        "webpack-cli": "^4.7.0"
+    }
 }
