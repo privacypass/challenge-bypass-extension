@@ -7,7 +7,15 @@ import path from 'path';
 // import buffer from "buffer";
 // import streamBrowserify from "stream-browserify";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __dirname = (() => {
+  const filepath_uri = import.meta.url;
+  const prefix = `file:${path.sep === '/' ? '' : path.sep}`;
+  let fp;
+  fp = path.normalize(filepath_uri);
+  fp = (fp.indexOf(prefix) === 0) ? fp.substring(prefix.length, fp.length) : new URL(filepath_uri).pathname;
+  fp = path.dirname(fp);
+  return fp;
+})();
 
 const tsloader = {
     test: /\.tsx?$/,
@@ -20,7 +28,7 @@ const tsloader = {
 
 const common = {
     output: {
-        path: path.resolve('dist'),
+        path: path.resolve('PrivacyPass'),
     },
     context: __dirname,
     mode: 'production',

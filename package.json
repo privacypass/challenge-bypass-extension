@@ -9,13 +9,13 @@
     "license": "BSD-3-Clause",
     "type": "module",
     "scripts": {
-        "sjcl": "cd node_modules/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
+        "sjcl": "cd node_modules/sjcl && perl configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
         "prebuild": "npm run sjcl",
         "build": "webpack",
         "pretest": "npm run sjcl",
         "test": "node --experimental-vm-modules node_modules/.bin/jest",
         "lint": "eslint ./src/**/*.{ts,tsx}",
-        "clean": "rimraf dist"
+        "clean": "rimraf lib && rimraf PrivacyPass && rimraf PrivacyPass.crx && rimraf PrivacyPass.xpi"
     },
     "dependencies": {
         "asn1-parser": "^1.1.8",

@@ -24,5 +24,10 @@
         "default_icon": "icons/32/grey.png",
         "default_title": "Privacy Pass",
         "default_popup": "popup.html"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "challenge-bypass-extension@privacypass.github.io"
+        }
     }
 }

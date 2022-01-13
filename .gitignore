@@ -1,4 +1,9 @@
 *.swp
-/node_modules
-/dist
-/lib
+node_modules/
+lib/
+PrivacyPass/
+PrivacyPass.pem
+PrivacyPass.crx
+PrivacyPass.xpi
+
+.bin/**/temp/
