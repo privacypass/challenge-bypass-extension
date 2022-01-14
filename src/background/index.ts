@@ -1,5 +1,3 @@
-import { Providers, EarnedTokenCookie } from './providers';
-
 import { Tab } from './tab';
 
 import {
@@ -14,6 +12,10 @@ import {
     handleBeforeSendHeaders,
     handleHeadersReceived,
 } from './listeners/webRequestListener';
+
+import {
+    handleChangedCookies,
+} from './listeners/cookiesListener';
 
 import * as voprf from './voprf';
 
@@ -96,18 +98,4 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }
 });
 
-chrome.cookies.onChanged.addListener((changeInfo) => {
-    if (!changeInfo.removed && Array.isArray(Providers) && Providers.length) {
-        for (const provider of Providers) {
-            const cookie: EarnedTokenCookie | void = provider.EARNED_TOKEN_COOKIE;
-            if (!cookie) continue;
-
-            if (
-                changeInfo.cookie.domain === cookie.domain &&
-                changeInfo.cookie.name   === cookie.name
-            ) {
-                chrome.cookies.remove({ url: cookie.url, name: cookie.name });
-            }
-        }
-    }
-});
+chrome.cookies.onChanged.addListener(handleChangedCookies);
