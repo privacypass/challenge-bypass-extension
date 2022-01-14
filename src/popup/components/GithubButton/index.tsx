@@ -7,5 +7,5 @@ export function GithubButton(): JSX.Element {
         chrome.tabs.create({ url: 'https://github.com/privacypass/challenge-bypass-extension' });
     };
 
-    return <Button onClick={openGithub}>View on Github</Button>;
+    return <Button onClick={openGithub}>{chrome.i18n.getMessage('ctaViewOnGithub')}</Button>;
 }

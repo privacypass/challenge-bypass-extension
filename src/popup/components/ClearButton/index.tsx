@@ -9,5 +9,5 @@ export function ClearButton(): JSX.Element {
     const clearPasses = () => {
         dispatch({ type: 'CLEAR_TOKENS' });
     };
-    return <Button onClick={clearPasses}>Clear All Passes</Button>;
+    return <Button onClick={clearPasses}>{chrome.i18n.getMessage('ctaClearAllPasses')}</Button>;
 }

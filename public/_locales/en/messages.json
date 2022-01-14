@@ -1,0 +1,34 @@
+{
+    "appName": {
+        "message":     "Privacy Pass",
+        "description": "name of extension included by 'manifest.json', and displayed by '@popup/components/Header'."
+    },
+    "appDescription": {
+        "message":     "Client support for Privacy Pass anonymous authorization protocol.",
+        "description": "description of extension included by 'manifest.json'."
+    },
+    "labelAppVersion": {
+        "message":     "Version",
+        "description": "label of current extension version displayed by '@popup/components/Header'."
+    },
+    "providerNameCloudflare": {
+        "message":     "Cloudflare",
+        "description": "name of Cloudflare provider displayed by '@popup/components/CloudflareButton'."
+    },
+    "providerNameHcaptcha": {
+        "message":     "hCaptcha",
+        "description": "name of hCaptcha provider displayed by '@popup/components/HcaptchaButton'."
+    },
+    "ctaGetMorePasses": {
+        "message":     "Get more passes!",
+        "description": "mouseover text displayed by '@popup/components/PassButton'."
+    },
+    "ctaClearAllPasses": {
+        "message":     "Clear All Passes",
+        "description": "displayed by '@popup/components/ClearButton'."
+    },
+    "ctaViewOnGithub": {
+        "message":     "View on Github",
+        "description": "displayed by '@popup/components/GithubButton'."
+    }
+}

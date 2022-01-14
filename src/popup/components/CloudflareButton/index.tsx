@@ -17,7 +17,7 @@ export function CloudflareButton(): JSX.Element {
 
     return (
         <PassButton value={tokens.length} onClick={openHomePage}>
-            Cloudflare
+            {chrome.i18n.getMessage('providerNameCloudflare')}
         </PassButton>
     );
 }

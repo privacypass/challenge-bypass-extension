@@ -291,7 +291,7 @@ export class CloudflareProvider extends Provider {
             return (
                 header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
                 header.value !== undefined &&
-                +header.value === CloudflareProvider.ID
+                parseInt(header.value, 10) === CloudflareProvider.ID
             );
         });
         if (!hasSupportHeader) {

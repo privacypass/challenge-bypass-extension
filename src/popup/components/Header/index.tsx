@@ -8,8 +8,8 @@ export function Header(): JSX.Element {
         <div className={styles.header}>
             <img className={styles.badge} src={badge} />
             <div className={styles.detail}>
-                <div className={styles.title}>Privacy Pass</div>
-                <div className={styles.version}>Version {packageJson.version}</div>
+                <div className={styles.title}>{chrome.i18n.getMessage('appName')}</div>
+                <div className={styles.version}>{chrome.i18n.getMessage('labelAppVersion')} {packageJson.version}</div>
             </div>
         </div>
     );

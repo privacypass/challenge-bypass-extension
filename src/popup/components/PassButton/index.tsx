@@ -13,7 +13,7 @@ export function PassButton(props: Props): JSX.Element {
         setMouseover(false);
     }
 
-    const element = mouseover ? 'Get more passes!' : props.children;
+    const element = mouseover ? chrome.i18n.getMessage('ctaGetMorePasses') : props.children;
 
     return (
         <div

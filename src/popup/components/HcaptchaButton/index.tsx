@@ -9,7 +9,7 @@ export function HcaptchaButton(): JSX.Element {
 
     return (
         <PassButton value={0} onClick={openHomePage}>
-            hCaptcha
+            {chrome.i18n.getMessage('providerNameHcaptcha')}
         </PassButton>
     );
 }

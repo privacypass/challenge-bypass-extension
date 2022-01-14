@@ -81,7 +81,7 @@ const popup = {
     },
     plugins: [
         new CopyWebpackPlugin({
-            patterns: [{ from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
+            patterns: [{ from: 'public/_locales', to: '_locales' }, { from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
         }),
         new HtmlWebpackPlugin({
             chunks: ['popup'],
