@@ -1,15 +1,23 @@
-import { Callbacks, Provider } from '.';
+import { Provider, EarnedTokenCookie, Callbacks } from './provider';
+import { Storage } from '../storage';
 
-export class HcaptchaProvider implements Provider {
+export class HcaptchaProvider extends Provider {
     static readonly ID: number = 2;
+
+    static readonly EARNED_TOKEN_COOKIE: EarnedTokenCookie = {
+        url:    'https://www.hcaptcha.com/privacy-pass',
+        domain: '.hcaptcha.com',
+        name:   'hc_clearance'
+    };
+
     private callbacks: Callbacks;
+//  private storage:   Storage;
 
-    constructor(callbacks: Callbacks) {
+    constructor(storage: Storage, callbacks: Callbacks) {
+        super(storage, callbacks);
+
         this.callbacks = callbacks;
-    }
-
-    getID(): number {
-        return HcaptchaProvider.ID;
+//      this.storage   = storage;
     }
 
     private getBadgeText(): string {

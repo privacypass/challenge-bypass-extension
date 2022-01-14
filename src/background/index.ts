@@ -1,8 +1,7 @@
-import {
-    handleBeforeRequest,
-    handleBeforeSendHeaders,
-    handleHeadersReceived,
-} from './listeners/webRequestListener';
+import { Providers, EarnedTokenCookie } from './providers';
+
+import { Tab } from './tab';
+
 import {
     handleActivated,
     handleCreated,
@@ -10,7 +9,17 @@ import {
     handleReplaced,
 } from './listeners/tabListener';
 
-import { Tab } from './tab';
+import {
+    handleBeforeRequest,
+    handleBeforeSendHeaders,
+    handleHeadersReceived,
+} from './listeners/webRequestListener';
+
+import * as voprf from './voprf';
+
+/* Initialize shared modules */
+
+voprf.initECSettings(voprf.defaultECSettings);
 
 /* Listeners for navigator */
 
@@ -87,14 +96,18 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }
 });
 
-// TODO It's better to move this to the provider class. Let's figure out how to do it later.
-// Removes cookies for captcha.website to enable getting more tokens in the future.
 chrome.cookies.onChanged.addListener((changeInfo) => {
-    if (
-        !changeInfo.removed &&
-        changeInfo.cookie.domain === '.captcha.website' &&
-        changeInfo.cookie.name === 'cf_clearance'
-    ) {
-        chrome.cookies.remove({ url: 'https://captcha.website', name: 'cf_clearance' });
+    if (!changeInfo.removed && Array.isArray(Providers) && Providers.length) {
+        for (const provider of Providers) {
+            const cookie: EarnedTokenCookie | void = provider.EARNED_TOKEN_COOKIE;
+            if (!cookie) continue;
+
+            if (
+                changeInfo.cookie.domain === cookie.domain &&
+                changeInfo.cookie.name   === cookie.name
+            ) {
+                chrome.cookies.remove({ url: cookie.url, name: cookie.name });
+            }
+        }
     }
 });

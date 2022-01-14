@@ -1,6 +1,6 @@
 import * as voprf from '../voprf';
 
-import { Callbacks, Provider } from '.';
+import { Provider, EarnedTokenCookie, Callbacks } from './provider';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
@@ -24,27 +24,31 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
 
-const TOKEN_STORE_KEY = 'tokens';
+const TOKEN_STORE_KEY: string = 'tokens';
 
 interface RedeemInfo {
     requestId: string;
     token: Token;
 }
 
-export class CloudflareProvider implements Provider {
+export class CloudflareProvider extends Provider {
     static readonly ID: number = 1;
-    private callbacks: Callbacks;
-    private storage: Storage;
 
+    static readonly EARNED_TOKEN_COOKIE: EarnedTokenCookie = {
+        url:    `https://${DEFAULT_ISSUING_HOSTNAME}`,
+        domain: `.${DEFAULT_ISSUING_HOSTNAME}`,
+        name:   'cf_clearance'
+    };
+
+    private callbacks:  Callbacks;
+    private storage:    Storage;
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage, callbacks: Callbacks) {
-        // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
-        // It's better if we can refactor the crypto module to be in object-oriented concept.
-        voprf.initECSettings(voprf.defaultECSettings);
+        super(storage, callbacks);
 
-        this.callbacks = callbacks;
-        this.storage = storage;
+        this.callbacks  = callbacks;
+        this.storage    = storage;
         this.redeemInfo = null;
     }
 
@@ -63,10 +67,6 @@ export class CloudflareProvider implements Provider {
             TOKEN_STORE_KEY,
             JSON.stringify(tokens.map((token) => token.toString())),
         );
-    }
-
-    getID(): number {
-        return CloudflareProvider.ID;
     }
 
     private async getCommitment(version: string): Promise<{ G: string; H: string }> {

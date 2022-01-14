@@ -1,4 +1,4 @@
-import { CloudflareProvider, HcaptchaProvider, Provider } from './providers';
+import { Provider, CloudflareProvider, HcaptchaProvider } from './providers';
 import { LocalStorage } from './storage';
 
 // Header from server to indicate that Privacy Pass is supported.
@@ -92,8 +92,12 @@ export class Tab {
             return;
         }
         const [providerId] = details.responseHeaders
-            .filter((header) => header.name.toLowerCase() === CHL_BYPASS_SUPPORT)
-            .map((header) => header.value !== undefined && +header.value);
+            .filter((header) => (header.name.toLowerCase() === CHL_BYPASS_SUPPORT) && header.value)
+            .map((header) => header.value ? parseInt(header.value, 10) : null);
+
+        if ((typeof providerId !== 'number') || isNaN(providerId)) {
+            return
+        }
 
         if (details.type === 'main_frame') {
             // The page in the tab is changed, so the context should change.
@@ -103,7 +107,7 @@ export class Tab {
 
         // Cloudflare has higher precedence than Hcaptcha.
         if (providerId === CloudflareProvider.ID && !(this.context instanceof CloudflareProvider)) {
-            const context = new CloudflareProvider(new LocalStorage('cf'), {
+            const context = new CloudflareProvider(new LocalStorage('id-' + CloudflareProvider.ID), {
                 updateIcon: this.updateIcon,
                 navigateUrl: this.navigateUrl,
             });
@@ -115,7 +119,7 @@ export class Tab {
             !(this.context instanceof CloudflareProvider) &&
             !(this.context instanceof HcaptchaProvider)
         ) {
-            this.context = new HcaptchaProvider({
+            this.context = new HcaptchaProvider(new LocalStorage('id-' + HcaptchaProvider.ID), {
                 updateIcon: this.updateIcon,
                 navigateUrl: this.navigateUrl,
             });
