@@ -59,7 +59,7 @@ export class CloudflareProvider extends Provider {
         }
 
         const tokens: string[] = JSON.parse(stored);
-        return tokens.map((token) => Token.fromString(token));
+        return tokens.map((token) => Token.fromString(token, this.VOPRF));
     }
 
     private setStoredTokens(tokens: Token[]) {
@@ -116,7 +116,7 @@ export class CloudflareProvider extends Provider {
         url: string,
         formData: { [key: string]: string[] | string },
     ): Promise<Token[]> {
-        const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token());
+        const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token(this.VOPRF));
         const issuance = {
             type: 'Issue',
             contents: tokens.map((token) => token.getEncodedBlindedPoint()),
