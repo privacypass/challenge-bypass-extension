@@ -1,4 +1,4 @@
-import * as voprf from '../voprf';
+import * as voprf from '../crypto/voprf';
 
 import { Provider, EarnedTokenCookie, Callbacks } from './provider';
 import { Storage } from '../storage';
@@ -38,6 +38,7 @@ export class CloudflareProvider extends Provider {
         name:   'cf_clearance'
     };
 
+    private VOPRF:      voprf.VOPRF;
     private callbacks:  Callbacks;
     private storage:    Storage;
     private redeemInfo: RedeemInfo | null;
@@ -45,6 +46,7 @@ export class CloudflareProvider extends Provider {
     constructor(storage: Storage, callbacks: Callbacks) {
         super(storage, callbacks);
 
+        this.VOPRF      = new voprf.VOPRF(voprf.defaultECSettings);
         this.callbacks  = callbacks;
         this.storage    = storage;
         this.redeemInfo = null;
@@ -92,7 +94,7 @@ export class CloudflareProvider extends Provider {
         }
 
         // This will throw an error on a bad signature.
-        voprf.verifyConfiguration(
+        this.VOPRF.verifyConfiguration(
             VERIFICATION_KEY,
             {
                 H: commitment.H,
@@ -103,7 +105,7 @@ export class CloudflareProvider extends Provider {
 
         // Cache.
         const item = {
-            G: voprf.sec1EncodeToBase64(voprf.getActiveECSettings().curve.G, false),
+            G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
             H: commitment.H,
         };
         this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
@@ -152,11 +154,11 @@ export class CloudflareProvider extends Provider {
         }
 
         const data: SignaturesParam = JSON.parse(atob(signatures));
-        const returned = voprf.getCurvePoints(data.sigs);
+        const returned = this.VOPRF.getCurvePoints(data.sigs);
 
         const commitment = await this.getCommitment(data.version);
 
-        const result = voprf.verifyProof(
+        const result = this.VOPRF.verifyProof(
             data.proof,
             tokens.map((token) => token.toLegacy()),
             returned,
@@ -200,7 +202,7 @@ export class CloudflareProvider extends Provider {
         this.redeemInfo = null;
 
         const key = token.getMacKey();
-        const binding = voprf.createRequestBinding(key, [
+        const binding = this.VOPRF.createRequestBinding(key, [
             voprf.getBytesFromString(url.hostname),
             voprf.getBytesFromString(details.method + ' ' + url.pathname),
         ]);

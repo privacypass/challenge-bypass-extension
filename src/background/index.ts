@@ -21,12 +21,6 @@ import {
     handleReceivedMessage,
 } from './listeners/messageListener';
 
-import * as voprf from './voprf';
-
-/* Initialize shared modules */
-
-voprf.initECSettings(voprf.defaultECSettings);
-
 /* Local state */
 
 declare global {
