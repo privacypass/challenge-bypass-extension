@@ -17,13 +17,17 @@ import {
     handleChangedCookies,
 } from './listeners/cookiesListener';
 
+import {
+    handleReceivedMessage,
+} from './listeners/messageListener';
+
 import * as voprf from './voprf';
 
 /* Initialize shared modules */
 
 voprf.initECSettings(voprf.defaultECSettings);
 
-/* Listeners for navigator */
+/* Local state */
 
 declare global {
     interface Window {
@@ -34,6 +38,15 @@ declare global {
 
 window.ACTIVE_TAB_ID = chrome.tabs.TAB_ID_NONE;
 window.TABS = new Map<number, Tab>();
+
+/* Access to local state */
+
+export function forceUpdateIcon(): void {
+    const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
+    if (activeTab !== undefined) {
+        activeTab.forceUpdateIcon();
+    }
+}
 
 /* Listeners for navigator */
 
@@ -79,23 +92,6 @@ chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: [
     'blocking',
 ]);
 
-// TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
-// common data between the popup and the background script.
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-    if (request.clear === true) {
-        window.localStorage.clear();
-
-        // Update the browser action icon after clearing the tokens.
-        const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
-        if (activeTab !== undefined) {
-            activeTab.forceUpdateIcon();
-        }
-        return;
-    }
-
-    if (request.key !== undefined && typeof request.key === 'string') {
-        sendResponse(window.localStorage.getItem(request.key));
-    }
-});
-
 chrome.cookies.onChanged.addListener(handleChangedCookies);
+
+chrome.runtime.onMessage.addListener(handleReceivedMessage);

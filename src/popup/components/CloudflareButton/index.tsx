@@ -3,12 +3,13 @@ import { useSelector } from 'react-redux';
 
 import { PassButton } from '@popup/components/PassButton';
 
+const providerID: string = '1';
+
 export function CloudflareButton(): JSX.Element {
-    const tokens: string[] = useSelector((state: { ['cf-tokens']?: string[] } | undefined) => {
-        if (state !== undefined && state['cf-tokens'] !== undefined) {
-            return state['cf-tokens'];
-        }
-        return [];
+    const tokensCount: number = useSelector((state: {[key: string]: number} | void): number => {
+        return ((state instanceof Object) && (typeof state[providerID] === 'number'))
+            ? Number(state[providerID])
+            : 0;
     });
 
     const openHomePage = () => {
@@ -16,7 +17,7 @@ export function CloudflareButton(): JSX.Element {
     };
 
     return (
-        <PassButton value={tokens.length} onClick={openHomePage}>
+        <PassButton value={tokensCount} onClick={openHomePage}>
             {chrome.i18n.getMessage('providerNameCloudflare')}
         </PassButton>
     );

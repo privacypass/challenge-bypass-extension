@@ -12,6 +12,8 @@ export interface EarnedTokenCookie {
 }
 
 export abstract class Provider {
+    static readonly TOKEN_STORE_KEY: string = 'tokens';
+
     static readonly ID: number;
     static readonly EARNED_TOKEN_COOKIE: EarnedTokenCookie | void;
 

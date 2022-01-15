@@ -2,8 +2,7 @@ import { createStore } from 'redux';
 
 interface UpdateStateAction {
     type: 'UPDATE_STATE';
-    key: string;
-    value: string;
+    value: {[key: string]: number};
 }
 
 interface ClearTokensAction {
@@ -13,17 +12,19 @@ interface ClearTokensAction {
 type Action = UpdateStateAction | ClearTokensAction;
 
 const reducer = (state: any | undefined, action: Action) => {
+    state = (state instanceof Object) ? state : {};
+
     switch (action.type) {
         case 'UPDATE_STATE':
             return {
                 ...state,
-                [action.key]: JSON.parse(action.value),
+                ...action.value,
             };
         case 'CLEAR_TOKENS':
-            // TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
-            // common data between the popup and the background script.
             chrome.runtime.sendMessage({ clear: true });
             return {};
+        default:
+            return state;
     }
 };
 

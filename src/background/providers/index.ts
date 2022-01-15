@@ -5,16 +5,16 @@ import { HcaptchaProvider }   from './hcaptcha';
 
 export type {
     Callbacks,
-    EarnedTokenCookie
+    EarnedTokenCookie,
 }
 
 export {
     Provider,
     CloudflareProvider,
-    HcaptchaProvider
+    HcaptchaProvider,
 }
 
 export const Providers: (typeof Provider)[] = [
     CloudflareProvider,
-    HcaptchaProvider
+    HcaptchaProvider,
 ]

@@ -24,8 +24,6 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
 
-const TOKEN_STORE_KEY: string = 'tokens';
-
 interface RedeemInfo {
     requestId: string;
     token: Token;
@@ -53,7 +51,7 @@ export class CloudflareProvider extends Provider {
     }
 
     private getStoredTokens(): Token[] {
-        const stored = this.storage.getItem(TOKEN_STORE_KEY);
+        const stored = this.storage.getItem(Provider.TOKEN_STORE_KEY);
         if (stored === null) {
             return [];
         }
@@ -64,7 +62,7 @@ export class CloudflareProvider extends Provider {
 
     private setStoredTokens(tokens: Token[]) {
         this.storage.setItem(
-            TOKEN_STORE_KEY,
+            Provider.TOKEN_STORE_KEY,
             JSON.stringify(tokens.map((token) => token.toString())),
         );
     }
