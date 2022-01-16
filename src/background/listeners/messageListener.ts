@@ -30,7 +30,7 @@ export function handleReceivedMessage(request: any, _sender: chrome.runtime.Mess
                 try {
                     const tokensArray: string[] = JSON.parse(tokensJSON);
 
-                    response[`${provider.ID}`] = Number(tokensArray.length);
+                    response[ provider.ID.toString() ] = Number(tokensArray.length);
                 }
                 catch (error: any) {}
             }

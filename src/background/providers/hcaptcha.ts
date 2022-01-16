@@ -83,6 +83,8 @@ export class HcaptchaProvider extends Provider {
             Provider.TOKEN_STORE_KEY,
             JSON.stringify(tokens.map((token) => token.toString())),
         );
+
+        this.forceUpdateIcon();
     }
 
     private async getCommitment(version: string): Promise<{ G: string; H: string }> {
@@ -213,7 +215,7 @@ export class HcaptchaProvider extends Provider {
     }
 
     handleActivated(): void {
-        this.callbacks.updateIcon(this.getBadgeText());
+        this.forceUpdateIcon();
     }
 
     handleBeforeSendHeaders(
@@ -244,8 +246,6 @@ export class HcaptchaProvider extends Provider {
 
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
-
-        this.callbacks.updateIcon(this.getBadgeText());
 
         return {
             requestHeaders: headers,
@@ -301,11 +301,12 @@ export class HcaptchaProvider extends Provider {
             async () => {
                 // Issue tokens.
                 const tokens = await this.issue(details.url, flattenFormData);
+
                 // Store tokens.
                 const cached = this.getStoredTokens();
                 this.setStoredTokens(cached.concat(tokens));
 
-                this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
+                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
             },
             0
         );

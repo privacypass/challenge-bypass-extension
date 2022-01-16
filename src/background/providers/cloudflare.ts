@@ -83,6 +83,8 @@ export class CloudflareProvider extends Provider {
             Provider.TOKEN_STORE_KEY,
             JSON.stringify(tokens.map((token) => token.toString())),
         );
+
+        this.forceUpdateIcon();
     }
 
     private async getCommitment(version: string): Promise<{ G: string; H: string }> {
@@ -212,7 +214,7 @@ export class CloudflareProvider extends Provider {
     }
 
     handleActivated(): void {
-        this.callbacks.updateIcon(this.getBadgeText());
+        this.forceUpdateIcon();
     }
 
     handleBeforeSendHeaders(
@@ -243,8 +245,6 @@ export class CloudflareProvider extends Provider {
 
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
-
-        this.callbacks.updateIcon(this.getBadgeText());
 
         return {
             requestHeaders: headers,
@@ -295,20 +295,22 @@ export class CloudflareProvider extends Provider {
             }
         }
 
-        (async () => {
-            // Issue tokens.
-            const tokens = await this.issue(details.url, flattenFormData);
-            // Store tokens.
-            const cached = this.getStoredTokens();
-            this.setStoredTokens(cached.concat(tokens));
+        // delay the request to issue tokens until next tick of the event loop
+        setTimeout(
+            async () => {
+                // Issue tokens.
+                const tokens = await this.issue(details.url, flattenFormData);
 
-            this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
-        })();
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
 
-        // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue
-        // cancelling the request. However, it seems that we can use image/* except image/svg+html. Let's figure how to
-        // use image data URL later.
-        // https://blog.mozilla.org/security/2017/11/27/blocking-top-level-navigations-data-urls-firefox-59/
+                this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+            },
+            0
+        );
+
+        // safe to cancel
         return { cancel: true };
     }
 
