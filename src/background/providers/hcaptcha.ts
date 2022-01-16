@@ -93,7 +93,7 @@ export class HcaptchaProvider extends Provider {
         }
 
         interface Response {
-            HC: { [version: string]: { H: string; expiry: string; sig: string } };
+            HC: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
         }
 
         // Download the commitment
@@ -103,28 +103,38 @@ export class HcaptchaProvider extends Provider {
             throw new Error(`No commitment for the version ${version} is found`);
         }
 
-        // Check the expiry date.
-        const expiry: number = (new Date(commitment.expiry)).getTime();
-        if (Date.now() >= expiry) {
-            throw new Error(`Commitments expired in ${expiry.toString()}`);
+        let item: { G: string; H: string };
+
+        // Does the commitment require verification?
+        if ('G' in commitment) {
+            item = commitment;
+        }
+        else {
+            // Check the expiry date.
+            const expiry: number = (new Date(commitment.expiry)).getTime();
+            if (Date.now() >= expiry) {
+                throw new Error(`Commitments expired in ${expiry.toString()}`);
+            }
+
+            // This will throw an error on a bad signature.
+            this.VOPRF.verifyConfiguration(
+                VERIFICATION_KEY,
+                {
+                    H: commitment.H,
+                    expiry: commitment.expiry,
+                },
+                commitment.sig,
+            );
+
+            item = {
+                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
+                H: commitment.H,
+            };
         }
 
-        // This will throw an error on a bad signature.
-        this.VOPRF.verifyConfiguration(
-            VERIFICATION_KEY,
-            {
-                H: commitment.H,
-                expiry: commitment.expiry,
-            },
-            commitment.sig,
-        );
-
         // Cache.
-        const item = {
-            G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
-            H: commitment.H,
-        };
         this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
+
         return item;
     }
 
@@ -168,7 +178,7 @@ export class HcaptchaProvider extends Provider {
             sigs:    string[];
             version: string;
             proof:   string;
-            prng:    string;
+            prng?:   string;
         }
 
         const data: SignaturesParam = JSON.parse(atob(signatures));
@@ -181,7 +191,7 @@ export class HcaptchaProvider extends Provider {
             tokens.map((token) => token.toLegacy()),
             returned,
             commitment,
-            data.prng,
+            data.prng || 'shake',
         );
         if (!result) {
             throw new Error('DLEQ proof is invalid.');
