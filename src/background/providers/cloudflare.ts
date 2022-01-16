@@ -1,25 +1,41 @@
 import * as voprf from '../crypto/voprf';
 
-import { Provider, EarnedTokenCookie, Callbacks } from './provider';
+import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams } from './provider';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
 import qs from 'qs';
 
-const ISSUE_HEADER_NAME = 'cf-chl-bypass';
-const NUMBER_OF_REQUESTED_TOKENS = 30;
-const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
+const NUMBER_OF_REQUESTED_TOKENS: number = 30;
+const DEFAULT_ISSUING_HOSTNAME:   string = 'captcha.website';
+const CHL_BYPASS_SUPPORT:         string = 'cf-chl-bypass';
+const ISSUE_HEADER_NAME:          string = 'cf-chl-bypass';
+const ISSUANCE_BODY_PARAM_NAME:   string = 'blinded-tokens';
 
-const COMMITMENT_URL =
+const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_QUERY_PARAMS = ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'];
-const QUALIFIED_BODY_PARAMS = ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'];
+const ALL_ISSUING_CRITERIA: {
+    HOSTNAMES:    QUALIFIED_HOSTNAMES;
+    PATHNAMES:    QUALIFIED_PATHNAMES;
+    QUERY_PARAMS: QUALIFIED_PARAMS;
+    BODY_PARAMS:  QUALIFIED_PARAMS;
+} = {
+    HOSTNAMES: {
+        exact :   [DEFAULT_ISSUING_HOSTNAME],
+        contains: [`.${DEFAULT_ISSUING_HOSTNAME}`],
+    },
+    PATHNAMES: {
+    },
+    QUERY_PARAMS: {
+        some: ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
+    },
+    BODY_PARAMS: {
+        some: ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'],
+    }
+}
 
-const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
-const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
-
-const VERIFICATION_KEY = `-----BEGIN PUBLIC KEY-----
+const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
@@ -88,8 +104,8 @@ export class CloudflareProvider extends Provider {
         }
 
         // Check the expiry date.
-        const expiry = new Date(commitment.expiry);
-        if (Date.now() >= +expiry) {
+        const expiry: number = (new Date(commitment.expiry)).getTime();
+        if (Date.now() >= expiry) {
             throw new Error(`Commitments expired in ${expiry.toString()}`);
         }
 
@@ -129,7 +145,8 @@ export class CloudflareProvider extends Provider {
         });
 
         const headers = {
-            'content-type': 'application/x-www-form-urlencoded',
+            'accept':            'application/json',
+            'content-type':      'application/x-www-form-urlencoded',
             [ISSUE_HEADER_NAME]: CloudflareProvider.ID.toString(),
         };
 
@@ -147,10 +164,10 @@ export class CloudflareProvider extends Provider {
         }
 
         interface SignaturesParam {
-            sigs: string[];
+            sigs:    string[];
             version: string;
-            proof: string;
-            prng: string;
+            proof:   string;
+            prng:    string;
         }
 
         const data: SignaturesParam = JSON.parse(atob(signatures));
@@ -227,33 +244,44 @@ export class CloudflareProvider extends Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-
+        // Only issue tokens for POST requests that contain 'application/x-www-form-urlencoded' data.
         if (
             details.requestBody === null ||
-            details.requestBody === undefined ||
-            details.requestBody.formData === undefined
+            details.requestBody === undefined
         ) {
             return;
         }
 
-        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some((param) => {
-            return url.searchParams.has(param);
-        });
-        const hasBodyParams = QUALIFIED_BODY_PARAMS.some((param) => {
-            return details.requestBody !== null && param in details.requestBody.formData!;
-        });
-        if (!hasQueryParams || !hasBodyParams) {
+        const url = new URL(details.url);
+        const formData: { [key: string]: string[] | string } = details.requestBody.formData || {};
+
+        // Only issue tokens on the issuing website.
+        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
+            return;
+        }
+
+        // Only issue tokens when the pathname passes defined criteria.
+        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
+            return;
+        }
+
+        // Only issue tokens when querystring parameters pass defined criteria.
+        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            return;
+        }
+
+        // Only issue tokens when POST data parameters pass defined criteria.
+        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
             return;
         }
 
         const flattenFormData: { [key: string]: string[] | string } = {};
-        for (const key in details.requestBody.formData) {
-            if (details.requestBody.formData[key].length == 1) {
-                const [value] = details.requestBody.formData[key];
+        for (const key in formData) {
+            if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
+                const [value] = formData[key];
                 flattenFormData[key] = value;
             } else {
-                flattenFormData[key] = details.requestBody.formData[key];
+                flattenFormData[key] = formData[key];
             }
         }
 
@@ -277,9 +305,8 @@ export class CloudflareProvider extends Provider {
     handleHeadersReceived(
         details: chrome.webRequest.WebResponseHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        // Don't redeem a token in the issuing website.
-        const url = new URL(details.url);
-        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
+        // Don't redeem a token on the issuing website.
+        if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
             return;
         }
 
