@@ -49,7 +49,7 @@ export class CloudflareProvider extends Provider {
     static readonly ID: number = 1;
 
     static readonly EARNED_TOKEN_COOKIE: EarnedTokenCookie = {
-        url:    `https://${DEFAULT_ISSUING_HOSTNAME}`,
+        url:    `https://${DEFAULT_ISSUING_HOSTNAME}/`,
         domain: `.${DEFAULT_ISSUING_HOSTNAME}`,
         name:   'cf_clearance'
     };

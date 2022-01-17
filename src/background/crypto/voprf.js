@@ -17,9 +17,11 @@ import { createShake256 } from './pseudorandom-number-generators/shake.ts';
 
 let PEM;
 let ASN1;
+let crypto;
 if (typeof window !== 'undefined') {
-    PEM = window.PEM;
-    ASN1 = window.ASN1;
+    PEM    = window.PEM;
+    ASN1   = window.ASN1;
+    crypto = window.crypto;
 }
 
 const BATCH_PROOF_PREFIX = 'batch-proof=';
@@ -437,7 +439,7 @@ export class VOPRF {
      * @return {sjcl.ecc.point}
      */
     newRandomPoint() {
-        const random = window.crypto.getRandomValues(new Int32Array(8));
+        const random = crypto.getRandomValues(new Int32Array(8));
 
         // Choose hash-to-curve method
         const point = this.h2Curve(random, this.getActiveECSettings());

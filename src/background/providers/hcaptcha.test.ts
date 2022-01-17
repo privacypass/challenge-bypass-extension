@@ -2,6 +2,16 @@ import { jest } from '@jest/globals';
 import { HcaptchaProvider } from './hcaptcha';
 import Token from '../token';
 
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.spyOn(global, 'setTimeout');
+});
+
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
 export class StorageMock {
     store: Map<string, string>;
 
@@ -61,8 +71,8 @@ test('getBadgeText', () => {
  * 1. Firstly, the listener check if the request looks like the one that we
  * should send an issuance request.
  * 2. If it passes the check, the listener returns the cancel command to
- * cancel the request. If not, it returns nothing and let the request
- * continue.
+ * explicitly prevent cancelling the request.
+ * If not, it returns nothing and let the request continue.
  * 3. At the same time the listener returns, it calls a private method
  * "issue" to send an issuance request to the server and the method return
  * an array of issued tokens.
@@ -82,7 +92,7 @@ describe('issuance', () => {
                 return tokens;
             });
             provider['issue'] = issue;
-            const url = 'https://www.hcaptcha.com/privacy-pass';
+            const url = 'https://www.hcaptcha.com/checkcaptcha/?s=00000000-0000-0000-0000-000000000000';
             const details = {
                 method: 'POST',
                 url,
@@ -93,27 +103,32 @@ describe('issuance', () => {
                 type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
                 timeStamp: 1,
                 requestBody: {
-                    formData: {
-                        ['h-captcha-response']: ['body-param'],
-                    },
+                    formData: {},
                 },
             };
-            const result = await provider.handleBeforeRequest(details);
-            expect(result).toEqual({ cancel: true });
+            const result = provider.handleBeforeRequest(details);
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+
+            jest.runAllTimers();
+            await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(url, {
-                ['h-captcha-response']: 'body-param',
-            });
-
-            expect(navigateUrl.mock.calls.length).toBe(1);
-            expect(navigateUrl).toHaveBeenCalledWith('https://www.hcaptcha.com/privacy-pass');
+            expect(issue).toHaveBeenCalledWith(url, {});
 
             // Expect the tokens are added.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.map((token) => token.toString()),
             );
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+            expect(navigateUrl.mock.calls.length).toBe(1);
+            expect(navigateUrl).toHaveBeenCalledWith('https://www.hcaptcha.com/privacy-pass');
         });
 
         /*
@@ -145,9 +160,12 @@ describe('issuance', () => {
                 timeStamp: 1,
                 requestBody: {},
             };
-            const result = await provider.handleBeforeRequest(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
+
+            expect(setTimeout).not.toHaveBeenCalled();
             expect(issue).not.toHaveBeenCalled();
+            expect(updateIcon).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
@@ -178,7 +196,7 @@ describe('issuance', () => {
 describe('redemption', () => {
     describe('handleHeadersReceived', () => {
         const validDetails = {
-            url: 'https://non-issuing-subdomain.hcaptcha.com/',
+            url: 'https://non-issuing-domain.example.com/',
             requestId: 'xxx',
             frameId: 1,
             parentFrameId: 1,
@@ -318,15 +336,13 @@ describe('redemption', () => {
                 requestHeaders: [
                     {
                         name: 'challenge-bypass-token',
-                        value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJyeXRSRExLN3J2THVhd09XZkJ0RXJTclVuUWpIaGpLbkNKK3RqQnhQSFYwPSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==',
+                        value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJxNmhOM2krakRmQXlpOW1MdjFaSE04alNRSng4SWZKZThWYUIvQU9UYm9FPSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==',
                     },
                 ],
             });
             const newRedeemInfo = provider['redeemInfo'];
             expect(newRedeemInfo).toBeNull();
-
-            expect(updateIcon.mock.calls.length).toBe(1);
-            expect(updateIcon).toHaveBeenCalledWith('0');
+            expect(updateIcon).not.toHaveBeenCalled();
         });
 
         test('without redeemInfo', () => {

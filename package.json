@@ -15,7 +15,7 @@
         "prebuild": "npm run sjcl",
         "build": "webpack",
         "pretest": "npm run sjcl",
-        "test": "node --experimental-vm-modules node_modules/.bin/jest",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
         "lint": "eslint ./src/**/*.{ts,tsx}",
         "clean": "rimraf lib && rimraf PrivacyPass && rimraf PrivacyPass.crx && rimraf PrivacyPass.xpi"
     },

@@ -2,6 +2,16 @@ import { jest } from '@jest/globals';
 import { CloudflareProvider } from './cloudflare';
 import Token from '../token';
 
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.spyOn(global, 'setTimeout');
+});
+
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
 export class StorageMock {
     store: Map<string, string>;
 
@@ -94,26 +104,35 @@ describe('issuance', () => {
                 timeStamp: 1,
                 requestBody: {
                     formData: {
-                        ['h-captcha-response']: ['body-param'],
+                        'h-captcha-response': ['body-param'],
                     },
                 },
             };
-            const result = await provider.handleBeforeRequest(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toEqual({ cancel: true });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+
+            jest.runAllTimers();
+            await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
             expect(issue).toHaveBeenCalledWith(url, {
-                ['h-captcha-response']: 'body-param',
+                'h-captcha-response': 'body-param',
             });
-
-            expect(navigateUrl.mock.calls.length).toBe(1);
-            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
 
             // Expect the tokens are added.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.map((token) => token.toString()),
             );
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+            expect(navigateUrl.mock.calls.length).toBe(1);
+            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
         });
 
         /*
@@ -145,9 +164,12 @@ describe('issuance', () => {
                 timeStamp: 1,
                 requestBody: {},
             };
-            const result = await provider.handleBeforeRequest(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
+
+            expect(setTimeout).not.toHaveBeenCalled();
             expect(issue).not.toHaveBeenCalled();
+            expect(updateIcon).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
@@ -314,9 +336,7 @@ describe('redemption', () => {
             });
             const newRedeemInfo = provider['redeemInfo'];
             expect(newRedeemInfo).toBeNull();
-
-            expect(updateIcon.mock.calls.length).toBe(1);
-            expect(updateIcon).toHaveBeenCalledWith('0');
+            expect(updateIcon).not.toHaveBeenCalled();
         });
 
         test('without redeemInfo', () => {
