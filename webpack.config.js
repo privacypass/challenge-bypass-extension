@@ -30,8 +30,9 @@ const common = {
     },
     context: __dirname,
     mode: 'production',
+    target: ['web', 'es5'],
     optimization: {
-        minimize: false,
+        minimize: true,
     },
 };
 

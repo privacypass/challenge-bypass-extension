@@ -1,6 +1,6 @@
 {
     "name": "privacy-pass",
-    "version": "3.3.0",
+    "version": "3.3.1",
     "private": true,
     "contributors": [
         "Suphanat Chunhapanya <pop@cloudflare.com>",
