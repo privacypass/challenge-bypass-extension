@@ -19,7 +19,7 @@ const tsloader = {
 
 const common = {
     output: {
-        path: path.resolve('PrivacyPass'),
+        path: path.resolve('dist/PrivacyPass'),
     },
     context: __dirname,
     mode: 'production',

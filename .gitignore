@@ -1,9 +1,12 @@
-*.swp
 node_modules/
 lib/
-PrivacyPass/
-PrivacyPass.pem
-PrivacyPass.crx
-PrivacyPass.xpi
 
-.bin/**/temp/
+dist/PrivacyPass/
+dist/PrivacyPass.pem
+dist/PrivacyPass.crx
+dist/PrivacyPass.crx2
+dist/PrivacyPass.crx3
+dist/PrivacyPass.xpi
+dist/.bin/**/temp/
+
+*.swp

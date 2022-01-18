@@ -17,7 +17,7 @@
         "pretest": "npm run sjcl",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
         "lint": "eslint ./src/**/*.{ts,tsx}",
-        "clean": "rimraf lib && rimraf PrivacyPass && rimraf PrivacyPass.crx && rimraf PrivacyPass.xpi"
+        "clean": "rimraf lib && rimraf dist/PrivacyPass && rimraf dist/PrivacyPass.crx* && rimraf dist/PrivacyPass.xpi"
     },
     "dependencies": {
         "asn1-parser": "^1.1.8",
