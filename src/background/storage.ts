@@ -1,4 +1,9 @@
-export class LocalStorage {
+export interface Storage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+}
+
+export class LocalStorage implements Storage {
     private prefix: string;
 
     constructor(prefix: string) {
@@ -14,7 +19,10 @@ export class LocalStorage {
     }
 }
 
-export interface Storage {
-    getItem(key: string): string | null;
-    setItem(key: string, value: string): void;
+export function generatePrefixFromID(id: number): string {
+    return 'id-' + id;
+}
+
+export function clearAllPasses(): void {
+    window.localStorage.clear();
 }

@@ -1,38 +1,40 @@
 {
     "name": "privacy-pass",
-    "version": "3.0.0",
+    "version": "3.3.2",
+    "private": true,
     "contributors": [
         "Suphanat Chunhapanya <pop@cloudflare.com>",
-        "Armando Faz <armfazh@cloudflare.com>"
+        "Armando Faz <armfazh@cloudflare.com>",
+        "Warren Bank <warren.r.bank@gmail.com>"
     ],
-    "main": "index.js",
+    "browser": "index.js",
     "license": "BSD-3-Clause",
     "type": "module",
     "scripts": {
-        "sjcl": "cd node_modules/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
+        "sjcl": "cd node_modules/sjcl && perl configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
         "prebuild": "npm run sjcl",
         "build": "webpack",
         "pretest": "npm run sjcl",
-        "test": "node --experimental-vm-modules node_modules/.bin/jest",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
         "lint": "eslint ./src/**/*.{ts,tsx}",
-        "clean": "rimraf dist"
+        "clean": "rimraf lib && rimraf dist/PrivacyPass && rimraf dist/PrivacyPass.crx* && rimraf dist/PrivacyPass.xpi"
     },
     "dependencies": {
         "asn1-parser": "^1.1.8",
         "axios": "^0.23.0",
         "buffer": "^6.0.3",
-        "keccak": "^3.0.1",
+        "keccak": "^3.0.2",
         "qs": "^6.10.1",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
         "react-redux": "^7.2.5",
         "redux": "^4.1.1",
-        "sjcl": "^1.0.8",
-        "stream-browserify": "^3.0.0"
+        "sjcl": "^1.0.8"
     },
     "devDependencies": {
         "@types/chrome": "^0.0.159",
         "@types/jest": "^27.0.2",
+        "@types/keccak": "^3.0.1",
         "@types/qs": "^6.9.6",
         "@types/react": "^17.0.5",
         "@types/react-dom": "^17.0.5",

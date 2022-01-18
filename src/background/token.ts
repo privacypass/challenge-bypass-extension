@@ -1,4 +1,4 @@
-import * as voprf from './voprf';
+import * as voprf from './crypto/voprf';
 
 interface SignedComponent {
     blindedPoint: voprf.Point;
@@ -6,6 +6,8 @@ interface SignedComponent {
 }
 
 export default class Token {
+    private VOPRF: voprf.VOPRF;
+
     private input: voprf.Bytes;
     private factor: voprf.BigNum;
 
@@ -14,9 +16,15 @@ export default class Token {
 
     private signed: SignedComponent | null;
 
-    constructor() {
-        const { data: input, point: unblindedPoint } = voprf.newRandomPoint();
-        const { blind: factor, point: blindedPoint } = voprf.blindPoint(unblindedPoint);
+    constructor(VOPRF: voprf.VOPRF | void) {
+        if (VOPRF === undefined) {
+            VOPRF = new voprf.VOPRF(voprf.defaultECSettings);
+        }
+
+        this.VOPRF = VOPRF;
+
+        const { data: input, point: unblindedPoint } = this.VOPRF.newRandomPoint();
+        const { blind: factor, point: blindedPoint } = this.VOPRF.blindPoint(unblindedPoint);
 
         this.input = input;
         this.factor = factor;
@@ -27,22 +35,27 @@ export default class Token {
         this.signed = null;
     }
 
-    static fromString(str: string): Token {
+    static fromString(str: string, VOPRF: voprf.VOPRF | void): Token {
+        if (VOPRF === undefined) {
+            VOPRF = new voprf.VOPRF(voprf.defaultECSettings);
+        }
+
         const json = JSON.parse(str);
 
         const token: Token = Object.create(Token.prototype);
 
-        token.input = json.input;
+        token.VOPRF  = VOPRF;
+        token.input  = json.input;
         token.factor = voprf.newBigNum(json.factor);
 
-        token.blindedPoint = voprf.sec1DecodeFromBase64(json.blindedPoint);
-        token.unblindedPoint = voprf.sec1DecodeFromBase64(json.unblindedPoint);
+        token.blindedPoint   = VOPRF.sec1DecodeFromBase64(json.blindedPoint);
+        token.unblindedPoint = VOPRF.sec1DecodeFromBase64(json.unblindedPoint);
 
         token.signed =
             json.signed !== null
                 ? {
-                      blindedPoint: voprf.sec1DecodeFromBase64(json.signed.blindedPoint),
-                      unblindedPoint: voprf.sec1DecodeFromBase64(json.signed.unblindedPoint),
+                      blindedPoint:   VOPRF.sec1DecodeFromBase64(json.signed.blindedPoint),
+                      unblindedPoint: VOPRF.sec1DecodeFromBase64(json.signed.unblindedPoint),
                   }
                 : null;
 
@@ -50,8 +63,8 @@ export default class Token {
     }
 
     setSignedPoint(point: voprf.Point): void {
-        const blindedPoint = point;
-        const unblindedPoint = voprf.unblindPoint(this.factor, point);
+        const blindedPoint   = point;
+        const unblindedPoint = this.VOPRF.unblindPoint(this.factor, point);
 
         this.signed = {
             blindedPoint,
@@ -76,7 +89,7 @@ export default class Token {
         if (this.signed === null) {
             throw new Error('Unsigned token is used to derive a MAC key');
         }
-        return voprf.deriveKey(this.signed.unblindedPoint, this.input);
+        return this.VOPRF.deriveKey(this.signed.unblindedPoint, this.input);
     }
 
     getInput(): voprf.Bytes {

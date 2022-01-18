@@ -13,14 +13,11 @@ ReactDOM.render(
     document.getElementById('root'),
 );
 
-// TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
-// common data between the popup and the background script.
-chrome.runtime.sendMessage({ key: 'cf-tokens' }, (response) => {
-    if (response !== undefined && typeof response === 'string') {
+chrome.runtime.sendMessage({ tokensCount: true }, (response: any) => {
+    if ((response !== undefined) && (response !== null) && (response instanceof Object)) {
         store.dispatch({
-            type: 'UPDATE_STATE',
-            key: 'cf-tokens',
-            value: response,
+            type:  'UPDATE_STATE',
+            value: response
         });
     }
 });

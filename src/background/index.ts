@@ -1,8 +1,5 @@
-import {
-    handleBeforeRequest,
-    handleBeforeSendHeaders,
-    handleHeadersReceived,
-} from './listeners/webRequestListener';
+import { Tab } from './tab';
+
 import {
     handleActivated,
     handleCreated,
@@ -10,9 +7,21 @@ import {
     handleReplaced,
 } from './listeners/tabListener';
 
-import { Tab } from './tab';
+import {
+    handleBeforeRequest,
+    handleBeforeSendHeaders,
+    handleHeadersReceived,
+} from './listeners/webRequestListener';
 
-/* Listeners for navigator */
+import {
+    handleChangedCookies,
+} from './listeners/cookiesListener';
+
+import {
+    handleReceivedMessage,
+} from './listeners/messageListener';
+
+/* Local state */
 
 declare global {
     interface Window {
@@ -23,6 +32,15 @@ declare global {
 
 window.ACTIVE_TAB_ID = chrome.tabs.TAB_ID_NONE;
 window.TABS = new Map<number, Tab>();
+
+/* Access to local state */
+
+export function forceUpdateIcon(): void {
+    const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
+    if (activeTab !== undefined) {
+        activeTab.forceUpdateIcon();
+    }
+}
 
 /* Listeners for navigator */
 
@@ -68,33 +86,6 @@ chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: [
     'blocking',
 ]);
 
-// TODO Using Message passing is dirty. It's better to use chrome.storage for sharing
-// common data between the popup and the background script.
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-    if (request.clear === true) {
-        window.localStorage.clear();
+chrome.cookies.onChanged.addListener(handleChangedCookies);
 
-        // Update the browser action icon after clearing the tokens.
-        const activeTab = window.TABS.get(window.ACTIVE_TAB_ID);
-        if (activeTab !== undefined) {
-            activeTab.forceUpdateIcon();
-        }
-        return;
-    }
-
-    if (request.key !== undefined && typeof request.key === 'string') {
-        sendResponse(window.localStorage.getItem(request.key));
-    }
-});
-
-// TODO It's better to move this to the provider class. Let's figure out how to do it later.
-// Removes cookies for captcha.website to enable getting more tokens in the future.
-chrome.cookies.onChanged.addListener((changeInfo) => {
-    if (
-        !changeInfo.removed &&
-        changeInfo.cookie.domain === '.captcha.website' &&
-        changeInfo.cookie.name === 'cf_clearance'
-    ) {
-        chrome.cookies.remove({ url: 'https://captcha.website', name: 'cf_clearance' });
-    }
-});
+chrome.runtime.onMessage.addListener(handleReceivedMessage);

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { CloudflareProvider } from './cloudflare';
+import { HcaptchaProvider } from './hcaptcha';
 import Token from '../token';
 
 beforeEach(() => {
@@ -33,7 +33,7 @@ test('getStoredTokens', () => {
     const updateIcon = jest.fn();
     const navigateUrl = jest.fn();
 
-    const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+    const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
     const storedTokens = provider['getStoredTokens']();
@@ -47,7 +47,7 @@ test('setStoredTokens', () => {
     const updateIcon = jest.fn();
     const navigateUrl = jest.fn();
 
-    const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+    const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
     const storedTokens = JSON.parse(storage.store.get('tokens')!);
@@ -59,7 +59,7 @@ test('getBadgeText', () => {
     const updateIcon = jest.fn();
     const navigateUrl = jest.fn();
 
-    const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+    const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
     const text = provider['getBadgeText']();
@@ -71,8 +71,8 @@ test('getBadgeText', () => {
  * 1. Firstly, the listener check if the request looks like the one that we
  * should send an issuance request.
  * 2. If it passes the check, the listener returns the cancel command to
- * cancel the request. If not, it returns nothing and let the request
- * continue.
+ * explicitly prevent cancelling the request.
+ * If not, it returns nothing and let the request continue.
  * 3. At the same time the listener returns, it calls a private method
  * "issue" to send an issuance request to the server and the method return
  * an array of issued tokens.
@@ -86,13 +86,13 @@ describe('issuance', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             const issue = jest.fn(async () => {
                 return tokens;
             });
             provider['issue'] = issue;
-            const url = 'https://captcha.website/?__cf_chl_captcha_tk__=query-param';
+            const url = 'https://www.hcaptcha.com/checkcaptcha/?s=00000000-0000-0000-0000-000000000000';
             const details = {
                 method: 'POST',
                 url,
@@ -103,13 +103,11 @@ describe('issuance', () => {
                 type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
                 timeStamp: 1,
                 requestBody: {
-                    formData: {
-                        'h-captcha-response': ['body-param'],
-                    },
+                    formData: {},
                 },
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toEqual({ cancel: true });
+            expect(result).toEqual({ cancel: false });
 
             expect(setTimeout).toHaveBeenCalledTimes(1);
             expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
@@ -118,9 +116,7 @@ describe('issuance', () => {
             await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(url, {
-                'h-captcha-response': 'body-param',
-            });
+            expect(issue).toHaveBeenCalledWith(url, {});
 
             // Expect the tokens are added.
             const storedTokens = provider['getStoredTokens']();
@@ -132,7 +128,7 @@ describe('issuance', () => {
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
 
             expect(navigateUrl.mock.calls.length).toBe(1);
-            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
+            expect(navigateUrl).toHaveBeenCalledWith('https://www.hcaptcha.com/privacy-pass');
         });
 
         /*
@@ -150,12 +146,12 @@ describe('issuance', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const issue = jest.fn(async () => []);
             provider['issue'] = issue;
             const details = {
                 method: 'GET',
-                url: 'https://cloudflare.com/',
+                url: 'https://www.hcaptcha.com/',
                 requestId: 'xxx',
                 frameId: 1,
                 parentFrameId: 1,
@@ -200,7 +196,7 @@ describe('issuance', () => {
 describe('redemption', () => {
     describe('handleHeadersReceived', () => {
         const validDetails = {
-            url: 'https://cloudflare.com/',
+            url: 'https://non-issuing-domain.example.com/',
             requestId: 'xxx',
             frameId: 1,
             parentFrameId: 1,
@@ -213,7 +209,7 @@ describe('redemption', () => {
             responseHeaders: [
                 {
                     name: 'cf-chl-bypass',
-                    value: '1',
+                    value: '2',
                 },
             ],
             method: 'GET',
@@ -224,7 +220,7 @@ describe('redemption', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
             const details = validDetails;
@@ -246,23 +242,25 @@ describe('redemption', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             provider['setStoredTokens']([]);
             const details = validDetails;
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
         });
 
-        test('captcha.website response', () => {
+        test('no response from an issuing domain', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
-            const details = validDetails;
-            details.url = 'https://captcha.website/';
+            const details = {
+                ...validDetails,
+                url: 'https://www.hcaptcha.com/privacy-pass'
+            };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
         });
@@ -270,28 +268,36 @@ describe('redemption', () => {
         /*
          * The response is invalid if any of the followings is true:
          * 1. The status code is not 403.
-         * 2. There is no HTTP header of "cf-chl-bypass: 1"
+         * 2. There is no HTTP header of "cf-chl-bypass: 2"
          */
-        test('invalid response', () => {
+        test('no response when the status code is not 403', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
             const details = {
-                url: 'https://cloudflare.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
+                ...validDetails,
+                statusLine: 'HTTP/1.1 200 OK',
+                statusCode: 200
+            };
+            const result = provider.handleHeadersReceived(details);
+            expect(result).toBeUndefined();
+        });
 
-                statusLine: 'HTTP/1.1 403 Forbidden',
-                statusCode: 403,
-                method: 'GET',
+        test('no response when there is no HTTP header of "cf-chl-bypass: 2"', () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
+            const tokens = [new Token(), new Token(), new Token()];
+            provider['setStoredTokens'](tokens);
+            const details = {
+                ...validDetails,
+                responseHeaders: undefined
             };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
@@ -304,7 +310,7 @@ describe('redemption', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
 
             const token = Token.fromString(
                 '{"input":[238,205,51,250,226,251,144,68,170,68,235,25,231,152,125,63,215,10,42,37,65,157,56,22,98,23,129,9,157,179,223,64],"factor":"0x359953995df006ba98bdcf1383a4c75ca79ae41d4e718dcb051832ce65c002bc","blindedPoint":"BCrzbuVf2eSD/5NtR+o09ovo+oRWAwjwopzl7lb+IuOPuj/ctLkdlkeJQUeyjtUbfgJqU4BFNBRz9ln4z3Dk7Us=","unblindedPoint":"BLKf1op+oq4FcbNdP5vygTkGO3WWLHD6oXCCZDfaFyuFlruih49BStHm6QxtZZAqgCR9i6SsO6VP69hHnfBDNeg=","signed":{"blindedPoint":"BKEnbsQSwnHCxEv4ppp6XuqLV60FiQpF8YWvodQHdnmFHv7CKyWHqBLBW8fJ2uuV+uLxl99+VRYPxr8Q8E7i2Iw=","unblindedPoint":"BA8G3dHM554FzDiOtEsSBu0XYW8p5vA2OIEvnYQcJlRGHTiq2N6j3BKUbiI7I6fAy2vsOrwhrLGHOD+q7YxO+UM="}}',
@@ -316,7 +322,7 @@ describe('redemption', () => {
             provider['redeemInfo'] = redeemInfo;
             const details = {
                 method: 'GET',
-                url: 'https://cloudflare.com/',
+                url: 'https://www.hcaptcha.com/',
                 requestId: 'xxx',
                 frameId: 1,
                 parentFrameId: 1,
@@ -330,7 +336,7 @@ describe('redemption', () => {
                 requestHeaders: [
                     {
                         name: 'challenge-bypass-token',
-                        value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJyeXRSRExLN3J2THVhd09XZkJ0RXJTclVuUWpIaGpLbkNKK3RqQnhQSFYwPSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==',
+                        value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJxNmhOM2krakRmQXlpOW1MdjFaSE04alNRSng4SWZKZThWYUIvQU9UYm9FPSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==',
                     },
                 ],
             });
@@ -344,11 +350,11 @@ describe('redemption', () => {
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
-            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
 
             const details = {
                 method: 'GET',
-                url: 'https://cloudflare.com/',
+                url: 'https://www.hcaptcha.com/',
                 requestId: 'xxx',
                 frameId: 1,
                 parentFrameId: 1,

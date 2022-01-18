@@ -1,72 +1,90 @@
-import * as voprf from '../voprf';
+import * as voprf from '../crypto/voprf';
 
-import { Callbacks, Provider } from '.';
+import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams } from './provider';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
 import qs from 'qs';
 
-const ISSUE_HEADER_NAME = 'cf-chl-bypass';
-const NUMBER_OF_REQUESTED_TOKENS = 30;
-const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
+const NUMBER_OF_REQUESTED_TOKENS: number = 30;
+const DEFAULT_ISSUING_HOSTNAME:   string = 'captcha.website';
+const CHL_BYPASS_SUPPORT:         string = 'cf-chl-bypass';
+const ISSUE_HEADER_NAME:          string = 'cf-chl-bypass';
+const ISSUANCE_BODY_PARAM_NAME:   string = 'blinded-tokens';
 
-const COMMITMENT_URL =
+const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_QUERY_PARAMS = ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'];
-const QUALIFIED_BODY_PARAMS = ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'];
+const ALL_ISSUING_CRITERIA: {
+    HOSTNAMES:    QUALIFIED_HOSTNAMES;
+    PATHNAMES:    QUALIFIED_PATHNAMES;
+    QUERY_PARAMS: QUALIFIED_PARAMS;
+    BODY_PARAMS:  QUALIFIED_PARAMS;
+} = {
+    HOSTNAMES: {
+        exact :   [DEFAULT_ISSUING_HOSTNAME],
+        contains: [`.${DEFAULT_ISSUING_HOSTNAME}`],
+    },
+    PATHNAMES: {
+    },
+    QUERY_PARAMS: {
+        some: ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
+    },
+    BODY_PARAMS: {
+        some: ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'],
+    }
+}
 
-const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
-const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
-
-const VERIFICATION_KEY = `-----BEGIN PUBLIC KEY-----
+const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
-
-const TOKEN_STORE_KEY = 'tokens';
 
 interface RedeemInfo {
     requestId: string;
     token: Token;
 }
 
-export class CloudflareProvider implements Provider {
+export class CloudflareProvider extends Provider {
     static readonly ID: number = 1;
-    private callbacks: Callbacks;
-    private storage: Storage;
 
+    static readonly EARNED_TOKEN_COOKIE: EarnedTokenCookie = {
+        url:    `https://${DEFAULT_ISSUING_HOSTNAME}/`,
+        domain: `.${DEFAULT_ISSUING_HOSTNAME}`,
+        name:   'cf_clearance'
+    };
+
+    private VOPRF:      voprf.VOPRF;
+    private callbacks:  Callbacks;
+    private storage:    Storage;
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage, callbacks: Callbacks) {
-        // TODO This changes the global state in the crypto module, which can be a side effect outside of this object.
-        // It's better if we can refactor the crypto module to be in object-oriented concept.
-        voprf.initECSettings(voprf.defaultECSettings);
+        super(storage, callbacks);
 
-        this.callbacks = callbacks;
-        this.storage = storage;
+        this.VOPRF      = new voprf.VOPRF(voprf.defaultECSettings);
+        this.callbacks  = callbacks;
+        this.storage    = storage;
         this.redeemInfo = null;
     }
 
     private getStoredTokens(): Token[] {
-        const stored = this.storage.getItem(TOKEN_STORE_KEY);
+        const stored = this.storage.getItem(Provider.TOKEN_STORE_KEY);
         if (stored === null) {
             return [];
         }
 
         const tokens: string[] = JSON.parse(stored);
-        return tokens.map((token) => Token.fromString(token));
+        return tokens.map((token) => Token.fromString(token, this.VOPRF));
     }
 
     private setStoredTokens(tokens: Token[]) {
         this.storage.setItem(
-            TOKEN_STORE_KEY,
+            Provider.TOKEN_STORE_KEY,
             JSON.stringify(tokens.map((token) => token.toString())),
         );
-    }
 
-    getID(): number {
-        return CloudflareProvider.ID;
+        this.forceUpdateIcon();
     }
 
     private async getCommitment(version: string): Promise<{ G: string; H: string }> {
@@ -77,7 +95,7 @@ export class CloudflareProvider implements Provider {
         }
 
         interface Response {
-            CF: { [version: string]: { H: string; expiry: string; sig: string } };
+            CF: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
         }
 
         // Download the commitment
@@ -87,28 +105,38 @@ export class CloudflareProvider implements Provider {
             throw new Error(`No commitment for the version ${version} is found`);
         }
 
-        // Check the expiry date.
-        const expiry = new Date(commitment.expiry);
-        if (Date.now() >= +expiry) {
-            throw new Error(`Commitments expired in ${expiry.toString()}`);
+        let item: { G: string; H: string };
+
+        // Does the commitment require verification?
+        if ('G' in commitment) {
+            item = commitment;
+        }
+        else {
+            // Check the expiry date.
+            const expiry: number = (new Date(commitment.expiry)).getTime();
+            if (Date.now() >= expiry) {
+                throw new Error(`Commitments expired in ${expiry.toString()}`);
+            }
+
+            // This will throw an error on a bad signature.
+            this.VOPRF.verifyConfiguration(
+                VERIFICATION_KEY,
+                {
+                    H: commitment.H,
+                    expiry: commitment.expiry,
+                },
+                commitment.sig,
+            );
+
+            item = {
+                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
+                H: commitment.H,
+            };
         }
 
-        // This will throw an error on a bad signature.
-        voprf.verifyConfiguration(
-            VERIFICATION_KEY,
-            {
-                H: commitment.H,
-                expiry: commitment.expiry,
-            },
-            commitment.sig,
-        );
-
         // Cache.
-        const item = {
-            G: voprf.sec1EncodeToBase64(voprf.getActiveECSettings().curve.G, false),
-            H: commitment.H,
-        };
         this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
+
         return item;
     }
 
@@ -116,7 +144,7 @@ export class CloudflareProvider implements Provider {
         url: string,
         formData: { [key: string]: string[] | string },
     ): Promise<Token[]> {
-        const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token());
+        const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token(this.VOPRF));
         const issuance = {
             type: 'Issue',
             contents: tokens.map((token) => token.getEncodedBlindedPoint()),
@@ -129,7 +157,8 @@ export class CloudflareProvider implements Provider {
         });
 
         const headers = {
-            'content-type': 'application/x-www-form-urlencoded',
+            'accept':            'application/json',
+            'content-type':      'application/x-www-form-urlencoded',
             [ISSUE_HEADER_NAME]: CloudflareProvider.ID.toString(),
         };
 
@@ -147,23 +176,23 @@ export class CloudflareProvider implements Provider {
         }
 
         interface SignaturesParam {
-            sigs: string[];
+            sigs:    string[];
             version: string;
-            proof: string;
-            prng: string;
+            proof:   string;
+            prng?:   string;
         }
 
         const data: SignaturesParam = JSON.parse(atob(signatures));
-        const returned = voprf.getCurvePoints(data.sigs);
+        const returned = this.VOPRF.getCurvePoints(data.sigs);
 
         const commitment = await this.getCommitment(data.version);
 
-        const result = voprf.verifyProof(
+        const result = this.VOPRF.verifyProof(
             data.proof,
             tokens.map((token) => token.toLegacy()),
             returned,
             commitment,
-            data.prng,
+            data.prng || 'shake',
         );
         if (!result) {
             throw new Error('DLEQ proof is invalid.');
@@ -185,7 +214,7 @@ export class CloudflareProvider implements Provider {
     }
 
     handleActivated(): void {
-        this.callbacks.updateIcon(this.getBadgeText());
+        this.forceUpdateIcon();
     }
 
     handleBeforeSendHeaders(
@@ -202,7 +231,7 @@ export class CloudflareProvider implements Provider {
         this.redeemInfo = null;
 
         const key = token.getMacKey();
-        const binding = voprf.createRequestBinding(key, [
+        const binding = this.VOPRF.createRequestBinding(key, [
             voprf.getBytesFromString(url.hostname),
             voprf.getBytesFromString(details.method + ' ' + url.pathname),
         ]);
@@ -217,8 +246,6 @@ export class CloudflareProvider implements Provider {
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
 
-        this.callbacks.updateIcon(this.getBadgeText());
-
         return {
             requestHeaders: headers,
         };
@@ -227,59 +254,71 @@ export class CloudflareProvider implements Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-
+        // Only issue tokens for POST requests that contain 'application/x-www-form-urlencoded' data.
         if (
             details.requestBody === null ||
-            details.requestBody === undefined ||
-            details.requestBody.formData === undefined
+            details.requestBody === undefined
         ) {
             return;
         }
 
-        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some((param) => {
-            return url.searchParams.has(param);
-        });
-        const hasBodyParams = QUALIFIED_BODY_PARAMS.some((param) => {
-            return details.requestBody !== null && param in details.requestBody.formData!;
-        });
-        if (!hasQueryParams || !hasBodyParams) {
+        const url = new URL(details.url);
+        const formData: { [key: string]: string[] | string } = details.requestBody.formData || {};
+
+        // Only issue tokens on the issuing website.
+        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
+            return;
+        }
+
+        // Only issue tokens when the pathname passes defined criteria.
+        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
+            return;
+        }
+
+        // Only issue tokens when querystring parameters pass defined criteria.
+        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            return;
+        }
+
+        // Only issue tokens when POST data parameters pass defined criteria.
+        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
             return;
         }
 
         const flattenFormData: { [key: string]: string[] | string } = {};
-        for (const key in details.requestBody.formData) {
-            if (details.requestBody.formData[key].length == 1) {
-                const [value] = details.requestBody.formData[key];
+        for (const key in formData) {
+            if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
+                const [value] = formData[key];
                 flattenFormData[key] = value;
             } else {
-                flattenFormData[key] = details.requestBody.formData[key];
+                flattenFormData[key] = formData[key];
             }
         }
 
-        (async () => {
-            // Issue tokens.
-            const tokens = await this.issue(details.url, flattenFormData);
-            // Store tokens.
-            const cached = this.getStoredTokens();
-            this.setStoredTokens(cached.concat(tokens));
+        // delay the request to issue tokens until next tick of the event loop
+        setTimeout(
+            async () => {
+                // Issue tokens.
+                const tokens = await this.issue(details.url, flattenFormData);
 
-            this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
-        })();
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
 
-        // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue
-        // cancelling the request. However, it seems that we can use image/* except image/svg+html. Let's figure how to
-        // use image data URL later.
-        // https://blog.mozilla.org/security/2017/11/27/blocking-top-level-navigations-data-urls-firefox-59/
+                this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+            },
+            0
+        );
+
+        // safe to cancel
         return { cancel: true };
     }
 
     handleHeadersReceived(
         details: chrome.webRequest.WebResponseHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        // Don't redeem a token in the issuing website.
-        const url = new URL(details.url);
-        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
+        // Don't redeem a token on the issuing website.
+        if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
             return;
         }
 
@@ -291,7 +330,7 @@ export class CloudflareProvider implements Provider {
             return (
                 header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
                 header.value !== undefined &&
-                +header.value === CloudflareProvider.ID
+                parseInt(header.value, 10) === CloudflareProvider.ID
             );
         });
         if (!hasSupportHeader) {

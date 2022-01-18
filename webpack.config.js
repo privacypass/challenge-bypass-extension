@@ -1,17 +1,16 @@
+import webpack from 'webpack';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// import buffer from "buffer";
-// import streamBrowserify from "stream-browserify";
-
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const tsloader = {
-    test: /\.tsx?$/,
-    exclude: /node_modules/,
+    test: /\.[jt]sx?$/,
+    exclude: /node_modules(?![\/\\](?:buffer|keccak))/,
     loader: 'ts-loader',
     options: {
         projectReferences: true,
@@ -20,12 +19,13 @@ const tsloader = {
 
 const common = {
     output: {
-        path: path.resolve('dist'),
+        path: path.resolve('dist/PrivacyPass'),
     },
     context: __dirname,
     mode: 'production',
+    target: ['web', 'es5'],
     optimization: {
-        minimize: false,
+        minimize: true,
     },
 };
 
@@ -34,17 +34,23 @@ const background = {
     entry: {
         background: path.resolve('src/background/index.ts'),
     },
-    externals: { crypto: 'null' },
+    externals: {
+        crypto: 'null',
+    },
     module: {
         rules: [tsloader],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
         fallback: {
-            // 'buffer': buffer,
-            // 'stream': streamBrowserify,
+            buffer: 'buffer/',
         },
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+        }),
+    ],
 };
 
 const popup = {
@@ -73,7 +79,7 @@ const popup = {
     },
     plugins: [
         new CopyWebpackPlugin({
-            patterns: [{ from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
+            patterns: [{ from: 'public/_locales', to: '_locales' }, { from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
         }),
         new HtmlWebpackPlugin({
             chunks: ['popup'],

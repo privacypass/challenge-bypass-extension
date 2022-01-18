@@ -1,8 +1,9 @@
 {
-    "name": "Privacy Pass",
+    "name": "__MSG_appName__",
+    "description": "__MSG_appDescription__",
+    "version": "3.3.2",
     "manifest_version": 2,
-    "description": "Client support for Privacy Pass anonymous authorization protocol.",
-    "version": "3.0.0",
+    "default_locale": "en",
     "icons": {
         "32": "icons/32/gold.png",
         "48": "icons/48/gold.png",
@@ -24,5 +25,10 @@
         "default_icon": "icons/32/grey.png",
         "default_title": "Privacy Pass",
         "default_popup": "popup.html"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "challenge-bypass-extension@privacypass.github.io"
+        }
     }
 }

@@ -1,4 +1,12 @@
+node_modules/
+lib/
+
+dist/PrivacyPass/
+dist/PrivacyPass.pem
+dist/PrivacyPass.crx
+dist/PrivacyPass.crx2
+dist/PrivacyPass.crx3
+dist/PrivacyPass.xpi
+dist/.bin/**/temp/
+
 *.swp
-/node_modules
-/dist
-/lib
