@@ -4,20 +4,13 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const __dirname = (() => {
-  const filepath_uri = import.meta.url;
-  const prefix = `file:${path.sep === '/' ? '' : path.sep}`;
-  let fp;
-  fp = path.normalize(filepath_uri);
-  fp = (fp.indexOf(prefix) === 0) ? fp.substring(prefix.length, fp.length) : new URL(filepath_uri).pathname;
-  fp = path.dirname(fp);
-  return fp;
-})();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const tsloader = {
-    test: /\.tsx?$/,
-    exclude: /node_modules/,
+    test: /\.[jt]sx?$/,
+    exclude: /node_modules(?![\/\\](?:buffer|keccak))/,
     loader: 'ts-loader',
     options: {
         projectReferences: true,
@@ -41,14 +34,16 @@ const background = {
     entry: {
         background: path.resolve('src/background/index.ts'),
     },
-    externals: { crypto: 'null' },
+    externals: {
+        crypto: 'null',
+    },
     module: {
         rules: [tsloader],
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
         fallback: {
-            buffer: 'buffer',
+            buffer: 'buffer/',
         },
     },
     plugins: [
