@@ -2,12 +2,13 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
+import { fileURLToPath } from 'url';
 import path from 'path';
 
 // import buffer from "buffer";
 // import streamBrowserify from "stream-browserify";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const tsloader = {
     test: /\.tsx?$/,
