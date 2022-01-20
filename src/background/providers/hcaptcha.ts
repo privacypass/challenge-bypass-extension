@@ -40,6 +40,12 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4OifvSTxGcy3T/yac6LVugArFb89
 wvqGivp0/54wgeyWkvUZiUdlbIQF7BuGeO9C4sx4nHkpAgRfvd8jdBGz9g==
 -----END PUBLIC KEY-----`;
 
+interface IssueInfo {
+    requestId: string;
+    url: string;
+    formData: { [key: string]: string[] | string };
+}
+
 interface RedeemInfo {
     requestId: string;
     token: Token;
@@ -57,6 +63,7 @@ export class HcaptchaProvider extends Provider {
     private VOPRF:      voprf.VOPRF;
     private callbacks:  Callbacks;
     private storage:    Storage;
+    private issueInfo:  IssueInfo  | null;
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage, callbacks: Callbacks) {
@@ -65,6 +72,7 @@ export class HcaptchaProvider extends Provider {
         this.VOPRF      = new voprf.VOPRF(voprf.defaultECSettings);
         this.callbacks  = callbacks;
         this.storage    = storage;
+        this.issueInfo  = null;
         this.redeemInfo = null;
     }
 
@@ -286,30 +294,16 @@ export class HcaptchaProvider extends Provider {
             return;
         }
 
-        const flattenFormData: { [key: string]: string[] | string } = {};
+        this.issueInfo = { requestId: details.requestId, url: details.url, formData: {} };
+
         for (const key in formData) {
             if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
                 const [value] = formData[key];
-                flattenFormData[key] = value;
+                this.issueInfo.formData[key] = value;
             } else {
-                flattenFormData[key] = formData[key];
+                this.issueInfo.formData[key] = formData[key];
             }
         }
-
-        // delay the request to issue tokens until next tick of the event loop
-        setTimeout(
-            async () => {
-                // Issue tokens.
-                const tokens = await this.issue(details.url, flattenFormData);
-
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
-
-                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
-            },
-            0
-        );
 
         // do NOT cancel the original captcha solve request
         return { cancel: false };
@@ -318,6 +312,24 @@ export class HcaptchaProvider extends Provider {
     handleHeadersReceived(
         details: chrome.webRequest.WebResponseHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
+        // Check if it's the response of the request that solved a captcha on a domain that issues tokens.
+        if (this.issueInfo !== null && details.requestId === this.issueInfo.requestId) {
+            (async () => {
+                // Issue tokens.
+                const tokens = await this.issue(this.issueInfo!.url, this.issueInfo!.formData);
+
+                // Clear the issue info to indicate that we are already issuing the tokens.
+                this.issueInfo = null;
+
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
+
+                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
+            })();
+            return;
+        }
+
         // Don't redeem a token on the issuing website.
         if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
             return;

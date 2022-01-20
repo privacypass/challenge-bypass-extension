@@ -295,20 +295,16 @@ export class CloudflareProvider extends Provider {
             }
         }
 
-        // delay the request to issue tokens until next tick of the event loop
-        setTimeout(
-            async () => {
-                // Issue tokens.
-                const tokens = await this.issue(details.url, flattenFormData);
+        (async () => {
+            // Issue tokens.
+            const tokens = await this.issue(details.url, flattenFormData);
 
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
+            // Store tokens.
+            const cached = this.getStoredTokens();
+            this.setStoredTokens(cached.concat(tokens));
 
-                this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
-            },
-            0
-        );
+            this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+        })();
 
         // safe to cancel
         return { cancel: true };

@@ -2,16 +2,6 @@ import { jest } from '@jest/globals';
 import { CloudflareProvider } from './cloudflare';
 import Token from '../token';
 
-beforeEach(() => {
-  jest.useFakeTimers();
-  jest.spyOn(global, 'setTimeout');
-});
-
-afterEach(() => {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-});
-
 export class StorageMock {
     store: Map<string, string>;
 
@@ -28,20 +18,6 @@ export class StorageMock {
     }
 }
 
-test('getStoredTokens', () => {
-    const storage = new StorageMock();
-    const updateIcon = jest.fn();
-    const navigateUrl = jest.fn();
-
-    const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
-    const tokens = [new Token(), new Token()];
-    provider['setStoredTokens'](tokens);
-    const storedTokens = provider['getStoredTokens']();
-    expect(storedTokens.map((token) => token.toString())).toEqual(
-        tokens.map((token) => token.toString()),
-    );
-});
-
 test('setStoredTokens', () => {
     const storage = new StorageMock();
     const updateIcon = jest.fn();
@@ -50,8 +26,36 @@ test('setStoredTokens', () => {
     const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
     const storedTokens = JSON.parse(storage.store.get('tokens')!);
     expect(storedTokens).toEqual(tokens.map((token) => token.toString()));
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(navigateUrl).not.toHaveBeenCalled();
+});
+
+test('getStoredTokens', () => {
+    const storage = new StorageMock();
+    const updateIcon = jest.fn();
+    const navigateUrl = jest.fn();
+
+    const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+    const tokens = [new Token(), new Token()];
+    provider['setStoredTokens'](tokens);
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+    const storedTokens = provider['getStoredTokens']();
+    expect(storedTokens.map((token) => token.toString())).toEqual(
+        tokens.map((token) => token.toString()),
+    );
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(navigateUrl).not.toHaveBeenCalled();
 });
 
 test('getBadgeText', () => {
@@ -81,6 +85,22 @@ test('getBadgeText', () => {
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
+        const validDetails = {
+            method: 'POST',
+            url: 'https://captcha.website/?__cf_chl_captcha_tk__=query-param',
+            requestId: 'xxx',
+            frameId: 1,
+            parentFrameId: 1,
+            tabId: 1,
+            type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+            timeStamp: 1,
+            requestBody: {
+                formData: {
+                    'h-captcha-response': ['body-param'],
+                },
+            },
+        };
+
         test('valid request', async () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
@@ -92,33 +112,13 @@ describe('issuance', () => {
                 return tokens;
             });
             provider['issue'] = issue;
-            const url = 'https://captcha.website/?__cf_chl_captcha_tk__=query-param';
-            const details = {
-                method: 'POST',
-                url,
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestBody: {
-                    formData: {
-                        'h-captcha-response': ['body-param'],
-                    },
-                },
-            };
-            const result = provider.handleBeforeRequest(details);
+
+            const result = provider.handleBeforeRequest(validDetails);
             expect(result).toEqual({ cancel: true });
-
-            expect(setTimeout).toHaveBeenCalledTimes(1);
-            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
-
-            jest.runAllTimers();
             await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(url, {
+            expect(issue).toHaveBeenCalledWith(validDetails.url, {
                 'h-captcha-response': 'body-param',
             });
 
@@ -145,7 +145,7 @@ describe('issuance', () => {
          *    b. 'h-captcha-response'
          *    c. 'cf_captcha_kind'
          */
-        test('invalid request', async () => {
+        test('invalid request w/ no query param', async () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -153,21 +153,37 @@ describe('issuance', () => {
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
             const issue = jest.fn(async () => []);
             provider['issue'] = issue;
+
             const details = {
-                method: 'GET',
+                ...validDetails,
                 url: 'https://cloudflare.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
+            };
+            const result = provider.handleBeforeRequest(details);
+            expect(result).toBeUndefined();
+            await Promise.resolve();
+
+            expect(issue).not.toHaveBeenCalled();
+            expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
+        });
+
+        test('invalid request w/ no body param', async () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const issue = jest.fn(async () => []);
+            provider['issue'] = issue;
+
+            const details = {
+                ...validDetails,
                 requestBody: {},
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
+            await Promise.resolve();
 
-            expect(setTimeout).not.toHaveBeenCalled();
             expect(issue).not.toHaveBeenCalled();
             expect(updateIcon).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
@@ -200,6 +216,7 @@ describe('issuance', () => {
 describe('redemption', () => {
     describe('handleHeadersReceived', () => {
         const validDetails = {
+            method: 'GET',
             url: 'https://cloudflare.com/',
             requestId: 'xxx',
             frameId: 1,
@@ -207,7 +224,6 @@ describe('redemption', () => {
             tabId: 1,
             type: 'main_frame' as chrome.webRequest.ResourceType,
             timeStamp: 1,
-
             statusLine: 'HTTP/1.1 403 Forbidden',
             statusCode: 403,
             responseHeaders: [
@@ -216,7 +232,6 @@ describe('redemption', () => {
                     value: '1',
                 },
             ],
-            method: 'GET',
         };
 
         test('valid response with tokens', () => {
@@ -227,18 +242,30 @@ describe('redemption', () => {
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
             const details = validDetails;
             const result = provider.handleHeadersReceived(details);
             expect(result).toEqual({ redirectUrl: details.url });
+
             // Expect redeemInfo to be set.
             const redeemInfo = provider['redeemInfo'];
             expect(redeemInfo!.requestId).toEqual(details.requestId);
             expect(redeemInfo!.token.toString()).toEqual(tokens[0].toString());
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(updateIcon).toHaveBeenLastCalledWith((tokens.length - 1).toString());
+
             // Expect a token is used.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.slice(1).map((token) => token.toString()),
             );
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         test('valid response without tokens', () => {
@@ -248,12 +275,20 @@ describe('redemption', () => {
 
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
             provider['setStoredTokens']([]);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith('0');
+
             const details = validDetails;
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(updateIcon).toHaveBeenLastCalledWith('0');
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        test('captcha.website response', () => {
+        test('no response from an issuing domain', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -261,10 +296,19 @@ describe('redemption', () => {
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
-            const details = validDetails;
-            details.url = 'https://captcha.website/';
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+            const details = {
+                ...validDetails,
+                url: 'https://captcha.website/',
+            };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         /*
@@ -272,7 +316,7 @@ describe('redemption', () => {
          * 1. The status code is not 403.
          * 2. There is no HTTP header of "cf-chl-bypass: 1"
          */
-        test('invalid response', () => {
+        test('invalid response w/ wrong status code', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -280,25 +324,59 @@ describe('redemption', () => {
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
-            const details = {
-                url: 'https://cloudflare.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
 
-                statusLine: 'HTTP/1.1 403 Forbidden',
-                statusCode: 403,
-                method: 'GET',
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+            const details = {
+                ...validDetails,
+                statusLine: 'HTTP/1.1 200 OK',
+                statusCode: 200,
             };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
+        });
+
+        test('invalid response w/ no bypass header', () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const tokens = [new Token(), new Token(), new Token()];
+            provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+            const details = {
+                ...validDetails,
+                responseHeaders: [],
+            };
+            const result = provider.handleHeadersReceived(details);
+            expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
 
     describe('handleBeforeSendHeaders', () => {
+        const validDetails = {
+            method: 'GET',
+            url: 'https://cloudflare.com/',
+            requestId: 'xxx',
+            frameId: 1,
+            parentFrameId: 1,
+            tabId: 1,
+            type: 'main_frame' as chrome.webRequest.ResourceType,
+            timeStamp: 1,
+            requestHeaders: [],
+        };
+
         test('with redeemInfo', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
@@ -314,17 +392,8 @@ describe('redemption', () => {
                 token,
             };
             provider['redeemInfo'] = redeemInfo;
-            const details = {
-                method: 'GET',
-                url: 'https://cloudflare.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestHeaders: [],
-            };
+
+            const details = validDetails;
             const result = provider.handleBeforeSendHeaders(details);
             expect(result).toEqual({
                 requestHeaders: [
@@ -334,9 +403,12 @@ describe('redemption', () => {
                     },
                 ],
             });
+
             const newRedeemInfo = provider['redeemInfo'];
             expect(newRedeemInfo).toBeNull();
+
             expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         test('without redeemInfo', () => {
@@ -346,20 +418,12 @@ describe('redemption', () => {
 
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
 
-            const details = {
-                method: 'GET',
-                url: 'https://cloudflare.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestHeaders: [],
-            };
+            const details = validDetails;
             const result = provider.handleBeforeSendHeaders(details);
             expect(result).toBeUndefined();
+
             expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
 });

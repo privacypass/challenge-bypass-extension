@@ -2,16 +2,6 @@ import { jest } from '@jest/globals';
 import { HcaptchaProvider } from './hcaptcha';
 import Token from '../token';
 
-beforeEach(() => {
-  jest.useFakeTimers();
-  jest.spyOn(global, 'setTimeout');
-});
-
-afterEach(() => {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-});
-
 export class StorageMock {
     store: Map<string, string>;
 
@@ -28,20 +18,6 @@ export class StorageMock {
     }
 }
 
-test('getStoredTokens', () => {
-    const storage = new StorageMock();
-    const updateIcon = jest.fn();
-    const navigateUrl = jest.fn();
-
-    const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-    const tokens = [new Token(), new Token()];
-    provider['setStoredTokens'](tokens);
-    const storedTokens = provider['getStoredTokens']();
-    expect(storedTokens.map((token) => token.toString())).toEqual(
-        tokens.map((token) => token.toString()),
-    );
-});
-
 test('setStoredTokens', () => {
     const storage = new StorageMock();
     const updateIcon = jest.fn();
@@ -50,8 +26,36 @@ test('setStoredTokens', () => {
     const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
     const storedTokens = JSON.parse(storage.store.get('tokens')!);
     expect(storedTokens).toEqual(tokens.map((token) => token.toString()));
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(navigateUrl).not.toHaveBeenCalled();
+});
+
+test('getStoredTokens', () => {
+    const storage = new StorageMock();
+    const updateIcon = jest.fn();
+    const navigateUrl = jest.fn();
+
+    const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
+    const tokens = [new Token(), new Token()];
+    provider['setStoredTokens'](tokens);
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
+    const storedTokens = provider['getStoredTokens']();
+    expect(storedTokens.map((token) => token.toString())).toEqual(
+        tokens.map((token) => token.toString()),
+    );
+
+    expect(updateIcon.mock.calls.length).toBe(1);
+    expect(navigateUrl).not.toHaveBeenCalled();
 });
 
 test('getBadgeText', () => {
@@ -67,62 +71,89 @@ test('getBadgeText', () => {
 });
 
 /*
- * The issuance involves handleBeforeRequest listener.
+ * The issuance involves handleBeforeRequest and handleHeadersReceived
+ * listeners. In handleBeforeRequest listener,
  * 1. Firstly, the listener check if the request looks like the one that we
  * should send an issuance request.
  * 2. If it passes the check, the listener returns the cancel command to
  * explicitly prevent cancelling the request.
  * If not, it returns nothing and let the request continue.
- * 3. At the same time the listener returns, it calls a private method
- * "issue" to send an issuance request to the server and the method return
+ * 3. The listener sets "issueInfo" property which includes the request id
+ * and other request details. The property will be used by
+ * handleHeadersReceived to issue new tokens.
+ *
+ * In handleHeadersReceived,
+ * 1. The listener will check if the provided request id matches the
+ * request id in "issueInfo". If so, it means that the response is to the
+ * request checked by handleBeforeRequest that should trigger an issuance request.
+ * 2. If it passes the check, the listener calls a private method
+ * "issue" to send an issuance request to the server and the method returns
  * an array of issued tokens.
- * 4. The listener stored the issued tokens in the storage.
- * 5. The listener reloads the tab to get the proper web page for the tab.);
+ * 3. The listener stores the issued tokens in the storage.
+ * 4. The listener reloads the tab to get the proper web page for the tab.
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
+        const validDetails = {
+            method: 'POST',
+            url: 'https://hcaptcha.com/checkcaptcha/xxx?s=00000000-0000-0000-0000-000000000000',
+            requestId: 'xxx',
+            frameId: 1,
+            parentFrameId: 1,
+            tabId: 1,
+            type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+            timeStamp: 1,
+            requestBody: {
+                formData: {},
+            },
+        };
+
         test('valid request', async () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
+            let result, issueInfo
+
+            const reqDetails = validDetails;
+            result = provider.handleBeforeRequest(reqDetails);
+            expect(result).toEqual({ cancel: false });
+
+            // Expect issueInfo to be set.
+            issueInfo = provider['issueInfo'];
+            expect(issueInfo!.requestId).toEqual(reqDetails.requestId);
+            expect(issueInfo!.url).toEqual(reqDetails.url);
+            expect(issueInfo!.formData).toEqual({});
+
             const tokens = [new Token(), new Token(), new Token()];
             const issue = jest.fn(async () => {
                 return tokens;
             });
             provider['issue'] = issue;
-            const url = 'https://www.hcaptcha.com/checkcaptcha/?s=00000000-0000-0000-0000-000000000000';
-            const details = {
-                method: 'POST',
-                url,
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestBody: {
-                    formData: {},
-                },
+
+            const resDetails = {
+                ...validDetails,
+                statusLine: 'HTTP/1.1 200 OK',
+                statusCode: 200,
+                responseHeaders: [],
             };
-            const result = provider.handleBeforeRequest(details);
-            expect(result).toEqual({ cancel: false });
-
-            expect(setTimeout).toHaveBeenCalledTimes(1);
-            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
-
-            jest.runAllTimers();
+            result = provider.handleHeadersReceived(resDetails);
+            expect(result).toBeUndefined();
             await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(url, {});
+            expect(issue).toHaveBeenCalledWith(issueInfo!.url, issueInfo!.formData);
 
             // Expect the tokens are added.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.map((token) => token.toString()),
             );
+
+            // Expect issueInfo to be null.
+            issueInfo = provider['issueInfo'];
+            expect(issueInfo).toBeNull();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
@@ -134,37 +165,50 @@ describe('issuance', () => {
         /*
          * The request is invalid if any of the followings is true:
          * 1. It has no url param of any of the followings:
-         *    a. '__cf_chl_captcha_tk__'
-         *    b. '__cf_chl_managed_tk__'
-         * 2. It has no body param of any of the followings:
-         *    a. 'g-recaptcha-response'
-         *    b. 'h-captcha-response'
-         *    c. 'cf_captcha_kind'
+         *    a. 's=00000000-0000-0000-0000-000000000000'
+         * 2. Its pathname does not contain of any of the followings:
+         *    a. '/checkcaptcha'
          */
-        test('invalid request', async () => {
+        test('invalid request w/ no query param', async () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-            const issue = jest.fn(async () => []);
-            provider['issue'] = issue;
+
             const details = {
-                method: 'GET',
-                url: 'https://www.hcaptcha.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestBody: {},
+                ...validDetails,
+                url: 'https://hcaptcha.com/checkcaptcha/xxx?s=',
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
 
-            expect(setTimeout).not.toHaveBeenCalled();
-            expect(issue).not.toHaveBeenCalled();
+            // Expect issueInfo to be null.
+            const issueInfo = provider['issueInfo'];
+            expect(issueInfo).toBeNull();
+
+            expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
+        });
+
+        test('invalid request w/ no matching pathname', async () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
+
+            const details = {
+                ...validDetails,
+                url: 'https://hcaptcha.com/getcaptcha?s=00000000-0000-0000-0000-000000000000',
+            };
+            const result = provider.handleBeforeRequest(details);
+            expect(result).toBeUndefined();
+
+            // Expect issueInfo to be null.
+            const issueInfo = provider['issueInfo'];
+            expect(issueInfo).toBeNull();
+
             expect(updateIcon).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
         });
@@ -196,6 +240,7 @@ describe('issuance', () => {
 describe('redemption', () => {
     describe('handleHeadersReceived', () => {
         const validDetails = {
+            method: 'GET',
             url: 'https://non-issuing-domain.example.com/',
             requestId: 'xxx',
             frameId: 1,
@@ -203,7 +248,6 @@ describe('redemption', () => {
             tabId: 1,
             type: 'main_frame' as chrome.webRequest.ResourceType,
             timeStamp: 1,
-
             statusLine: 'HTTP/1.1 403 Forbidden',
             statusCode: 403,
             responseHeaders: [
@@ -212,7 +256,6 @@ describe('redemption', () => {
                     value: '2',
                 },
             ],
-            method: 'GET',
         };
 
         test('valid response with tokens', () => {
@@ -223,18 +266,30 @@ describe('redemption', () => {
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
             const details = validDetails;
             const result = provider.handleHeadersReceived(details);
             expect(result).toEqual({ redirectUrl: details.url });
+
             // Expect redeemInfo to be set.
             const redeemInfo = provider['redeemInfo'];
             expect(redeemInfo!.requestId).toEqual(details.requestId);
             expect(redeemInfo!.token.toString()).toEqual(tokens[0].toString());
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(updateIcon).toHaveBeenLastCalledWith((tokens.length - 1).toString());
+
             // Expect a token is used.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.slice(1).map((token) => token.toString()),
             );
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         test('valid response without tokens', () => {
@@ -244,9 +299,17 @@ describe('redemption', () => {
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             provider['setStoredTokens']([]);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith('0');
+
             const details = validDetails;
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(2);
+            expect(updateIcon).toHaveBeenLastCalledWith('0');
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         test('no response from an issuing domain', () => {
@@ -257,20 +320,27 @@ describe('redemption', () => {
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
             const details = {
                 ...validDetails,
-                url: 'https://www.hcaptcha.com/privacy-pass'
+                url: 'https://www.hcaptcha.com/privacy-pass',
             };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         /*
          * The response is invalid if any of the followings is true:
          * 1. The status code is not 403.
-         * 2. There is no HTTP header of "cf-chl-bypass: 2"
+         * 2. There is no HTTP header of "cf-chl-bypass: 1"
          */
-        test('no response when the status code is not 403', () => {
+        test('invalid response w/ wrong status code', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -278,16 +348,23 @@ describe('redemption', () => {
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
             const details = {
                 ...validDetails,
                 statusLine: 'HTTP/1.1 200 OK',
-                statusCode: 200
+                statusCode: 200,
             };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        test('no response when there is no HTTP header of "cf-chl-bypass: 2"', () => {
+        test('invalid response w/ no bypass header', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -295,16 +372,35 @@ describe('redemption', () => {
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             const tokens = [new Token(), new Token(), new Token()];
             provider['setStoredTokens'](tokens);
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
+
             const details = {
                 ...validDetails,
-                responseHeaders: undefined
+                responseHeaders: [],
             };
             const result = provider.handleHeadersReceived(details);
             expect(result).toBeUndefined();
+
+            expect(updateIcon.mock.calls.length).toBe(1);
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
 
     describe('handleBeforeSendHeaders', () => {
+        const validDetails = {
+            method: 'GET',
+            url: 'https://www.hcaptcha.com/',
+            requestId: 'xxx',
+            frameId: 1,
+            parentFrameId: 1,
+            tabId: 1,
+            type: 'main_frame' as chrome.webRequest.ResourceType,
+            timeStamp: 1,
+            requestHeaders: [],
+        };
+
         test('with redeemInfo', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
@@ -320,17 +416,8 @@ describe('redemption', () => {
                 token,
             };
             provider['redeemInfo'] = redeemInfo;
-            const details = {
-                method: 'GET',
-                url: 'https://www.hcaptcha.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestHeaders: [],
-            };
+
+            const details = validDetails;
             const result = provider.handleBeforeSendHeaders(details);
             expect(result).toEqual({
                 requestHeaders: [
@@ -340,9 +427,12 @@ describe('redemption', () => {
                     },
                 ],
             });
+
             const newRedeemInfo = provider['redeemInfo'];
             expect(newRedeemInfo).toBeNull();
+
             expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
 
         test('without redeemInfo', () => {
@@ -352,20 +442,12 @@ describe('redemption', () => {
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
 
-            const details = {
-                method: 'GET',
-                url: 'https://www.hcaptcha.com/',
-                requestId: 'xxx',
-                frameId: 1,
-                parentFrameId: 1,
-                tabId: 1,
-                type: 'main_frame' as chrome.webRequest.ResourceType,
-                timeStamp: 1,
-                requestHeaders: [],
-            };
+            const details = validDetails;
             const result = provider.handleBeforeSendHeaders(details);
             expect(result).toBeUndefined();
+
             expect(updateIcon).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
 });
