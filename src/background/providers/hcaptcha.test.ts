@@ -71,7 +71,7 @@ test('getBadgeText', () => {
 });
 
 /*
- * The issuance involves handleBeforeRequest and handleHeadersReceived
+ * The issuance involves handleBeforeRequest and handleOnCompleted
  * listeners. In handleBeforeRequest listener,
  * 1. Firstly, the listener check if the request looks like the one that we
  * should send an issuance request.
@@ -80,9 +80,9 @@ test('getBadgeText', () => {
  * If not, it returns nothing and let the request continue.
  * 3. The listener sets "issueInfo" property which includes the request id
  * and other request details. The property will be used by
- * handleHeadersReceived to issue new tokens.
+ * handleOnCompleted to issue new tokens.
  *
- * In handleHeadersReceived,
+ * In handleOnCompleted,
  * 1. The listener will check if the provided request id matches the
  * request id in "issueInfo". If so, it means that the response is to the
  * request checked by handleBeforeRequest that should trigger an issuance request.
@@ -138,7 +138,7 @@ describe('issuance', () => {
                 statusCode: 200,
                 responseHeaders: [],
             };
-            result = provider.handleHeadersReceived(resDetails);
+            result = provider.handleOnCompleted(resDetails);
             expect(result).toBeUndefined();
             await Promise.resolve();
 
@@ -178,7 +178,7 @@ describe('issuance', () => {
 
             const details = {
                 ...validDetails,
-                url: 'https://hcaptcha.com/checkcaptcha/xxx?s=',
+                url: validDetails.url.substring(0, validDetails.url.indexOf('?')),
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
@@ -200,7 +200,7 @@ describe('issuance', () => {
 
             const details = {
                 ...validDetails,
-                url: 'https://hcaptcha.com/getcaptcha?s=00000000-0000-0000-0000-000000000000',
+                url: validDetails.url.replace(/checkcaptcha/g, 'getcaptcha'),
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();

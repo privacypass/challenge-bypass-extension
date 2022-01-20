@@ -133,4 +133,20 @@ export class Tab {
 
         return result;
     }
+
+    handleOnCompleted(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): void {
+        if (this.context !== null) {
+            this.context.handleOnCompleted(details);
+        }
+    }
+
+    handleOnErrorOccurred(
+        details: chrome.webRequest.WebResponseErrorDetails,
+    ): void {
+        if (this.context !== null) {
+            this.context.handleOnErrorOccurred(details);
+        }
+    }
 }

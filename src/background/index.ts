@@ -11,6 +11,8 @@ import {
     handleBeforeRequest,
     handleBeforeSendHeaders,
     handleHeadersReceived,
+    handleOnCompleted,
+    handleOnErrorOccurred,
 } from './listeners/webRequestListener';
 
 import {
@@ -71,20 +73,25 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs: chrome.
 });
 
 chrome.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<all_urls>'] }, [
-    'requestBody',
     'blocking',
+    'requestBody',
 ]);
 
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    handleBeforeSendHeaders,
-    { urls: ['<all_urls>'] },
-    ['requestHeaders', 'blocking'],
-);
+chrome.webRequest.onBeforeSendHeaders.addListener(handleBeforeSendHeaders, { urls: ['<all_urls>'] }, [
+    'blocking',
+    'requestHeaders',
+]);
 
 chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: ['<all_urls>'] }, [
-    'responseHeaders',
     'blocking',
+    'responseHeaders',
 ]);
+
+chrome.webRequest.onCompleted.addListener(handleOnCompleted, { urls: ['<all_urls>'] }, [
+    'responseHeaders',
+]);
+
+chrome.webRequest.onErrorOccurred.addListener(handleOnErrorOccurred, { urls: ['<all_urls>'] });
 
 chrome.cookies.onChanged.addListener(handleChangedCookies);
 

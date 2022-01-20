@@ -30,6 +30,12 @@ export abstract class Provider {
     abstract handleBeforeSendHeaders(
         details: chrome.webRequest.WebRequestHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void;
+    abstract handleOnCompleted(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): void;
+    abstract handleOnErrorOccurred(
+        details: chrome.webRequest.WebResponseErrorDetails,
+    ): void;
 }
 
 // -----------------------------------------------------------------------------

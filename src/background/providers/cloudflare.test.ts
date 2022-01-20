@@ -156,7 +156,7 @@ describe('issuance', () => {
 
             const details = {
                 ...validDetails,
-                url: 'https://cloudflare.com/',
+                url: validDetails.url.substring(0, validDetails.url.indexOf('?')),
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();

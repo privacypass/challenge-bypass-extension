@@ -350,4 +350,16 @@ export class CloudflareProvider extends Provider {
             redirectUrl: details.url,
         };
     }
+
+    handleOnCompleted(
+        _details: chrome.webRequest.WebResponseHeadersDetails,
+    ): void {
+        return;
+    }
+
+    handleOnErrorOccurred(
+        _details: chrome.webRequest.WebResponseErrorDetails,
+    ): void {
+        return;
+    }
 }

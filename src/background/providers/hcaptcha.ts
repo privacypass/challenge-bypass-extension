@@ -312,24 +312,6 @@ export class HcaptchaProvider extends Provider {
     handleHeadersReceived(
         details: chrome.webRequest.WebResponseHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        // Check if it's the response of the request that solved a captcha on a domain that issues tokens.
-        if (this.issueInfo !== null && details.requestId === this.issueInfo.requestId) {
-            (async () => {
-                // Issue tokens.
-                const tokens = await this.issue(this.issueInfo!.url, this.issueInfo!.formData);
-
-                // Clear the issue info to indicate that we are already issuing the tokens.
-                this.issueInfo = null;
-
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
-
-                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
-            })();
-            return;
-        }
-
         // Don't redeem a token on the issuing website.
         if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
             return;
@@ -366,5 +348,38 @@ export class HcaptchaProvider extends Provider {
         return {
             redirectUrl: details.url,
         };
+    }
+
+    private sendIssueRequest(requestId: string): void {
+        // Check if it's the response of the request that solved a captcha on a domain that issues tokens.
+        if (this.issueInfo !== null && requestId === this.issueInfo.requestId) {
+            this.issueInfo.requestId = 'issued';
+
+            (async () => {
+                // Issue tokens.
+                const tokens = await this.issue(this.issueInfo!.url, this.issueInfo!.formData);
+
+                // Clear the issue info to indicate that we are already issuing the tokens.
+                this.issueInfo = null;
+
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
+
+                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
+            })();
+        }
+    }
+
+    handleOnCompleted(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): void {
+        this.sendIssueRequest(details.requestId);
+    }
+
+    handleOnErrorOccurred(
+        details: chrome.webRequest.WebResponseErrorDetails,
+    ): void {
+        this.sendIssueRequest(details.requestId);
     }
 }
