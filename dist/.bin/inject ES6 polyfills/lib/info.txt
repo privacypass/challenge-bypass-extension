@@ -1,0 +1,4 @@
+https://www.npmjs.com/package/core-js-pure
+https://github.com/zloirock/core-js
+https://cdnjs.com/libraries/core-js
+https://cdnjs.cloudflare.com/ajax/libs/core-js/3.20.3/minified.min.js

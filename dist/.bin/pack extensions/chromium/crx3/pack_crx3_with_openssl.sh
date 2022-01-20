@@ -2,15 +2,18 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# ------------------------------------------------------------------------------
-# configuration
+source "${DIR}/../../../.env/constants.sh"
+source "${DIR}/../../../.env/openssl.sh"
 
-OPENSSL_HOME='/c/PortableApps/OpenSSL/1.1.0'
-PATH="${OPENSSL_HOME}:${PATH}"
+if [ -z "$ext_name" ];then
+  echo 'script configuration is invalid:'
+  echo 'missing name of browser extension'
+  exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # Source:  https://stackoverflow.com/a/18709204
-# Purpose: Pack a Chromium extension directory into crx format
+# Purpose: Pack a Chromium extension directory into crx3 format
 #   notes: all temporary files are created in the cwd.
 #          the final crx is created adjacent to the input extension directory.
 
@@ -22,7 +25,7 @@ function pack_crx3 {
 
   ext_dir=$1
   ext_key=$2
-  crx="${ext_dir}.crx"
+  crx="${ext_dir}.crx3.crx"
   name=$(basename "$ext_dir")
   pub="${name}.pub"
   sig="${name}.sig"
@@ -30,7 +33,17 @@ function pack_crx3 {
   tosign="${name}.presig"
   binary_crx_id="${name}.crxid"
 
-  echo "writing '${name}.crx'"
+  if [ ! -d "$ext_dir" ];then
+    echo 'error: extension directory path does not exist'
+    exit 1
+  fi
+
+  if [ ! -f "$ext_key" ];then
+    echo 'error: pem file path does not exist'
+    exit 1
+  fi
+
+  echo "writing ${name}.crx3.crx"
 
   # preparation: remove previous crx
   rm -f "$crx"
@@ -85,10 +98,10 @@ function pack_crx3 {
 # bootstrap
 
 function main {
-  cd "${DIR}/../.."
+  cd "${DIR}/../../../.."
   cwd=$(pwd -P)
-  ext_dir="${cwd}/PrivacyPass"
-  ext_key="${cwd}/PrivacyPass.pem"
+  ext_dir="${cwd}/${ext_name}"
+  ext_key="${cwd}/${ext_name}.pem"
 
   TMP="${DIR}/temp"
   [ -d "$TMP" ] && rm -rf "$TMP"

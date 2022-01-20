@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 
+if [ -z "$ext_name" ];then
+  echo 'script configuration is invalid:'
+  echo 'missing name of browser extension'
+  exit 1
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# ------------------------------------------------------------------------------
-# configuration
-
-CHROME_HOME='/c/PortableApps/Google Chrome/97.0.4692.71/App/Chrome-bin'
-CHROME_HOME='/c/PortableApps/SRWare Iron/85.0.4350.0/Iron'
-PATH="${CHROME_HOME}:${PATH}"
 
 # ------------------------------------------------------------------------------
 # bootstrap
 
 function main {
-  cd "${DIR}/../.."
+  cd "${DIR}/../../../.."
   cwd=$(realpath .)
   ext_dir="${cwd}/PrivacyPass"
   ext_key="${cwd}/PrivacyPass.pem"
