@@ -10,10 +10,15 @@ $_font-weight: 200;
     background-color: colors.$light-grey;
     font-size:   $_font-size;
     font-weight: $_font-weight;
+
+    white-space: nowrap;
+    line-height: 1em;
+    height: 1em;
+    clear: both;
 }
 
 .content {
-    display: inline;
+    float: left;
 }
 
 .value {
