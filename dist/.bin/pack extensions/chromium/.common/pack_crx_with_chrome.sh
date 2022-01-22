@@ -14,13 +14,13 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function main {
   cd "${DIR}/../../../.."
   cwd=$(realpath .)
-  ext_dir="${cwd}/PrivacyPass"
-  ext_key="${cwd}/PrivacyPass.pem"
+  ext_dir="${cwd}/${ext_name}"
+  ext_key="${cwd}/${ext_name}.pem"
 
   if [ -f "$ext_key" ];then
-    chrome "--pack-extension=${ext_dir}" "--pack-extension-key=${ext_key}"
+    chrome --disable-gpu --disable-software-rasterizer "--pack-extension=${ext_dir}" "--pack-extension-key=${ext_key}"
   else
-    chrome "--pack-extension=${ext_dir}"
+    chrome --disable-gpu --disable-software-rasterizer "--pack-extension=${ext_dir}"
   fi
 }
 
