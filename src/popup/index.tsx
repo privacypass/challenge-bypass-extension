@@ -13,11 +13,4 @@ ReactDOM.render(
     document.getElementById('root'),
 );
 
-chrome.runtime.sendMessage({ tokensCount: true }, (response: any) => {
-    if ((response !== undefined) && (response !== null) && (response instanceof Object)) {
-        store.dispatch({
-            type:  'UPDATE_STATE',
-            value: response
-        });
-    }
-});
+store.dispatch({ type: 'OBTAIN_STATE' });
