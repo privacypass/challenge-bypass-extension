@@ -17,6 +17,12 @@ function main {
   ext_dir="${cwd}/${ext_name}"
   ext_key="${cwd}/${ext_name}.pem"
 
+  if [ ! -d "$ext_dir" ];then
+    echo 'Extension directory does not exist.'
+    echo 'Perhaps the Typescript compiler build failed?'
+    exit 1
+  fi
+
   if [ -f "$ext_key" ];then
     chrome --disable-gpu --disable-software-rasterizer "--pack-extension=${ext_dir}" "--pack-extension-key=${ext_key}"
   else

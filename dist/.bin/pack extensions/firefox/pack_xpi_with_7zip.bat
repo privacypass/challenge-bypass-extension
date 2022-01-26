@@ -11,13 +11,20 @@ if not defined ext_name (
 
 cd /D "%~dp0..\..\.."
 
-set xpi_file="%cd%\%ext_name%.xpi"
+set ext_dir="%cd%\%ext_name%"
+set ext_xpi="%cd%\%ext_name%.xpi"
 
-cd "%ext_name%"
+if not exist %ext_dir% (
+  echo Extension directory does not exist.
+  echo Perhaps the Typescript compiler build failed?
+  exit /b 1
+)
+
+cd %ext_dir%
 
 rem :: https://sevenzip.osdn.jp/chm/cmdline/index.htm
 rem :: https://sevenzip.osdn.jp/chm/cmdline/commands/add.htm
-7z a -tzip %xpi_file% -r .
+7z a -tzip %ext_xpi% -r .
 
 if not defined BUILD_ALL (
   echo.

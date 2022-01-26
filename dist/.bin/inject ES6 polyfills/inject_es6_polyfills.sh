@@ -11,12 +11,21 @@ if [ -z "$ext_name" ];then
   exit 1
 fi
 
-cd "${DIR}/../../${ext_name}"
+ext_dir="${DIR}/../../${ext_name}"
+
+if [ ! -d "$ext_dir" ];then
+  echo 'Extension directory does not exist.'
+  echo 'Perhaps the Typescript compiler build failed?'
+  echo 'Quitting without making any changes.'
+  exit 1
+fi
+
+cd "$ext_dir"
 
 if [ -d 'lib' ];then
-  echo '"lib" directory already exists in extension directory'
-  echo 'has polyfill has already been injected?'
-  echo 'quitting without making any changes'
+  echo '"lib" directory already exists in extension directory.'
+  echo 'Has polyfill has already been injected?'
+  echo 'Quitting without making any changes.'
   exit 1
 fi
 

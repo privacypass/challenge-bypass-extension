@@ -10,12 +10,21 @@ if not defined ext_name (
   exit /b 1
 )
 
-cd "%~dp0..\..\%ext_name%"
+set ext_dir="%~dp0..\..\%ext_name%"
+
+if not exist %ext_dir% (
+  echo Extension directory does not exist.
+  echo Perhaps the Typescript compiler build failed?
+  echo Quitting without making any changes.
+  exit /b 1
+)
+
+cd /D %ext_dir%
 
 if exist "%cd%\lib" (
-  echo "lib" directory already exists in extension directory
-  echo has polyfill has already been injected?
-  echo quitting without making any changes
+  echo "lib" directory already exists in extension directory.
+  echo Has polyfill has already been injected?
+  echo Quitting without making any changes.
   exit /b 1
 )
 

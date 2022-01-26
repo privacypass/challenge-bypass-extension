@@ -17,12 +17,19 @@ function main {
   cd "${DIR}/../../.."
   cwd=$(pwd -P)
 
-  xpi_file="${cwd}/${ext_name}.xpi"
+  ext_dir="${cwd}/${ext_name}"
+  ext_xpi="${cwd}/${ext_name}.xpi"
 
-  cd "$ext_name"
+  if [ ! -d "$ext_dir" ];then
+    echo 'Extension directory does not exist.'
+    echo 'Perhaps the Typescript compiler build failed?'
+    exit 1
+  fi
+
+  cd "$ext_dir"
 
   # https://extensionworkshop.com/documentation/publish/package-your-extension/#package-linux
-  zip -r -FS "$xpi_file" *
+  zip -r -FS "$ext_xpi" *
 }
 
 main
