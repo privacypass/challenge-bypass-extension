@@ -25,7 +25,7 @@ const common = {
     mode: 'production',
     target: ['web', 'es5'],
     optimization: {
-        minimize: true,
+        minimize: (process.env.NODE_ENV === 'production'),
     },
 };
 

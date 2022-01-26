@@ -1,6 +1,7 @@
-/node_modules
-/lib
+/node_modules/
+/lib/
 
+/dist/lib/
 /dist/PrivacyPass/
 /dist/PrivacyPass.pem
 /dist/PrivacyPass.crx*
