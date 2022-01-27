@@ -71,7 +71,7 @@ const reducer = (state: any | undefined, action: Action) => {
             });
             return state;
         case 'RESTORE_TOKENS':
-            (async () => {
+            (async (): Promise<void> => {
 
                 const readFile = function (event: Event) {
                     event.stopPropagation();

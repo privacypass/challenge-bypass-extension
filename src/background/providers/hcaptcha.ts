@@ -303,7 +303,7 @@ export class HcaptchaProvider extends Provider {
             // Clear the issue info.
             this.issueInfo = null;
 
-            (async () => {
+            (async (): Promise<void> => {
                 // Issue tokens.
                 const tokens = await this.issue(url);
 

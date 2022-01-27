@@ -87,57 +87,90 @@ export class CloudflareProvider extends Provider {
         this.forceUpdateIcon();
     }
 
-    private async getCommitment(version: string): Promise<{ G: string; H: string }> {
-        const keyPrefix = 'commitment-';
-        const cached = this.storage.getItem(`${keyPrefix}${version}`);
-        if (cached !== null) {
-            return JSON.parse(cached);
+    private getBadgeText(): string {
+        return this.getStoredTokens().length.toString();
+    }
+
+    forceUpdateIcon(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
+    }
+
+    handleActivated(): void {
+        this.forceUpdateIcon();
+    }
+
+    handleBeforeRequest(
+        details: chrome.webRequest.WebRequestBodyDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        const url = new URL(details.url);
+        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
+            ? details.requestBody.formData
+            : {}
+        ;
+
+        if (this.matchesIssuingCriteria(details, url, formData)) {
+            (async (): Promise<void> => {
+                // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
+                const flattenFormData: { [key: string]: string[] | string } = {};
+                for (const key in formData) {
+                    if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
+                        const [value] = formData[key];
+                        flattenFormData[key] = value;
+                    } else {
+                        flattenFormData[key] = formData[key];
+                    }
+                }
+
+                // Issue tokens.
+                const tokens = await this.issue(details.url, flattenFormData);
+
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
+
+                this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+            })();
+
+            // safe to cancel
+            return { cancel: true };
+        }
+    }
+
+    private matchesIssuingCriteria(
+        details:  chrome.webRequest.WebRequestBodyDetails,
+        url:      URL,
+        formData: { [key: string]: string[] | string }
+    ): boolean {
+        // Only issue tokens for POST requests that contain data in body.
+        if (
+            (details.method.toUpperCase() !== 'POST'   ) ||
+            (details.requestBody          === null     ) ||
+            (details.requestBody          === undefined)
+        ) {
+            return false;
         }
 
-        interface Response {
-            CF: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
+        // Only issue tokens to hosts belonging to the provider.
+        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
+            return false;
         }
 
-        // Download the commitment
-        const { data } = await axios.get<Response>(COMMITMENT_URL);
-        const commitment = data.CF[version];
-        if (commitment === undefined) {
-            throw new Error(`No commitment for the version ${version} is found`);
+        // Only issue tokens when the pathname passes defined criteria.
+        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
+            return false;
         }
 
-        let item: { G: string; H: string };
-
-        // Does the commitment require verification?
-        if ('G' in commitment) {
-            item = commitment;
-        }
-        else {
-            // Check the expiry date.
-            const expiry: number = (new Date(commitment.expiry)).getTime();
-            if (Date.now() >= expiry) {
-                throw new Error(`Commitments expired in ${expiry.toString()}`);
-            }
-
-            // This will throw an error on a bad signature.
-            this.VOPRF.verifyConfiguration(
-                VERIFICATION_KEY,
-                {
-                    H: commitment.H,
-                    expiry: commitment.expiry,
-                },
-                commitment.sig,
-            );
-
-            item = {
-                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
-                H: commitment.H,
-            };
+        // Only issue tokens when querystring parameters pass defined criteria.
+        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            return false;
         }
 
-        // Cache.
-        this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
+        // Only issue tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
+        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
+            return false;
+        }
 
-        return item;
+        return true;
     }
 
     private async issue(
@@ -205,109 +238,57 @@ export class CloudflareProvider extends Provider {
         return tokens;
     }
 
-    private getBadgeText(): string {
-        return this.getStoredTokens().length.toString();
-    }
-
-    forceUpdateIcon(): void {
-        this.callbacks.updateIcon(this.getBadgeText());
-    }
-
-    handleActivated(): void {
-        this.forceUpdateIcon();
-    }
-
-    handleBeforeSendHeaders(
-        details: chrome.webRequest.WebRequestHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
-            return;
+    private async getCommitment(version: string): Promise<{ G: string; H: string }> {
+        const keyPrefix = 'commitment-';
+        const cached = this.storage.getItem(`${keyPrefix}${version}`);
+        if (cached !== null) {
+            return JSON.parse(cached);
         }
 
-        const url = new URL(details.url);
-
-        const token = this.redeemInfo!.token;
-        // Clear the redeem info to indicate that we are already redeeming the token.
-        this.redeemInfo = null;
-
-        const key = token.getMacKey();
-        const binding = this.VOPRF.createRequestBinding(key, [
-            voprf.getBytesFromString(url.hostname),
-            voprf.getBytesFromString(details.method + ' ' + url.pathname),
-        ]);
-
-        const contents = [
-            voprf.getBase64FromBytes(token.getInput()),
-            binding,
-            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
-        ];
-        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
-
-        const headers = details.requestHeaders ?? [];
-        headers.push({ name: 'challenge-bypass-token', value: redemption });
-
-        return {
-            requestHeaders: headers,
-        };
-    }
-
-    handleBeforeRequest(
-        details: chrome.webRequest.WebRequestBodyDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        // Only issue tokens for POST requests that contain 'application/x-www-form-urlencoded' data.
-        if (
-            details.requestBody === null ||
-            details.requestBody === undefined
-        ) {
-            return;
+        interface Response {
+            CF: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
         }
 
-        const url = new URL(details.url);
-        const formData: { [key: string]: string[] | string } = details.requestBody.formData || {};
-
-        // Only issue tokens on the issuing website.
-        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
-            return;
+        // Download the commitment
+        const { data } = await axios.get<Response>(COMMITMENT_URL);
+        const commitment = data.CF[version];
+        if (commitment === undefined) {
+            throw new Error(`No commitment for the version ${version} is found`);
         }
 
-        // Only issue tokens when the pathname passes defined criteria.
-        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
-            return;
-        }
+        let item: { G: string; H: string };
 
-        // Only issue tokens when querystring parameters pass defined criteria.
-        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
-            return;
+        // Does the commitment require verification?
+        if ('G' in commitment) {
+            item = commitment;
         }
-
-        // Only issue tokens when POST data parameters pass defined criteria.
-        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
-            return;
-        }
-
-        const flattenFormData: { [key: string]: string[] | string } = {};
-        for (const key in formData) {
-            if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
-                const [value] = formData[key];
-                flattenFormData[key] = value;
-            } else {
-                flattenFormData[key] = formData[key];
+        else {
+            // Check the expiry date.
+            const expiry: number = (new Date(commitment.expiry)).getTime();
+            if (Date.now() >= expiry) {
+                throw new Error(`Commitments expired in ${expiry.toString()}`);
             }
+
+            // This will throw an error on a bad signature.
+            this.VOPRF.verifyConfiguration(
+                VERIFICATION_KEY,
+                {
+                    H: commitment.H,
+                    expiry: commitment.expiry,
+                },
+                commitment.sig,
+            );
+
+            item = {
+                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
+                H: commitment.H,
+            };
         }
 
-        (async () => {
-            // Issue tokens.
-            const tokens = await this.issue(details.url, flattenFormData);
+        // Cache.
+        this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
 
-            // Store tokens.
-            const cached = this.getStoredTokens();
-            this.setStoredTokens(cached.concat(tokens));
-
-            this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
-        })();
-
-        // safe to cancel
-        return { cancel: true };
+        return item;
     }
 
     handleHeadersReceived(
@@ -345,9 +326,44 @@ export class CloudflareProvider extends Provider {
         }
 
         this.redeemInfo = { requestId: details.requestId, token };
+
         // Redirect to resend the request attached with the token.
         return {
             redirectUrl: details.url,
+        };
+    }
+
+    handleBeforeSendHeaders(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
+            return;
+        }
+
+        const token = this.redeemInfo!.token;
+
+        // Clear the redeem info.
+        this.redeemInfo = null;
+
+        const url = new URL(details.url);
+        const key = token.getMacKey();
+        const binding = this.VOPRF.createRequestBinding(key, [
+            voprf.getBytesFromString(url.hostname),
+            voprf.getBytesFromString(details.method + ' ' + url.pathname),
+        ]);
+
+        const contents = [
+            voprf.getBase64FromBytes(token.getInput()),
+            binding,
+            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
+        ];
+        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
+
+        const headers = details.requestHeaders ?? [];
+        headers.push({ name: 'challenge-bypass-token', value: redemption });
+
+        return {
+            requestHeaders: headers,
         };
     }
 
