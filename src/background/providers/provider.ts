@@ -101,10 +101,28 @@ function areQualifiedParamsFound(params: QUALIFIED_PARAMS | void, test: (param: 
 }
 
 function isQualifiedQueryParam(url: URL, param: string): boolean {
-    const [param_name, param_value] = param.split('=', 2);
+    let [param_name, param_value] = param.split('=', 2);
+    let param_exact: boolean = true;
+    if (param_value) {
+        if (param_name[param_name.length - 1] === '!') {
+            param_exact = false;
+            param_name  = param_name.substring(0, param_name.length - 1);
+        }
+    }
+
     if (!url.searchParams.has(param_name)) return false;
-    if (param_value && (url.searchParams.get(param_name) !== param_value)) return false;
-    return true;
+
+    if (param_value) {
+        const actual_value: string | null = url.searchParams.get(param_name);
+
+        return param_exact
+            ? (actual_value! === param_value)
+            : (actual_value! !== param_value)
+        ;
+    }
+    else {
+        return true;
+    }
 }
 
 export function areQualifiedQueryParams(params: QUALIFIED_PARAMS | void, url: URL): boolean {
@@ -115,17 +133,38 @@ export function areQualifiedQueryParams(params: QUALIFIED_PARAMS | void, url: UR
 function isQualifiedBodyFormParam(formData: { [key: string]: string[] | string } | void, param: string): boolean {
     if (!(formData instanceof Object)) return false;
 
-    const [param_name, param_value] = param.split('=', 2);
-    if (!(param_name in formData)) return false;
+    let [param_name, param_value] = param.split('=', 2);
+    let param_exact: boolean = true;
     if (param_value) {
-        if (Array.isArray(formData[param_name])) {
-            if (formData[param_name].indexOf(param_value) === -1) return false;
-        }
-        else {
-            if (formData[param_name] !== param_value) return false;
+        if (param_name[param_name.length - 1] === '!') {
+            param_exact = false;
+            param_name  = param_name.substring(0, param_name.length - 1);
         }
     }
-    return true;
+
+    if (!(param_name in formData)) return false;
+
+    if (param_value) {
+        const actual_value: string | string[] = formData[param_name];
+
+        if (Array.isArray(actual_value)) {
+            const isInArray: boolean = (actual_value.indexOf(param_value) !== -1);
+
+            return param_exact
+                ? isInArray
+                : !isInArray
+            ;
+        }
+        else {
+            return param_exact
+                ? (actual_value === param_value)
+                : (actual_value !== param_value)
+            ;
+        }
+    }
+    else {
+        return true;
+    }
 }
 
 export function areQualifiedBodyFormParams(params: QUALIFIED_PARAMS | void, formData: { [key: string]: string[] | string } | void): boolean {

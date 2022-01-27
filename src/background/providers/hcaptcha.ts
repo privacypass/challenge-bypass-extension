@@ -8,7 +8,6 @@ import qs from 'qs';
 
 const NUMBER_OF_REQUESTED_TOKENS: number = 5;
 const DEFAULT_ISSUING_HOSTNAME:   string = 'hcaptcha.com';
-const CHL_BYPASS_SUPPORT:         string = 'cf-chl-bypass';
 const ISSUE_HEADER_NAME:          string = 'cf-chl-bypass';
 const ISSUANCE_BODY_PARAM_NAME:   string = 'blinded-tokens';
 
@@ -35,6 +34,27 @@ const ALL_ISSUING_CRITERIA: {
     }
 }
 
+const ALL_REDEMPTION_CRITERIA: {
+    HOSTNAMES:    QUALIFIED_HOSTNAMES;
+    PATHNAMES:    QUALIFIED_PATHNAMES;
+    QUERY_PARAMS: QUALIFIED_PARAMS;
+    BODY_PARAMS:  QUALIFIED_PARAMS;
+} = {
+    HOSTNAMES: {
+        exact :   [DEFAULT_ISSUING_HOSTNAME],
+        contains: [`.${DEFAULT_ISSUING_HOSTNAME}`],
+    },
+    PATHNAMES: {
+        contains: ['/getcaptcha'],
+    },
+    QUERY_PARAMS: {
+        some: ['s!=00000000-0000-0000-0000-000000000000'],
+    },
+    BODY_PARAMS: {
+        every: ['sitekey!=00000000-0000-0000-0000-000000000000', 'motionData', 'host!=www.hcaptcha.com'],
+    }
+}
+
 const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4OifvSTxGcy3T/yac6LVugArFb89
 wvqGivp0/54wgeyWkvUZiUdlbIQF7BuGeO9C4sx4nHkpAgRfvd8jdBGz9g==
@@ -42,13 +62,11 @@ wvqGivp0/54wgeyWkvUZiUdlbIQF7BuGeO9C4sx4nHkpAgRfvd8jdBGz9g==
 
 interface IssueInfo {
     requestId: string;
-    url: string;
-    formData: { [key: string]: string[] | string };
+    url:       string;
 }
 
 interface RedeemInfo {
     requestId: string;
-    token: Token;
 }
 
 export class HcaptchaProvider extends Provider {
@@ -95,62 +113,211 @@ export class HcaptchaProvider extends Provider {
         this.forceUpdateIcon();
     }
 
-    private async getCommitment(version: string): Promise<{ G: string; H: string }> {
-        const keyPrefix = 'commitment-';
-        const cached = this.storage.getItem(`${keyPrefix}${version}`);
-        if (cached !== null) {
-            return JSON.parse(cached);
+    private getBadgeText(): string {
+        return this.getStoredTokens().length.toString();
+    }
+
+    forceUpdateIcon(): void {
+        this.callbacks.updateIcon(this.getBadgeText());
+    }
+
+    handleActivated(): void {
+        this.forceUpdateIcon();
+    }
+
+    handleBeforeRequest(
+        details: chrome.webRequest.WebRequestBodyDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        const url = new URL(details.url);
+        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
+            ? details.requestBody.formData
+            : {}
+        ;
+
+        if (this.matchesIssuingCriteria(details, url, formData)) {
+            this.issueInfo = { requestId: details.requestId, url: details.url };
+
+            // do NOT cancel the request with captcha solution.
+            return { cancel: false };
         }
 
-        interface Response {
-            HC: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
+        if (this.matchesRedemptionCriteria(details, url, formData)) {
+            this.redeemInfo = { requestId: details.requestId };
+
+            // do NOT cancel the request to generate a new captcha.
+            // note: "handleBeforeSendHeaders" will add request headers to embed a token.
+            return { cancel: false };
+        }
+    }
+
+    private matchesIssuingCriteria(
+        details:  chrome.webRequest.WebRequestBodyDetails,
+        url:      URL,
+        formData: { [key: string]: string[] | string }
+    ): boolean {
+        // Only issue tokens for POST requests that contain data in body.
+        if (
+            (details.method.toUpperCase() !== 'POST'   ) ||
+            (details.requestBody          === null     ) ||
+            (details.requestBody          === undefined)
+        ) {
+            return false;
         }
 
-        // Download the commitment
-        const { data } = await axios.get<Response>(COMMITMENT_URL);
-        const commitment = data.HC[version];
-        if (commitment === undefined) {
-            throw new Error(`No commitment for the version ${version} is found`);
+        // Only issue tokens to hosts belonging to the provider.
+        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
+            return false;
         }
 
-        let item: { G: string; H: string };
-
-        // Does the commitment require verification?
-        if ('G' in commitment) {
-            item = commitment;
-        }
-        else {
-            // Check the expiry date.
-            const expiry: number = (new Date(commitment.expiry)).getTime();
-            if (Date.now() >= expiry) {
-                throw new Error(`Commitments expired in ${expiry.toString()}`);
-            }
-
-            // This will throw an error on a bad signature.
-            this.VOPRF.verifyConfiguration(
-                VERIFICATION_KEY,
-                {
-                    H: commitment.H,
-                    expiry: commitment.expiry,
-                },
-                commitment.sig,
-            );
-
-            item = {
-                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
-                H: commitment.H,
-            };
+        // Only issue tokens when the pathname passes defined criteria.
+        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
+            return false;
         }
 
-        // Cache.
-        this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
+        // Only issue tokens when querystring parameters pass defined criteria.
+        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            return false;
+        }
 
-        return item;
+        // Only issue tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
+        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private matchesRedemptionCriteria(
+        details:  chrome.webRequest.WebRequestBodyDetails,
+        url:      URL,
+        formData: { [key: string]: string[] | string }
+    ): boolean {
+        // Only redeem tokens for POST requests that contain data in body.
+        if (
+            (details.method.toUpperCase() !== 'POST'   ) ||
+            (details.requestBody          === null     ) ||
+            (details.requestBody          === undefined)
+        ) {
+            return false;
+        }
+
+        // Only redeem tokens to hosts belonging to the provider.
+        if (!isIssuingHostname(ALL_REDEMPTION_CRITERIA.HOSTNAMES, url)) {
+            return false;
+        }
+
+        // Only redeem tokens when the pathname passes defined criteria.
+        if (!isQualifiedPathname(ALL_REDEMPTION_CRITERIA.PATHNAMES, url)) {
+            return false;
+        }
+
+        // Only redeem tokens when querystring parameters pass defined criteria.
+        if (!areQualifiedQueryParams(ALL_REDEMPTION_CRITERIA.QUERY_PARAMS, url)) {
+            return false;
+        }
+
+        // Only redeem tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
+        if (!areQualifiedBodyFormParams(ALL_REDEMPTION_CRITERIA.BODY_PARAMS, formData)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    handleBeforeSendHeaders(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        if (
+            (this.redeemInfo === null) ||
+            (this.redeemInfo.requestId !== details.requestId)
+        ) {
+            return;
+        }
+
+        // Clear the redeem info.
+        this.redeemInfo = null;
+
+        // Redeem one token (if available)
+
+        const tokens = this.getStoredTokens();
+        const token = tokens.shift();
+        this.setStoredTokens(tokens);
+
+        // No tokens in wallet!
+        if (token === undefined) {
+            return;
+        }
+
+        const url = new URL(details.url);
+        const key = token.getMacKey();
+        const binding = this.VOPRF.createRequestBinding(key, [
+            voprf.getBytesFromString(url.hostname),
+            voprf.getBytesFromString(details.method + ' ' + url.pathname),
+        ]);
+
+        const contents = [
+            voprf.getBase64FromBytes(token.getInput()),
+            binding,
+            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
+        ];
+        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
+
+        const headers = details.requestHeaders ?? [];
+        headers.push(
+            { name: 'challenge-bypass-host',  value: 'hcaptcha.com'     },
+            { name: 'challenge-bypass-path',  value: 'POST /getcaptcha' },
+            { name: 'challenge-bypass-token', value: redemption         },
+        );
+
+        return {
+            requestHeaders: headers,
+        };
+    }
+
+    handleHeadersReceived(
+        _details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        return;
+    }
+
+    handleOnCompleted(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): void {
+        this.sendIssueRequest(details.requestId);
+    }
+
+    handleOnErrorOccurred(
+        details: chrome.webRequest.WebResponseErrorDetails,
+    ): void {
+        this.sendIssueRequest(details.requestId);
+    }
+
+    private sendIssueRequest(requestId: string): void {
+        // Is the completed request a trigger to initiate a secondary request to the provider for the issuing of signed tokens?
+        if (
+            (this.issueInfo           !== null) &&
+            (this.issueInfo.requestId === requestId)
+        ) {
+            const url: string = this.issueInfo!.url;
+
+            // Clear the issue info.
+            this.issueInfo = null;
+
+            (async () => {
+                // Issue tokens.
+                const tokens = await this.issue(url);
+
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
+
+                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
+            })();
+        }
     }
 
     private async issue(
         url: string,
-        formData: { [key: string]: string[] | string },
     ): Promise<Token[]> {
         const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token(this.VOPRF));
         const issuance = {
@@ -160,7 +327,6 @@ export class HcaptchaProvider extends Provider {
         const param = btoa(JSON.stringify(issuance));
 
         const body = qs.stringify({
-            ...formData,
             [ISSUANCE_BODY_PARAM_NAME]: param,
             'captcha-bypass': true,
         });
@@ -214,172 +380,56 @@ export class HcaptchaProvider extends Provider {
         return tokens;
     }
 
-    private getBadgeText(): string {
-        return this.getStoredTokens().length.toString();
-    }
-
-    forceUpdateIcon(): void {
-        this.callbacks.updateIcon(this.getBadgeText());
-    }
-
-    handleActivated(): void {
-        this.forceUpdateIcon();
-    }
-
-    handleBeforeSendHeaders(
-        details: chrome.webRequest.WebRequestHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
-            return;
+    private async getCommitment(version: string): Promise<{ G: string; H: string }> {
+        const keyPrefix = 'commitment-';
+        const cached = this.storage.getItem(`${keyPrefix}${version}`);
+        if (cached !== null) {
+            return JSON.parse(cached);
         }
 
-        const url = new URL(details.url);
-
-        const token = this.redeemInfo!.token;
-        // Clear the redeem info to indicate that we are already redeeming the token.
-        this.redeemInfo = null;
-
-        const key = token.getMacKey();
-        const binding = this.VOPRF.createRequestBinding(key, [
-            voprf.getBytesFromString(url.hostname),
-            voprf.getBytesFromString(details.method + ' ' + url.pathname),
-        ]);
-
-        const contents = [
-            voprf.getBase64FromBytes(token.getInput()),
-            binding,
-            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
-        ];
-        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
-
-        const headers = details.requestHeaders ?? [];
-        headers.push({ name: 'challenge-bypass-token', value: redemption });
-
-        return {
-            requestHeaders: headers,
-        };
-    }
-
-    handleBeforeRequest(
-        details: chrome.webRequest.WebRequestBodyDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        // Only issue tokens for POST requests that contain 'application/x-www-form-urlencoded' data.
-        if (
-            details.requestBody === null ||
-            details.requestBody === undefined
-        ) {
-            return;
+        interface Response {
+            HC: { [version: string]: { G: string; H: string } | { H: string; expiry: string; sig: string } };
         }
 
-        const url = new URL(details.url);
-        const formData: { [key: string]: string[] | string } = details.requestBody.formData || {};
-
-        // Only issue tokens on the issuing website.
-        if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
-            return;
+        // Download the commitment
+        const { data } = await axios.get<Response>(COMMITMENT_URL);
+        const commitment = data.HC[version];
+        if (commitment === undefined) {
+            throw new Error(`No commitment for the version ${version} is found`);
         }
 
-        // Only issue tokens when the pathname passes defined criteria.
-        if (!isQualifiedPathname(ALL_ISSUING_CRITERIA.PATHNAMES, url)) {
-            return;
+        let item: { G: string; H: string };
+
+        // Does the commitment require verification?
+        if ('G' in commitment) {
+            item = commitment;
         }
-
-        // Only issue tokens when querystring parameters pass defined criteria.
-        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
-            return;
-        }
-
-        // Only issue tokens when POST data parameters pass defined criteria.
-        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
-            return;
-        }
-
-        this.issueInfo = { requestId: details.requestId, url: details.url, formData: {} };
-
-        for (const key in formData) {
-            if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
-                const [value] = formData[key];
-                this.issueInfo.formData[key] = value;
-            } else {
-                this.issueInfo.formData[key] = formData[key];
+        else {
+            // Check the expiry date.
+            const expiry: number = (new Date(commitment.expiry)).getTime();
+            if (Date.now() >= expiry) {
+                throw new Error(`Commitments expired in ${expiry.toString()}`);
             }
-        }
 
-        // do NOT cancel the original captcha solve request
-        return { cancel: false };
-    }
-
-    handleHeadersReceived(
-        details: chrome.webRequest.WebResponseHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        // Don't redeem a token on the issuing website.
-        if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
-            return;
-        }
-
-        // Check if it's the response of the request that we should insert a token.
-        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
-            return;
-        }
-        const hasSupportHeader = details.responseHeaders.some((header) => {
-            return (
-                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
-                header.value !== undefined &&
-                parseInt(header.value, 10) === HcaptchaProvider.ID
+            // This will throw an error on a bad signature.
+            this.VOPRF.verifyConfiguration(
+                VERIFICATION_KEY,
+                {
+                    H: commitment.H,
+                    expiry: commitment.expiry,
+                },
+                commitment.sig,
             );
-        });
-        if (!hasSupportHeader) {
-            return;
+
+            item = {
+                G: voprf.sec1EncodeToBase64(this.VOPRF.getActiveECSettings().curve.G, false),
+                H: commitment.H,
+            };
         }
 
-        // Let's try to redeem.
+        // Cache.
+        this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
 
-        // Get one token.
-        const tokens = this.getStoredTokens();
-        const token = tokens.shift();
-        this.setStoredTokens(tokens);
-
-        if (token === undefined) {
-            return;
-        }
-
-        this.redeemInfo = { requestId: details.requestId, token };
-        // Redirect to resend the request attached with the token.
-        return {
-            redirectUrl: details.url,
-        };
-    }
-
-    private sendIssueRequest(requestId: string): void {
-        // Check if it's the response of the request that solved a captcha on a domain that issues tokens.
-        if (this.issueInfo !== null && requestId === this.issueInfo.requestId) {
-            this.issueInfo.requestId = 'issued';
-
-            (async () => {
-                // Issue tokens.
-                const tokens = await this.issue(this.issueInfo!.url, this.issueInfo!.formData);
-
-                // Clear the issue info to indicate that we are already issuing the tokens.
-                this.issueInfo = null;
-
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
-
-                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
-            })();
-        }
-    }
-
-    handleOnCompleted(
-        details: chrome.webRequest.WebResponseHeadersDetails,
-    ): void {
-        this.sendIssueRequest(details.requestId);
-    }
-
-    handleOnErrorOccurred(
-        details: chrome.webRequest.WebResponseErrorDetails,
-    ): void {
-        this.sendIssueRequest(details.requestId);
+        return item;
     }
 }

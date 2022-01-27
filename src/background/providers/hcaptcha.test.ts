@@ -71,30 +71,22 @@ test('getBadgeText', () => {
 });
 
 /*
- * The issuance involves handleBeforeRequest and handleOnCompleted
- * listeners. In handleBeforeRequest listener,
- * 1. Firstly, the listener check if the request looks like the one that we
- * should send an issuance request.
- * 2. If it passes the check, the listener returns the cancel command to
- * explicitly prevent cancelling the request.
- * If not, it returns nothing and let the request continue.
- * 3. The listener sets "issueInfo" property which includes the request id
- * and other request details. The property will be used by
- * handleOnCompleted to issue new tokens.
+ * The issuance involves handleBeforeRequest and handleOnCompleted listeners.
+ *
+ * In handleBeforeRequest listener,
+ * 1. Check that the request matches the criteria for redemption.
+ *    Such requests are submitting a solved captcha to the provider
+ *    on a website controlled by the provider.
+ * 2. If so, the listener sets the "issueInfo" property,
+ *    which includes the request id for subsequent processing.
  *
  * In handleOnCompleted,
- * 1. The listener will check if the provided request id matches the
- * request id in "issueInfo". If so, it means that the response is to the
- * request checked by handleBeforeRequest that should trigger an issuance request.
- * 2. If it passes the check, the listener calls a private method
- * "issue" to send an issuance request to the server and the method returns
- * an array of issued tokens.
- * 3. The listener stores the issued tokens in the storage.
- * 4. The listener reloads the tab to get the proper web page for the tab.
+ * 1. Check that the "issueInfo" property is set, and its request id is a match.
+ * 2. If so, initiate a secondary request to the provider for the issuing of signed tokens.
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
-        const validDetails = {
+        const validDetails: chrome.webRequest.WebRequestBodyDetails = {
             method: 'POST',
             url: 'https://hcaptcha.com/checkcaptcha/xxx?s=00000000-0000-0000-0000-000000000000',
             requestId: 'xxx',
@@ -103,9 +95,7 @@ describe('issuance', () => {
             tabId: 1,
             type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
             timeStamp: 1,
-            requestBody: {
-                formData: {},
-            },
+            requestBody: {},
         };
 
         test('valid request', async () => {
@@ -116,7 +106,7 @@ describe('issuance', () => {
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
             let result, issueInfo
 
-            const reqDetails = validDetails;
+            const reqDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
             result = provider.handleBeforeRequest(reqDetails);
             expect(result).toEqual({ cancel: false });
 
@@ -124,7 +114,6 @@ describe('issuance', () => {
             issueInfo = provider['issueInfo'];
             expect(issueInfo!.requestId).toEqual(reqDetails.requestId);
             expect(issueInfo!.url).toEqual(reqDetails.url);
-            expect(issueInfo!.formData).toEqual({});
 
             const tokens = [new Token(), new Token(), new Token()];
             const issue = jest.fn(async () => {
@@ -132,7 +121,7 @@ describe('issuance', () => {
             });
             provider['issue'] = issue;
 
-            const resDetails = {
+            const resDetails: chrome.webRequest.WebResponseHeadersDetails = {
                 ...validDetails,
                 statusLine: 'HTTP/1.1 200 OK',
                 statusCode: 200,
@@ -143,7 +132,7 @@ describe('issuance', () => {
             await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(issueInfo!.url, issueInfo!.formData);
+            expect(issue).toHaveBeenCalledWith(issueInfo!.url);
 
             // Expect the tokens are added.
             const storedTokens = provider['getStoredTokens']();
@@ -176,7 +165,7 @@ describe('issuance', () => {
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
 
-            const details = {
+            const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
                 url: validDetails.url.substring(0, validDetails.url.indexOf('?')),
             };
@@ -198,7 +187,7 @@ describe('issuance', () => {
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
 
-            const details = {
+            const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
                 url: validDetails.url.replace(/checkcaptcha/g, 'getcaptcha'),
             };
@@ -216,46 +205,36 @@ describe('issuance', () => {
 });
 
 /*
- * The redemption involves handleHeadersReceived and handleBeforeSendHeaders
- * listeners. In handleHeadersReceived listener,
- * 1. Firstly, the listener check if the response is the challenge page and
- * it supports Privacy Pass redemption.
- * 2. If it passes the check, the listener gets a token from the storage to
- * redeem.
- * 3. The listener sets "redeemInfo" property which includes the request id
- * and the mentioned token. The property will be used by
- * handleBeforeSendHeaders to redeem the token.
- * 4. The listener returns the redirect command so that the browser will
- * send the same request again with the token attached.
+ * The redemption involves handleBeforeRequest and handleBeforeSendHeaders listeners.
+ *
+ * In handleBeforeRequest listener,
+ * 1. Check that the request matches the criteria for redemption.
+ *    Such requests are asking for the provider to generate a new captcha.
+ * 2. If so, the listener sets the "redeemInfo" property,
+ *    which includes the request id for subsequent processing.
  *
  * In handleBeforeSendHeaders,
- * 1. The listener will check if the provided request id matches the
- * request id in "redeemInfo". If so, it means that the request is from the
- * redirect command returned by handleHeadersReceived. If not, it returns
- * nothing and let the request continue.
- * 2. If it passes the check, the listener attaches the token from
- * "redeemInfo" in the "challenge-bypass-token" HTTP header and clears the
- * "redeemInfo" property because "redeemInfo" is used already.
+ * 1. Check that the "redeemInfo" property is set, and its request id is a match.
+ * 2. If so, add headers to include one token for redemption by provider.
  */
 describe('redemption', () => {
-    describe('handleHeadersReceived', () => {
-        const validDetails = {
-            method: 'GET',
-            url: 'https://non-issuing-domain.example.com/',
+    describe('handleBeforeRequest', () => {
+        const validDetails: chrome.webRequest.WebRequestBodyDetails = {
+            method: 'POST',
+            url: 'https://hcaptcha.com/getcaptcha/xxx?s=11111111-1111-1111-1111-111111111111',
             requestId: 'xxx',
             frameId: 1,
             parentFrameId: 1,
             tabId: 1,
-            type: 'main_frame' as chrome.webRequest.ResourceType,
+            type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
             timeStamp: 1,
-            statusLine: 'HTTP/1.1 403 Forbidden',
-            statusCode: 403,
-            responseHeaders: [
-                {
-                    name: 'cf-chl-bypass',
-                    value: '2',
-                },
-            ],
+            requestBody: {
+                formData: {
+                    sitekey:    ['xxx'],
+                    motionData: ['xxx'],
+                    host:       ['non-issuing-domain.example.com']
+                }
+            },
         };
 
         test('valid response with tokens', () => {
@@ -264,31 +243,51 @@ describe('redemption', () => {
             const navigateUrl = jest.fn();
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-            const tokens = [new Token(), new Token(), new Token()];
-            provider['setStoredTokens'](tokens);
+            const token = Token.fromString(
+                '{"input":[238,205,51,250,226,251,144,68,170,68,235,25,231,152,125,63,215,10,42,37,65,157,56,22,98,23,129,9,157,179,223,64],"factor":"0x359953995df006ba98bdcf1383a4c75ca79ae41d4e718dcb051832ce65c002bc","blindedPoint":"BCrzbuVf2eSD/5NtR+o09ovo+oRWAwjwopzl7lb+IuOPuj/ctLkdlkeJQUeyjtUbfgJqU4BFNBRz9ln4z3Dk7Us=","unblindedPoint":"BLKf1op+oq4FcbNdP5vygTkGO3WWLHD6oXCCZDfaFyuFlruih49BStHm6QxtZZAqgCR9i6SsO6VP69hHnfBDNeg=","signed":{"blindedPoint":"BKEnbsQSwnHCxEv4ppp6XuqLV60FiQpF8YWvodQHdnmFHv7CKyWHqBLBW8fJ2uuV+uLxl99+VRYPxr8Q8E7i2Iw=","unblindedPoint":"BA8G3dHM554FzDiOtEsSBu0XYW8p5vA2OIEvnYQcJlRGHTiq2N6j3BKUbiI7I6fAy2vsOrwhrLGHOD+q7YxO+UM="}}',
+            );
+            const tokens = [token, new Token(), new Token()];
+            let result, redeemInfo;
 
+            provider['setStoredTokens'](tokens);
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
 
-            const details = validDetails;
-            const result = provider.handleHeadersReceived(details);
-            expect(result).toEqual({ redirectUrl: details.url });
+            const bodyDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
+            result = provider.handleBeforeRequest(bodyDetails);
+            expect(result).toEqual({ cancel: false });
 
             // Expect redeemInfo to be set.
-            const redeemInfo = provider['redeemInfo'];
-            expect(redeemInfo!.requestId).toEqual(details.requestId);
-            expect(redeemInfo!.token.toString()).toEqual(tokens[0].toString());
+            redeemInfo = provider['redeemInfo'];
+            expect(redeemInfo!.requestId).toEqual(bodyDetails.requestId);
 
-            expect(updateIcon.mock.calls.length).toBe(2);
-            expect(updateIcon).toHaveBeenLastCalledWith((tokens.length - 1).toString());
+            const headDetails: any = {
+                ...validDetails,
+                requestHeaders: []
+            };
+            delete headDetails.requestBody;
 
-            // Expect a token is used.
+            result = provider.handleBeforeSendHeaders(<chrome.webRequest.WebRequestHeadersDetails>headDetails);
+            expect(result).toEqual({
+                requestHeaders: [
+                    { name: 'challenge-bypass-host',  value: 'hcaptcha.com'     },
+                    { name: 'challenge-bypass-path',  value: 'POST /getcaptcha' },
+                    { name: 'challenge-bypass-token', value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJhR3ZFRmJaUmN1SnZvcHpSUDBFT1pQb084eDJtdzV6Q3ptUG9mL3AwY3F3PSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==' },
+                ],
+            });
+
+            // Expect redeemInfo to be unset.
+            redeemInfo = provider['redeemInfo'];
+            expect(redeemInfo).toBeNull();
+
+            // Expect one token to be consumed.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(
                 tokens.slice(1).map((token) => token.toString()),
             );
 
             expect(updateIcon.mock.calls.length).toBe(2);
+            expect(updateIcon).toHaveBeenLastCalledWith((tokens.length - 1).toString());
             expect(navigateUrl).not.toHaveBeenCalled();
         });
 
@@ -298,13 +297,22 @@ describe('redemption', () => {
             const navigateUrl = jest.fn();
 
             const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-            provider['setStoredTokens']([]);
+            let result;
 
+            provider['setStoredTokens']([]);
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith('0');
 
-            const details = validDetails;
-            const result = provider.handleHeadersReceived(details);
+            const bodyDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
+            result = provider.handleBeforeRequest(bodyDetails);
+
+            const headDetails: any = {
+                ...validDetails,
+                requestHeaders: []
+            };
+            delete headDetails.requestBody;
+
+            result = provider.handleBeforeSendHeaders(<chrome.webRequest.WebRequestHeadersDetails>headDetails);
             expect(result).toBeUndefined();
 
             expect(updateIcon.mock.calls.length).toBe(2);
@@ -312,7 +320,7 @@ describe('redemption', () => {
             expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        test('no response from an issuing domain', () => {
+        test('no response from an issuing domain (hostname)', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -324,23 +332,23 @@ describe('redemption', () => {
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
 
-            const details = {
+            const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
-                url: 'https://www.hcaptcha.com/privacy-pass',
+                requestBody: {
+                    formData: {
+                        ...validDetails.requestBody!.formData!,
+                        host: ['www.hcaptcha.com']
+                    }
+                }
             };
-            const result = provider.handleHeadersReceived(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        /*
-         * The response is invalid if any of the followings is true:
-         * 1. The status code is not 403.
-         * 2. There is no HTTP header of "cf-chl-bypass: 1"
-         */
-        test('invalid response w/ wrong status code', () => {
+        test('no response from an issuing domain (sitekey in body)', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -352,19 +360,23 @@ describe('redemption', () => {
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
 
-            const details = {
+            const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
-                statusLine: 'HTTP/1.1 200 OK',
-                statusCode: 200,
+                requestBody: {
+                    formData: {
+                        ...validDetails.requestBody!.formData!,
+                        sitekey: ['00000000-0000-0000-0000-000000000000']
+                    }
+                }
             };
-            const result = provider.handleHeadersReceived(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        test('invalid response w/ no bypass header', () => {
+        test('no response from an issuing domain (sitekey in querystring)', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -376,77 +388,14 @@ describe('redemption', () => {
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(updateIcon).toHaveBeenCalledWith(tokens.length.toString());
 
-            const details = {
+            const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
-                responseHeaders: [],
+                url: validDetails.url.replace(/\?s=.*$/, '?s=00000000-0000-0000-0000-000000000000')
             };
-            const result = provider.handleHeadersReceived(details);
+            const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
 
             expect(updateIcon.mock.calls.length).toBe(1);
-            expect(navigateUrl).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('handleBeforeSendHeaders', () => {
-        const validDetails = {
-            method: 'GET',
-            url: 'https://www.hcaptcha.com/',
-            requestId: 'xxx',
-            frameId: 1,
-            parentFrameId: 1,
-            tabId: 1,
-            type: 'main_frame' as chrome.webRequest.ResourceType,
-            timeStamp: 1,
-            requestHeaders: [],
-        };
-
-        test('with redeemInfo', () => {
-            const storage = new StorageMock();
-            const updateIcon = jest.fn();
-            const navigateUrl = jest.fn();
-
-            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-
-            const token = Token.fromString(
-                '{"input":[238,205,51,250,226,251,144,68,170,68,235,25,231,152,125,63,215,10,42,37,65,157,56,22,98,23,129,9,157,179,223,64],"factor":"0x359953995df006ba98bdcf1383a4c75ca79ae41d4e718dcb051832ce65c002bc","blindedPoint":"BCrzbuVf2eSD/5NtR+o09ovo+oRWAwjwopzl7lb+IuOPuj/ctLkdlkeJQUeyjtUbfgJqU4BFNBRz9ln4z3Dk7Us=","unblindedPoint":"BLKf1op+oq4FcbNdP5vygTkGO3WWLHD6oXCCZDfaFyuFlruih49BStHm6QxtZZAqgCR9i6SsO6VP69hHnfBDNeg=","signed":{"blindedPoint":"BKEnbsQSwnHCxEv4ppp6XuqLV60FiQpF8YWvodQHdnmFHv7CKyWHqBLBW8fJ2uuV+uLxl99+VRYPxr8Q8E7i2Iw=","unblindedPoint":"BA8G3dHM554FzDiOtEsSBu0XYW8p5vA2OIEvnYQcJlRGHTiq2N6j3BKUbiI7I6fAy2vsOrwhrLGHOD+q7YxO+UM="}}',
-            );
-            const redeemInfo = {
-                requestId: 'xxx',
-                token,
-            };
-            provider['redeemInfo'] = redeemInfo;
-
-            const details = validDetails;
-            const result = provider.handleBeforeSendHeaders(details);
-            expect(result).toEqual({
-                requestHeaders: [
-                    {
-                        name: 'challenge-bypass-token',
-                        value: 'eyJ0eXBlIjoiUmVkZWVtIiwiY29udGVudHMiOlsiN3Mweit1TDdrRVNxUk9zWjU1aDlQOWNLS2lWQm5UZ1dZaGVCQ1oyejMwQT0iLCJxNmhOM2krakRmQXlpOW1MdjFaSE04alNRSng4SWZKZThWYUIvQU9UYm9FPSIsImV5SmpkWEoyWlNJNkluQXlOVFlpTENKb1lYTm9Jam9pYzJoaE1qVTJJaXdpYldWMGFHOWtJam9pYVc1amNtVnRaVzUwSW4wPSJdfQ==',
-                    },
-                ],
-            });
-
-            const newRedeemInfo = provider['redeemInfo'];
-            expect(newRedeemInfo).toBeNull();
-
-            expect(updateIcon).not.toHaveBeenCalled();
-            expect(navigateUrl).not.toHaveBeenCalled();
-        });
-
-        test('without redeemInfo', () => {
-            const storage = new StorageMock();
-            const updateIcon = jest.fn();
-            const navigateUrl = jest.fn();
-
-            const provider = new HcaptchaProvider(storage, { updateIcon, navigateUrl });
-
-            const details = validDetails;
-            const result = provider.handleBeforeSendHeaders(details);
-            expect(result).toBeUndefined();
-
-            expect(updateIcon).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
         });
     });
