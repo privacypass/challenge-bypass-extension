@@ -396,6 +396,10 @@ describe('redemption', () => {
             requestHeaders: [],
         };
 
+        afterEach(() => {
+            validDetails.requestHeaders = [];
+        });
+
         test('with redeemInfo', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();

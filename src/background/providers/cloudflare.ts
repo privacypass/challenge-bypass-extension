@@ -109,28 +109,9 @@ export class CloudflareProvider extends Provider {
         ;
 
         if (this.matchesIssuingCriteria(details, url, formData)) {
-
             setTimeout(
-                async (): Promise<void> => {
-                    // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
-                    const flattenFormData: { [key: string]: string[] | string } = {};
-                    for (const key in formData) {
-                        if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
-                            const [value] = formData[key];
-                            flattenFormData[key] = value;
-                        } else {
-                            flattenFormData[key] = formData[key];
-                        }
-                    }
-
-                    // Issue tokens.
-                    const tokens = await this.issue(details.url, flattenFormData);
-
-                    // Store tokens.
-                    const cached = this.getStoredTokens();
-                    this.setStoredTokens(cached.concat(tokens));
-
-                    this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+                (): void => {
+                    this.sendIssueRequest(details.url, formData);
                 },
                 0
             );
@@ -143,7 +124,7 @@ export class CloudflareProvider extends Provider {
     private matchesIssuingCriteria(
         details:  chrome.webRequest.WebRequestBodyDetails,
         url:      URL,
-        formData: { [key: string]: string[] | string }
+        formData: { [key: string]: string[] | string },
     ): boolean {
         // Only issue tokens for POST requests that contain data in body.
         if (
@@ -177,8 +158,38 @@ export class CloudflareProvider extends Provider {
         return true;
     }
 
+    private async sendIssueRequest(
+        url:      string,
+        formData: { [key: string]: string[] | string },
+    ): Promise<void> {
+        try {
+            // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
+            const flattenFormData: { [key: string]: string[] | string } = {};
+            for (const key in formData) {
+                if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
+                    const [value] = formData[key];
+                    flattenFormData[key] = value;
+                } else {
+                    flattenFormData[key] = formData[key];
+                }
+            }
+
+            // Issue tokens.
+            const tokens = await this.issue(url, flattenFormData);
+
+            // Store tokens.
+            const cached = this.getStoredTokens();
+            this.setStoredTokens(cached.concat(tokens));
+        }
+        catch(error: any) {
+            console.error(error.message);
+        }
+
+        this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+    }
+
     private async issue(
-        url: string,
+        url:      string,
         formData: { [key: string]: string[] | string },
     ): Promise<Token[]> {
         const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token(this.VOPRF));
@@ -318,13 +329,13 @@ export class CloudflareProvider extends Provider {
             return;
         }
 
-        // Let's try to redeem.
+        // Redeem one token (if available)
 
-        // Get one token.
         const tokens = this.getStoredTokens();
         const token = tokens.shift();
         this.setStoredTokens(tokens);
 
+        // No tokens in wallet!
         if (token === undefined) {
             return;
         }
@@ -366,9 +377,7 @@ export class CloudflareProvider extends Provider {
         const headers = details.requestHeaders ?? [];
         headers.push({ name: 'challenge-bypass-token', value: redemption });
 
-        return {
-            requestHeaders: headers,
-        };
+        return {requestHeaders: headers};
     }
 
     handleOnCompleted(

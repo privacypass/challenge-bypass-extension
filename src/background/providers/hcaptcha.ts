@@ -128,29 +128,26 @@ export class HcaptchaProvider extends Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
+        const url = new URL(details.url);
+        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
+            ? details.requestBody.formData
+            : {}
+        ;
 
-        setTimeout(
-            (): void => {
-                const url = new URL(details.url);
-                const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
-                    ? details.requestBody.formData
-                    : {}
-                ;
+        if (this.matchesIssuingCriteria(details, url, formData)) {
+            this.issueInfo = { requestId: details.requestId, url: details.url };
 
-                if (this.matchesIssuingCriteria(details, url, formData)) {
-                    this.issueInfo = { requestId: details.requestId, url: details.url };
-                    return;
-                }
+            // do NOT cancel the request with captcha solution.
+            return { cancel: false };
+        }
 
-                if (this.matchesRedemptionCriteria(details, url, formData)) {
-                    this.redeemInfo = { requestId: details.requestId };
-                    return;
-                }
-            },
-            0
-        );
+        if (this.matchesRedemptionCriteria(details, url, formData)) {
+            this.redeemInfo = { requestId: details.requestId };
 
-        return { cancel: false };
+            // do NOT cancel the request to generate a new captcha.
+            // note: "handleBeforeSendHeaders" will add request headers to embed a token.
+            return { cancel: false };
+        }
     }
 
     private matchesIssuingCriteria(
