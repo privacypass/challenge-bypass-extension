@@ -128,26 +128,29 @@ export class HcaptchaProvider extends Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
-            ? details.requestBody.formData
-            : {}
-        ;
 
-        if (this.matchesIssuingCriteria(details, url, formData)) {
-            this.issueInfo = { requestId: details.requestId, url: details.url };
+        setTimeout(
+            (): void => {
+                const url = new URL(details.url);
+                const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
+                    ? details.requestBody.formData
+                    : {}
+                ;
 
-            // do NOT cancel the request with captcha solution.
-            return { cancel: false };
-        }
+                if (this.matchesIssuingCriteria(details, url, formData)) {
+                    this.issueInfo = { requestId: details.requestId, url: details.url };
+                    return;
+                }
 
-        if (this.matchesRedemptionCriteria(details, url, formData)) {
-            this.redeemInfo = { requestId: details.requestId };
+                if (this.matchesRedemptionCriteria(details, url, formData)) {
+                    this.redeemInfo = { requestId: details.requestId };
+                    return;
+                }
+            },
+            0
+        );
 
-            // do NOT cancel the request to generate a new captcha.
-            // note: "handleBeforeSendHeaders" will add request headers to embed a token.
-            return { cancel: false };
-        }
+        return { cancel: false };
     }
 
     private matchesIssuingCriteria(
@@ -292,7 +295,7 @@ export class HcaptchaProvider extends Provider {
         this.sendIssueRequest(details.requestId);
     }
 
-    private sendIssueRequest(requestId: string): void {
+    private async sendIssueRequest(requestId: string): Promise<void> {
         // Is the completed request a trigger to initiate a secondary request to the provider for the issuing of signed tokens?
         if (
             (this.issueInfo           !== null) &&
@@ -303,22 +306,18 @@ export class HcaptchaProvider extends Provider {
             // Clear the issue info.
             this.issueInfo = null;
 
-            (async (): Promise<void> => {
-                // Issue tokens.
-                const tokens = await this.issue(url);
+            // Issue tokens.
+            const tokens = await this.issue(url);
 
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
+            // Store tokens.
+            const cached = this.getStoredTokens();
+            this.setStoredTokens(cached.concat(tokens));
 
-                this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
-            })();
+            this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
         }
     }
 
-    private async issue(
-        url: string,
-    ): Promise<Token[]> {
+    private async issue(url: string): Promise<Token[]> {
         const tokens = Array.from(Array(NUMBER_OF_REQUESTED_TOKENS).keys()).map(() => new Token(this.VOPRF));
         const issuance = {
             type: 'Issue',

@@ -109,27 +109,31 @@ export class CloudflareProvider extends Provider {
         ;
 
         if (this.matchesIssuingCriteria(details, url, formData)) {
-            (async (): Promise<void> => {
-                // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
-                const flattenFormData: { [key: string]: string[] | string } = {};
-                for (const key in formData) {
-                    if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
-                        const [value] = formData[key];
-                        flattenFormData[key] = value;
-                    } else {
-                        flattenFormData[key] = formData[key];
+
+            setTimeout(
+                async (): Promise<void> => {
+                    // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
+                    const flattenFormData: { [key: string]: string[] | string } = {};
+                    for (const key in formData) {
+                        if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
+                            const [value] = formData[key];
+                            flattenFormData[key] = value;
+                        } else {
+                            flattenFormData[key] = formData[key];
+                        }
                     }
-                }
 
-                // Issue tokens.
-                const tokens = await this.issue(details.url, flattenFormData);
+                    // Issue tokens.
+                    const tokens = await this.issue(details.url, flattenFormData);
 
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
+                    // Store tokens.
+                    const cached = this.getStoredTokens();
+                    this.setStoredTokens(cached.concat(tokens));
 
-                this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
-            })();
+                    this.callbacks.navigateUrl(CloudflareProvider.EARNED_TOKEN_COOKIE.url);
+                },
+                0
+            );
 
             // safe to cancel
             return { cancel: true };

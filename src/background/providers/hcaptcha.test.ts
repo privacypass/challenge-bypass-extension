@@ -86,6 +86,17 @@ test('getBadgeText', () => {
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            jest.spyOn(global, 'setTimeout');
+        });
+
+        afterEach(() => {
+            jest.clearAllTimers();
+            jest.useRealTimers();
+        });
+
         const validDetails: chrome.webRequest.WebRequestBodyDetails = {
             method: 'POST',
             url: 'https://hcaptcha.com/checkcaptcha/xxx?s=00000000-0000-0000-0000-000000000000',
@@ -109,6 +120,10 @@ describe('issuance', () => {
             const reqDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
             result = provider.handleBeforeRequest(reqDetails);
             expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             // Expect issueInfo to be set.
             issueInfo = provider['issueInfo'];
@@ -170,7 +185,11 @@ describe('issuance', () => {
                 url: validDetails.url.substring(0, validDetails.url.indexOf('?')),
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             // Expect issueInfo to be null.
             const issueInfo = provider['issueInfo'];
@@ -192,7 +211,11 @@ describe('issuance', () => {
                 url: validDetails.url.replace(/checkcaptcha/g, 'getcaptcha'),
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             // Expect issueInfo to be null.
             const issueInfo = provider['issueInfo'];
@@ -219,6 +242,17 @@ describe('issuance', () => {
  */
 describe('redemption', () => {
     describe('handleBeforeRequest', () => {
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            jest.spyOn(global, 'setTimeout');
+        });
+
+        afterEach(() => {
+            jest.clearAllTimers();
+            jest.useRealTimers();
+        });
+
         const validDetails: chrome.webRequest.WebRequestBodyDetails = {
             method: 'POST',
             url: 'https://hcaptcha.com/getcaptcha/xxx?s=11111111-1111-1111-1111-111111111111',
@@ -256,6 +290,10 @@ describe('redemption', () => {
             const bodyDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
             result = provider.handleBeforeRequest(bodyDetails);
             expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             // Expect redeemInfo to be set.
             redeemInfo = provider['redeemInfo'];
@@ -305,6 +343,11 @@ describe('redemption', () => {
 
             const bodyDetails: chrome.webRequest.WebRequestBodyDetails = validDetails;
             result = provider.handleBeforeRequest(bodyDetails);
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             const headDetails: any = {
                 ...validDetails,
@@ -342,7 +385,11 @@ describe('redemption', () => {
                 }
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(navigateUrl).not.toHaveBeenCalled();
@@ -370,7 +417,11 @@ describe('redemption', () => {
                 }
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(navigateUrl).not.toHaveBeenCalled();
@@ -393,7 +444,11 @@ describe('redemption', () => {
                 url: validDetails.url.replace(/\?s=.*$/, '?s=00000000-0000-0000-0000-000000000000')
             };
             const result = provider.handleBeforeRequest(details);
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ cancel: false });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
 
             expect(updateIcon.mock.calls.length).toBe(1);
             expect(navigateUrl).not.toHaveBeenCalled();

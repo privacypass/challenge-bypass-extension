@@ -85,6 +85,17 @@ test('getBadgeText', () => {
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            jest.spyOn(global, 'setTimeout');
+        });
+
+        afterEach(() => {
+            jest.clearAllTimers();
+            jest.useRealTimers();
+        });
+
         const validDetails = {
             method: 'POST',
             url: 'https://captcha.website/?__cf_chl_captcha_tk__=query-param',
@@ -115,6 +126,10 @@ describe('issuance', () => {
 
             const result = provider.handleBeforeRequest(validDetails);
             expect(result).toEqual({ cancel: true });
+
+            expect(setTimeout).toHaveBeenCalledTimes(1);
+            expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 0);
+            jest.runAllTimers();
             await Promise.resolve();
 
             expect(issue.mock.calls.length).toBe(1);
@@ -160,6 +175,8 @@ describe('issuance', () => {
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
+
+            expect(setTimeout).toHaveBeenCalledTimes(0);
             await Promise.resolve();
 
             expect(issue).not.toHaveBeenCalled();
@@ -182,6 +199,8 @@ describe('issuance', () => {
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
+
+            expect(setTimeout).toHaveBeenCalledTimes(0);
             await Promise.resolve();
 
             expect(issue).not.toHaveBeenCalled();
