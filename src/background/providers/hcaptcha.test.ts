@@ -74,7 +74,7 @@ test('getBadgeText', () => {
  * The issuance involves handleBeforeRequest and handleOnCompleted listeners.
  *
  * In handleBeforeRequest listener,
- * 1. Check that the request matches the criteria for redemption.
+ * 1. Check that the request matches the criteria for issuing new tokens.
  *    Such requests are submitting a solved captcha to the provider
  *    on a website controlled by the provider.
  * 2. If so, the listener sets the "issueInfo" property,
@@ -158,7 +158,8 @@ describe('issuance', () => {
          * 2. Its pathname does not contain of any of the followings:
          *    a. '/checkcaptcha'
          */
-        test('invalid request w/ no query param', async () => {
+
+        test('invalid request: no query param', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -180,7 +181,7 @@ describe('issuance', () => {
             expect(navigateUrl).not.toHaveBeenCalled();
         });
 
-        test('invalid request w/ no matching pathname', async () => {
+        test('invalid request: no matching pathname', () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
             const navigateUrl = jest.fn();
@@ -263,7 +264,7 @@ describe('redemption', () => {
 
             const headDetails: any = {
                 ...validDetails,
-                requestHeaders: []
+                requestHeaders: [],
             };
             delete headDetails.requestBody;
 
@@ -308,7 +309,7 @@ describe('redemption', () => {
 
             const headDetails: any = {
                 ...validDetails,
-                requestHeaders: []
+                requestHeaders: [],
             };
             delete headDetails.requestBody;
 
@@ -337,9 +338,9 @@ describe('redemption', () => {
                 requestBody: {
                     formData: {
                         ...validDetails.requestBody!.formData!,
-                        host: ['www.hcaptcha.com']
-                    }
-                }
+                        host: ['www.hcaptcha.com'],
+                    },
+                },
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
@@ -365,9 +366,9 @@ describe('redemption', () => {
                 requestBody: {
                     formData: {
                         ...validDetails.requestBody!.formData!,
-                        sitekey: ['00000000-0000-0000-0000-000000000000']
-                    }
-                }
+                        sitekey: ['00000000-0000-0000-0000-000000000000'],
+                    },
+                },
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();
@@ -390,7 +391,7 @@ describe('redemption', () => {
 
             const details: chrome.webRequest.WebRequestBodyDetails = {
                 ...validDetails,
-                url: validDetails.url.replace(/\?s=.*$/, '?s=00000000-0000-0000-0000-000000000000')
+                url: validDetails.url.replace(/\?s=.*$/, '?s=00000000-0000-0000-0000-000000000000'),
             };
             const result = provider.handleBeforeRequest(details);
             expect(result).toBeUndefined();

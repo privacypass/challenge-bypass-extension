@@ -75,20 +75,24 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs: chrome.
 chrome.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<all_urls>'] }, [
     'blocking',
     'requestBody',
+    'extraHeaders',
 ]);
 
 chrome.webRequest.onBeforeSendHeaders.addListener(handleBeforeSendHeaders, { urls: ['<all_urls>'] }, [
     'blocking',
     'requestHeaders',
+    'extraHeaders',
 ]);
 
 chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: ['<all_urls>'] }, [
     'blocking',
     'responseHeaders',
+    'extraHeaders',
 ]);
 
 chrome.webRequest.onCompleted.addListener(handleOnCompleted, { urls: ['<all_urls>'] }, [
     'responseHeaders',
+    'extraHeaders',
 ]);
 
 chrome.webRequest.onErrorOccurred.addListener(handleOnErrorOccurred, { urls: ['<all_urls>'] });

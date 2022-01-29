@@ -40,6 +40,12 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
 VcH7NNb2xwdEz6Pxm44tvovEl/E+si8hdIDVg1Ys+cbaWwP0jYJW3ygv+Q==
 -----END PUBLIC KEY-----`;
 
+interface IssueInfo {
+    requestId: string;
+    url:       string;
+    formData:  { [key: string]: string[] | string };
+}
+
 interface RedeemInfo {
     requestId: string;
     token: Token;
@@ -57,6 +63,7 @@ export class CloudflareProvider extends Provider {
     private VOPRF:      voprf.VOPRF;
     private callbacks:  Callbacks;
     private storage:    Storage;
+    private issueInfo:  IssueInfo | null;
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage, callbacks: Callbacks) {
@@ -65,6 +72,7 @@ export class CloudflareProvider extends Provider {
         this.VOPRF      = new voprf.VOPRF(voprf.defaultECSettings);
         this.callbacks  = callbacks;
         this.storage    = storage;
+        this.issueInfo  = null;
         this.redeemInfo = null;
     }
 
@@ -108,20 +116,16 @@ export class CloudflareProvider extends Provider {
             : {}
         ;
 
-        if (this.matchesIssuingCriteria(details, url, formData)) {
-            setTimeout(
-                (): void => {
-                    this.sendIssueRequest(details.url, formData);
-                },
-                0
-            );
+        if (this.matchesIssuingBodyCriteria(details, url, formData)) {
+            this.issueInfo = { requestId: details.requestId, url: details.url, formData };
 
-            // safe to cancel
-            return { cancel: true };
+            // do NOT cancel the request with captcha solution.
+            // note: "handleBeforeSendHeaders" will cancel this request if additional criteria are satisfied.
+            return { cancel: false };
         }
     }
 
-    private matchesIssuingCriteria(
+    private matchesIssuingBodyCriteria(
         details:  chrome.webRequest.WebRequestBodyDetails,
         url:      URL,
         formData: { [key: string]: string[] | string },
@@ -145,17 +149,150 @@ export class CloudflareProvider extends Provider {
             return false;
         }
 
-        // Only issue tokens when querystring parameters pass defined criteria.
-        if (!areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
-            return false;
-        }
-
         // Only issue tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
         if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
             return false;
         }
 
         return true;
+    }
+
+    handleHeadersReceived(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        // Don't redeem a token on the issuing website.
+        if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
+            return;
+        }
+
+        // Check if it's the response of the request that we should insert a token.
+        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
+            return;
+        }
+        const hasSupportHeader = details.responseHeaders.some((header) => {
+            return (
+                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
+                header.value !== undefined &&
+                parseInt(header.value, 10) === CloudflareProvider.ID
+            );
+        });
+        if (!hasSupportHeader) {
+            return;
+        }
+
+        // Redeem one token (if available)
+
+        const tokens = this.getStoredTokens();
+        const token = tokens.shift();
+        this.setStoredTokens(tokens);
+
+        // No tokens in wallet!
+        if (token === undefined) {
+            return;
+        }
+
+        this.redeemInfo = { requestId: details.requestId, token };
+
+        // Redirect to resend the request attached with the token.
+        return {
+            redirectUrl: details.url,
+        };
+    }
+
+    handleBeforeSendHeaders(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+
+        if (this.issueInfo !== null) {
+            if (this.matchesIssuingHeadersCriteria(details)) {
+                const issueInfo: IssueInfo = { ...this.issueInfo };
+
+                // Clear the issue info.
+                this.issueInfo = null;
+
+                setTimeout(
+                    (): void => {
+                        this.sendIssueRequest(issueInfo.url, issueInfo.formData);
+                    },
+                    0
+                );
+
+                // cancel the request with captcha solution.
+                return { cancel: true };
+            }
+            else {
+                // Clear the issue info.
+                this.issueInfo = null;
+            }
+        }
+
+        return this.redeemToken(details);
+    }
+
+    private redeemToken(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
+            return;
+        }
+
+        const token = this.redeemInfo!.token;
+
+        // Clear the redeem info.
+        this.redeemInfo = null;
+
+        const url = new URL(details.url);
+        const key = token.getMacKey();
+        const binding = this.VOPRF.createRequestBinding(key, [
+            voprf.getBytesFromString(url.hostname),
+            voprf.getBytesFromString(details.method + ' ' + url.pathname),
+        ]);
+
+        const contents = [
+            voprf.getBase64FromBytes(token.getInput()),
+            binding,
+            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
+        ];
+        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
+
+        const headers = details.requestHeaders ?? [];
+        headers.push({ name: 'challenge-bypass-token', value: redemption });
+
+        return {requestHeaders: headers};
+    }
+
+    private matchesIssuingHeadersCriteria(
+        details: chrome.webRequest.WebRequestHeadersDetails,
+    ): boolean {
+        let href: string;
+        let url:  URL;
+
+        if (this.issueInfo === null) return false;
+
+        href = this.issueInfo.url;
+        url  = new URL(href);
+
+        // Only issue tokens when querystring parameters pass defined criteria.
+        if (areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            return true;
+        }
+
+        if (details.requestHeaders) {
+            const ref_header = details.requestHeaders.find(h => (h !== undefined) && h.name && h.value && (h.name.toLowerCase() === 'referer'));
+
+            if (ref_header !== undefined) {
+                href = ref_header.value!.replace(/([\?&])(?:__cf_chl_tk)([=])/ig, ('$1' + '__cf_chl_captcha_tk__' + '$2'));
+                url  = new URL(href);
+
+                // Only issue tokens when querystring parameters pass defined criteria.
+                if (areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+                    this.issueInfo.url = href;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private async sendIssueRequest(
@@ -304,80 +441,6 @@ export class CloudflareProvider extends Provider {
         this.storage.setItem(`${keyPrefix}${version}`, JSON.stringify(item));
 
         return item;
-    }
-
-    handleHeadersReceived(
-        details: chrome.webRequest.WebResponseHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        // Don't redeem a token on the issuing website.
-        if (isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, new URL(details.url))) {
-            return;
-        }
-
-        // Check if it's the response of the request that we should insert a token.
-        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
-            return;
-        }
-        const hasSupportHeader = details.responseHeaders.some((header) => {
-            return (
-                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
-                header.value !== undefined &&
-                parseInt(header.value, 10) === CloudflareProvider.ID
-            );
-        });
-        if (!hasSupportHeader) {
-            return;
-        }
-
-        // Redeem one token (if available)
-
-        const tokens = this.getStoredTokens();
-        const token = tokens.shift();
-        this.setStoredTokens(tokens);
-
-        // No tokens in wallet!
-        if (token === undefined) {
-            return;
-        }
-
-        this.redeemInfo = { requestId: details.requestId, token };
-
-        // Redirect to resend the request attached with the token.
-        return {
-            redirectUrl: details.url,
-        };
-    }
-
-    handleBeforeSendHeaders(
-        details: chrome.webRequest.WebRequestHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
-            return;
-        }
-
-        const token = this.redeemInfo!.token;
-
-        // Clear the redeem info.
-        this.redeemInfo = null;
-
-        const url = new URL(details.url);
-        const key = token.getMacKey();
-        const binding = this.VOPRF.createRequestBinding(key, [
-            voprf.getBytesFromString(url.hostname),
-            voprf.getBytesFromString(details.method + ' ' + url.pathname),
-        ]);
-
-        const contents = [
-            voprf.getBase64FromBytes(token.getInput()),
-            binding,
-            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
-        ];
-        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
-
-        const headers = details.requestHeaders ?? [];
-        headers.push({ name: 'challenge-bypass-token', value: redemption });
-
-        return {requestHeaders: headers};
     }
 
     handleOnCompleted(

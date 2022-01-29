@@ -269,9 +269,7 @@ export class HcaptchaProvider extends Provider {
             { name: 'challenge-bypass-token', value: redemption         },
         );
 
-        return {
-            requestHeaders: headers,
-        };
+        return {requestHeaders: headers};
     }
 
     handleHeadersReceived(
@@ -298,17 +296,22 @@ export class HcaptchaProvider extends Provider {
             (this.issueInfo           !== null) &&
             (this.issueInfo.requestId === requestId)
         ) {
-            const url: string = this.issueInfo!.url;
+            try {
+                const url: string = this.issueInfo!.url;
 
-            // Clear the issue info.
-            this.issueInfo = null;
+                // Clear the issue info.
+                this.issueInfo = null;
 
-            // Issue tokens.
-            const tokens = await this.issue(url);
+                // Issue tokens.
+                const tokens = await this.issue(url);
 
-            // Store tokens.
-            const cached = this.getStoredTokens();
-            this.setStoredTokens(cached.concat(tokens));
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
+            }
+            catch(error: any) {
+                console.error(error.message);
+            }
 
             this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
         }
