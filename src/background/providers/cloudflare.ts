@@ -203,7 +203,10 @@ export class CloudflareProvider extends Provider {
         details: chrome.webRequest.WebRequestHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
 
-        if (this.issueInfo !== null) {
+        if (
+            (this.issueInfo           !== null) &&
+            (this.issueInfo.requestId === details.requestId)
+        ) {
             if (this.matchesIssuingHeadersCriteria(details)) {
                 const issueInfo: IssueInfo = { ...this.issueInfo };
 
@@ -232,7 +235,10 @@ export class CloudflareProvider extends Provider {
     private redeemToken(
         details: chrome.webRequest.WebRequestHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
+        if (
+            (this.redeemInfo === null) ||
+            (this.redeemInfo.requestId !== details.requestId)
+        ) {
             return;
         }
 
@@ -267,7 +273,12 @@ export class CloudflareProvider extends Provider {
         let href: string;
         let url:  URL;
 
-        if (this.issueInfo === null) return false;
+        if (
+            (this.issueInfo === null) ||
+            (this.issueInfo.requestId !== details.requestId)
+        ) {
+            return false;
+        }
 
         href = this.issueInfo.url;
         url  = new URL(href);
