@@ -208,17 +208,7 @@ export class CloudflareProvider extends Provider {
             (this.issueInfo.requestId === details.requestId)
         ) {
             if (this.matchesIssuingHeadersCriteria(details)) {
-                const issueInfo: IssueInfo = { ...this.issueInfo };
-
-                // Clear the issue info.
-                this.issueInfo = null;
-
-                setTimeout(
-                    (): void => {
-                        this.sendIssueRequest(issueInfo.url, issueInfo.formData);
-                    },
-                    0
-                );
+                this.triggerIssueRequest(details.requestId);
 
                 // cancel the request with captcha solution.
                 return { cancel: true };
@@ -304,6 +294,26 @@ export class CloudflareProvider extends Provider {
         }
 
         return false;
+    }
+
+    private triggerIssueRequest(requestId: string): void {
+        // Is the current (cancelled) request a trigger to initiate a secondary request to the provider for the issuing of signed tokens?
+        if (
+            (this.issueInfo           !== null) &&
+            (this.issueInfo.requestId === requestId)
+        ) {
+            const issueInfo: IssueInfo = { ...this.issueInfo };
+
+            // Clear the issue info.
+            this.issueInfo = null;
+
+            setTimeout(
+                (): void => {
+                    this.sendIssueRequest(issueInfo.url, issueInfo.formData);
+                },
+                0
+            );
+        }
     }
 
     private async sendIssueRequest(

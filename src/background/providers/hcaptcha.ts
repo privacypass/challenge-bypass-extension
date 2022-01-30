@@ -281,40 +281,44 @@ export class HcaptchaProvider extends Provider {
     handleOnCompleted(
         details: chrome.webRequest.WebResponseHeadersDetails,
     ): void {
-        this.sendIssueRequest(details.requestId);
+        this.triggerIssueRequest(details.requestId);
     }
 
     handleOnErrorOccurred(
         details: chrome.webRequest.WebResponseErrorDetails,
     ): void {
-        this.sendIssueRequest(details.requestId);
+        this.triggerIssueRequest(details.requestId);
     }
 
-    private async sendIssueRequest(requestId: string): Promise<void> {
-        // Is the completed request a trigger to initiate a secondary request to the provider for the issuing of signed tokens?
+    private triggerIssueRequest(requestId: string): void {
+        // Is the current (completed) request a trigger to initiate a secondary request to the provider for the issuing of signed tokens?
         if (
             (this.issueInfo           !== null) &&
             (this.issueInfo.requestId === requestId)
         ) {
-            try {
-                const url: string = this.issueInfo!.url;
+            const url: string = this.issueInfo!.url;
 
-                // Clear the issue info.
-                this.issueInfo = null;
+            // Clear the issue info.
+            this.issueInfo = null;
 
-                // Issue tokens.
-                const tokens = await this.issue(url);
-
-                // Store tokens.
-                const cached = this.getStoredTokens();
-                this.setStoredTokens(cached.concat(tokens));
-            }
-            catch(error: any) {
-                console.error(error.message);
-            }
-
-            this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
+            this.sendIssueRequest(url);
         }
+    }
+
+    private async sendIssueRequest(url: string): Promise<void> {
+        try {
+            // Issue tokens.
+            const tokens = await this.issue(url);
+
+            // Store tokens.
+            const cached = this.getStoredTokens();
+            this.setStoredTokens(cached.concat(tokens));
+        }
+        catch(error: any) {
+            console.error(error.message);
+        }
+
+        this.callbacks.navigateUrl(HcaptchaProvider.EARNED_TOKEN_COOKIE.url);
     }
 
     private async issue(url: string): Promise<Token[]> {
