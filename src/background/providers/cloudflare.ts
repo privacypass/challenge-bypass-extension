@@ -1,6 +1,6 @@
 import * as voprf from '../crypto/voprf';
 
-import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams } from './provider';
+import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams, getNormalizedFormData } from './provider';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
@@ -16,23 +16,24 @@ const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
 const ALL_ISSUING_CRITERIA: {
-    HOSTNAMES:    QUALIFIED_HOSTNAMES;
-    PATHNAMES:    QUALIFIED_PATHNAMES;
-    QUERY_PARAMS: QUALIFIED_PARAMS;
-    BODY_PARAMS:  QUALIFIED_PARAMS;
+    HOSTNAMES:    QUALIFIED_HOSTNAMES | void;
+    PATHNAMES:    QUALIFIED_PATHNAMES | void;
+    QUERY_PARAMS: QUALIFIED_PARAMS    | void;
+    BODY_PARAMS:  QUALIFIED_PARAMS    | void;
 } = {
     HOSTNAMES: {
         exact :   [DEFAULT_ISSUING_HOSTNAME],
         contains: [`.${DEFAULT_ISSUING_HOSTNAME}`],
     },
     PATHNAMES: {
+        exact :   ['/'],
     },
     QUERY_PARAMS: {
-        some: ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
+        some:     ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
     },
     BODY_PARAMS: {
-        some: ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'],
-    }
+        some:     ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'],
+    },
 }
 
 const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
@@ -110,15 +111,8 @@ export class CloudflareProvider extends Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
-            ? details.requestBody.formData
-            : {}
-        ;
 
-        if (this.matchesIssuingBodyCriteria(details, url, formData)) {
-            this.issueInfo = { requestId: details.requestId, url: details.url, formData };
-
+        if (this.matchesIssuingBodyCriteria(details)) {
             // do NOT cancel the request with captcha solution.
             // note: "handleBeforeSendHeaders" will cancel this request if additional criteria are satisfied.
             return { cancel: false };
@@ -126,10 +120,9 @@ export class CloudflareProvider extends Provider {
     }
 
     private matchesIssuingBodyCriteria(
-        details:  chrome.webRequest.WebRequestBodyDetails,
-        url:      URL,
-        formData: { [key: string]: string[] | string },
+        details: chrome.webRequest.WebRequestBodyDetails,
     ): boolean {
+
         // Only issue tokens for POST requests that contain data in body.
         if (
             (details.method.toUpperCase() !== 'POST'   ) ||
@@ -138,6 +131,8 @@ export class CloudflareProvider extends Provider {
         ) {
             return false;
         }
+
+        const url: URL = new URL(details.url);
 
         // Only issue tokens to hosts belonging to the provider.
         if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
@@ -149,10 +144,14 @@ export class CloudflareProvider extends Provider {
             return false;
         }
 
-        // Only issue tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
+        const formData: { [key: string]: string[] | string } = getNormalizedFormData(details, /* flatten= */ true);
+
+        // Only issue tokens when 'application/x-www-form-urlencoded' or 'application/json' data parameters in POST body pass defined criteria.
         if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
             return false;
         }
+
+        this.issueInfo = { requestId: details.requestId, url: details.url, formData };
 
         return true;
     }
@@ -321,19 +320,8 @@ export class CloudflareProvider extends Provider {
         formData: { [key: string]: string[] | string },
     ): Promise<void> {
         try {
-            // Normalize 'application/x-www-form-urlencoded' data parameters in POST body
-            const flattenFormData: { [key: string]: string[] | string } = {};
-            for (const key in formData) {
-                if (Array.isArray(formData[key]) && (formData[key].length === 1)) {
-                    const [value] = formData[key];
-                    flattenFormData[key] = value;
-                } else {
-                    flattenFormData[key] = formData[key];
-                }
-            }
-
             // Issue tokens.
-            const tokens = await this.issue(url, flattenFormData);
+            const tokens = await this.issue(url, formData);
 
             // Store tokens.
             const cached = this.getStoredTokens();

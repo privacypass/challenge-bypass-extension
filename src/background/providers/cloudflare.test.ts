@@ -116,6 +116,10 @@ describe('issuance', () => {
             },
         };
 
+        const flattenFormData: { [key: string]: string[] | string } = {
+            'h-captcha-response': 'body-param',
+        };
+
         test('valid request', async () => {
             const storage = new StorageMock();
             const updateIcon = jest.fn();
@@ -137,7 +141,7 @@ describe('issuance', () => {
             issueInfo = provider['issueInfo'];
             expect(issueInfo!.requestId).toEqual(bodyDetails.requestId);
             expect(issueInfo!.url).toEqual(bodyDetails.url);
-            expect(issueInfo!.formData).toEqual(bodyDetails.requestBody!.formData);
+            expect(issueInfo!.formData).toEqual(flattenFormData);
 
             const headDetails: any = {
                 ...validDetails,
@@ -199,7 +203,7 @@ describe('issuance', () => {
             issueInfo = provider['issueInfo'];
             expect(issueInfo!.requestId).toEqual(bodyDetails.requestId);
             expect(issueInfo!.url).toEqual(bodyDetails.url);
-            expect(issueInfo!.formData).toEqual(bodyDetails.requestBody!.formData);
+            expect(issueInfo!.formData).toEqual(flattenFormData);
 
             const headDetails: any = {
                 ...validDetails,
@@ -271,7 +275,7 @@ describe('issuance', () => {
             issueInfo = provider['issueInfo'];
             expect(issueInfo!.requestId).toEqual(bodyDetails.requestId);
             expect(issueInfo!.url).toEqual(bodyDetails.url);
-            expect(issueInfo!.formData).toEqual(bodyDetails.requestBody!.formData);
+            expect(issueInfo!.formData).toEqual(flattenFormData);
 
             const headDetails: any = {
                 ...validDetails,

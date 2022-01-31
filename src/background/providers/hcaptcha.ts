@@ -1,6 +1,6 @@
 import * as voprf from '../crypto/voprf';
 
-import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams } from './provider';
+import { Provider, EarnedTokenCookie, Callbacks, QUALIFIED_HOSTNAMES, QUALIFIED_PATHNAMES, QUALIFIED_PARAMS, isIssuingHostname, isQualifiedPathname, areQualifiedQueryParams, areQualifiedBodyFormParams, getNormalizedFormData } from './provider';
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
@@ -15,10 +15,10 @@ const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
 const ALL_ISSUING_CRITERIA: {
-    HOSTNAMES:    QUALIFIED_HOSTNAMES;
-    PATHNAMES:    QUALIFIED_PATHNAMES;
-    QUERY_PARAMS: QUALIFIED_PARAMS;
-    BODY_PARAMS:  QUALIFIED_PARAMS;
+    HOSTNAMES:    QUALIFIED_HOSTNAMES | void;
+    PATHNAMES:    QUALIFIED_PATHNAMES | void;
+    QUERY_PARAMS: QUALIFIED_PARAMS    | void;
+    BODY_PARAMS:  QUALIFIED_PARAMS    | void;
 } = {
     HOSTNAMES: {
         exact :   [DEFAULT_ISSUING_HOSTNAME],
@@ -28,17 +28,16 @@ const ALL_ISSUING_CRITERIA: {
         contains: ['/checkcaptcha'],
     },
     QUERY_PARAMS: {
-        some: ['s=00000000-0000-0000-0000-000000000000'],
+        some:     ['s=00000000-0000-0000-0000-000000000000'],
     },
-    BODY_PARAMS: {
-    }
+    BODY_PARAMS:  undefined,
 }
 
 const ALL_REDEMPTION_CRITERIA: {
-    HOSTNAMES:    QUALIFIED_HOSTNAMES;
-    PATHNAMES:    QUALIFIED_PATHNAMES;
-    QUERY_PARAMS: QUALIFIED_PARAMS;
-    BODY_PARAMS:  QUALIFIED_PARAMS;
+    HOSTNAMES:    QUALIFIED_HOSTNAMES | void;
+    PATHNAMES:    QUALIFIED_PATHNAMES | void;
+    QUERY_PARAMS: QUALIFIED_PARAMS    | void;
+    BODY_PARAMS:  QUALIFIED_PARAMS    | void;
 } = {
     HOSTNAMES: {
         exact :   [DEFAULT_ISSUING_HOSTNAME],
@@ -48,11 +47,11 @@ const ALL_REDEMPTION_CRITERIA: {
         contains: ['/getcaptcha'],
     },
     QUERY_PARAMS: {
-        some: ['s!=00000000-0000-0000-0000-000000000000'],
+        some:     ['s!=00000000-0000-0000-0000-000000000000'],
     },
     BODY_PARAMS: {
-        every: ['sitekey!=00000000-0000-0000-0000-000000000000', 'motionData', 'host!=www.hcaptcha.com'],
-    }
+        every:    ['sitekey!=00000000-0000-0000-0000-000000000000', 'motionData', 'host!=www.hcaptcha.com'],
+    },
 }
 
 const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
@@ -128,22 +127,13 @@ export class HcaptchaProvider extends Provider {
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-        const formData: { [key: string]: string[] | string } = (details.requestBody && details.requestBody.formData)
-            ? details.requestBody.formData
-            : {}
-        ;
 
-        if (this.matchesIssuingCriteria(details, url, formData)) {
-            this.issueInfo = { requestId: details.requestId, url: details.url };
-
+        if (this.matchesIssuingCriteria(details)) {
             // do NOT cancel the request with captcha solution.
             return { cancel: false };
         }
 
-        if (this.matchesRedemptionCriteria(details, url, formData)) {
-            this.redeemInfo = { requestId: details.requestId };
-
+        if (this.matchesRedemptionCriteria(details)) {
             // do NOT cancel the request to generate a new captcha.
             // note: "handleBeforeSendHeaders" will add request headers to embed a token.
             return { cancel: false };
@@ -151,10 +141,9 @@ export class HcaptchaProvider extends Provider {
     }
 
     private matchesIssuingCriteria(
-        details:  chrome.webRequest.WebRequestBodyDetails,
-        url:      URL,
-        formData: { [key: string]: string[] | string }
+        details: chrome.webRequest.WebRequestBodyDetails,
     ): boolean {
+
         // Only issue tokens for POST requests that contain data in body.
         if (
             (details.method.toUpperCase() !== 'POST'   ) ||
@@ -163,6 +152,8 @@ export class HcaptchaProvider extends Provider {
         ) {
             return false;
         }
+
+        const url: URL = new URL(details.url);
 
         // Only issue tokens to hosts belonging to the provider.
         if (!isIssuingHostname(ALL_ISSUING_CRITERIA.HOSTNAMES, url)) {
@@ -179,19 +170,25 @@ export class HcaptchaProvider extends Provider {
             return false;
         }
 
-        // Only issue tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
-        if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
-            return false;
+        // conditionally short-circuit an expensive operation
+        if (ALL_ISSUING_CRITERIA.BODY_PARAMS !== undefined) {
+            const formData: { [key: string]: string[] | string } = getNormalizedFormData(details);
+
+            // Only issue tokens when 'application/x-www-form-urlencoded' or 'application/json' data parameters in POST body pass defined criteria.
+            if (!areQualifiedBodyFormParams(ALL_ISSUING_CRITERIA.BODY_PARAMS, formData)) {
+                return false;
+            }
         }
+
+        this.issueInfo = { requestId: details.requestId, url: details.url };
 
         return true;
     }
 
     private matchesRedemptionCriteria(
-        details:  chrome.webRequest.WebRequestBodyDetails,
-        url:      URL,
-        formData: { [key: string]: string[] | string }
+        details: chrome.webRequest.WebRequestBodyDetails,
     ): boolean {
+
         // Only redeem tokens for POST requests that contain data in body.
         if (
             (details.method.toUpperCase() !== 'POST'   ) ||
@@ -200,6 +197,8 @@ export class HcaptchaProvider extends Provider {
         ) {
             return false;
         }
+
+        const url: URL = new URL(details.url);
 
         // Only redeem tokens to hosts belonging to the provider.
         if (!isIssuingHostname(ALL_REDEMPTION_CRITERIA.HOSTNAMES, url)) {
@@ -216,10 +215,17 @@ export class HcaptchaProvider extends Provider {
             return false;
         }
 
-        // Only redeem tokens when 'application/x-www-form-urlencoded' data parameters in POST body pass defined criteria.
-        if (!areQualifiedBodyFormParams(ALL_REDEMPTION_CRITERIA.BODY_PARAMS, formData)) {
-            return false;
+        // conditionally short-circuit an expensive operation
+        if (ALL_REDEMPTION_CRITERIA.BODY_PARAMS !== undefined) {
+            const formData: { [key: string]: string[] | string } = getNormalizedFormData(details);
+
+            // Only redeem tokens when 'application/x-www-form-urlencoded' or 'application/json' data parameters in POST body pass defined criteria.
+            if (!areQualifiedBodyFormParams(ALL_REDEMPTION_CRITERIA.BODY_PARAMS, formData)) {
+                return false;
+            }
         }
+
+        this.redeemInfo = { requestId: details.requestId };
 
         return true;
     }

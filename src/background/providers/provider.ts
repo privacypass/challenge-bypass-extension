@@ -1,4 +1,5 @@
 import { Storage } from '../storage';
+import qs from 'qs';
 
 export interface Callbacks {
     updateIcon(text: string): void;
@@ -170,4 +171,62 @@ function isQualifiedBodyFormParam(formData: { [key: string]: string[] | string }
 export function areQualifiedBodyFormParams(params: QUALIFIED_PARAMS | void, formData: { [key: string]: string[] | string } | void): boolean {
     const test: (param: string) => boolean = isQualifiedBodyFormParam.bind(null, formData);
     return areQualifiedParamsFound(params, test, true);
+}
+
+export function getNormalizedFormData(
+    details: chrome.webRequest.WebRequestBodyDetails,
+    flatten: boolean = false,
+): { [key: string]: string[] | string } {
+    let formData: { [key: string]: string[] | string } = {};
+
+    if (details.requestBody instanceof Object) {
+        if (details.requestBody.formData instanceof Object) {
+            formData = details.requestBody.formData;
+        }
+        else if (Array.isArray(details.requestBody.raw) && (details.requestBody.raw.length > 0)) {
+            try {
+                const decodedData = details.requestBody.raw.map(val => (val && val.bytes) ? new TextDecoder().decode(new Uint8Array(val.bytes!)) : '').join('');
+                let isParsed: boolean = false;
+
+                if (!isParsed) {
+                    // content-type: application/x-www-form-urlencoded
+                    try {
+                        const parsedData: any  = qs.parse(decodedData);
+
+                        if ((parsedData !== undefined) && (parsedData instanceof Object)) {
+                            isParsed = true;
+                            formData = parsedData;
+                        }
+                    }
+                    catch(e1) {}
+                }
+
+                if (!isParsed) {
+                    // content-type: application/json
+                    try {
+                        const parsedData: any  = JSON.parse(decodedData);
+
+                        if ((parsedData !== undefined) && (parsedData instanceof Object)) {
+                            formData = parsedData;
+                        }
+                    }
+                    catch(e2) {}
+                }
+            }
+            catch(error) {}
+        }
+    }
+
+    if (flatten) {
+        for (const key in formData) {
+            if (
+                Array.isArray(formData[key]) &&
+                (formData[key].length === 1)
+            ) {
+                formData[key] = formData[key][0];
+            }
+        }
+    }
+
+    return formData;
 }
