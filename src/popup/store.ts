@@ -71,51 +71,7 @@ const reducer = (state: any | undefined, action: Action) => {
             });
             return state;
         case 'RESTORE_TOKENS':
-            (async (): Promise<void> => {
-
-                const readFile = function (event: Event) {
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-
-                    const input: HTMLInputElement = <HTMLInputElement>event.target;
-                    const files: FileList | null  = input.files;
-                    if (files === null) return;
-
-                    for (let file_index=0; file_index < files.length; file_index++) {
-                        const reader = new FileReader();
-
-                        reader.onload = function(){
-                            try {
-                                if ((typeof reader.result === 'string') && (reader.result.length > 0)) {
-                                    const backupJSON: string = reader.result;
-                                    const backup: {[key: string]: string[]} = JSON.parse(backupJSON);
-
-                                    chrome.runtime.sendMessage({ restore: true, backup }, (response: any) => {
-                                        if (response === true) {
-                                            store.dispatch({ type: 'OBTAIN_STATE' });
-                                        }
-                                    });
-                                }
-                            }
-                            catch(e) {}
-                        };
-
-                        reader.readAsText(
-                            files[file_index]
-                        );
-                    }
-                };
-
-                try {
-                    const input = window.document.createElement('input');
-                    input.setAttribute('type',   'file');
-                    input.setAttribute('accept', 'text/plain, application/json, .txt, .json');
-                    input.addEventListener('change', readFile);
-                    input.click();
-                }
-                catch(e) {}
-            })();
-
+            chrome.runtime.sendMessage({ restore: true, tab: { open: true } });
             return state;
         case 'CLEAR_TOKENS':
             chrome.runtime.sendMessage({ clear: true });

@@ -55,7 +55,21 @@ function addPasses(providerID: string, newTokensArray: string[]): boolean {
     }
 }
 
-export function handleReceivedMessage(request: any, _sender: chrome.runtime.MessageSender, sendResponse: Function): void {
+function restorePasses(backup: {[key: string]: string[]} | void): boolean {
+    let did_restore: boolean = false;
+
+    if (backup !== undefined) {
+        for (const providerID in backup) {
+            if (addPasses(providerID, backup[providerID]) && !did_restore) {
+                did_restore = true;
+            }
+        }
+    }
+
+    return did_restore;
+}
+
+export function handleReceivedMessage(request: any, sender: chrome.runtime.MessageSender, sendResponse: Function): void {
 
     // -------------------------------------------------------------------------
     if (request.tokensCount === true) {
@@ -80,23 +94,37 @@ export function handleReceivedMessage(request: any, _sender: chrome.runtime.Mess
 
     // -------------------------------------------------------------------------
     if (request.restore === true) {
-        const backup: {[key: string]: string[]} | void = request.backup;
-        let did_restore: boolean = false;
+        if (request.tab !== undefined) {
+            if (request.tab.open === true) {
+                chrome.tabs.create({ url: '/restore.html', active: true });
 
-        if (backup !== undefined) {
-            for (const providerID in backup) {
-                if (addPasses(providerID, backup[providerID]) && !did_restore) {
-                    did_restore = true;
+                sendResponse();
+                return;
+            }
+
+            if (request.tab.close === true) {
+                if ((sender.tab !== undefined) && (sender.tab.id !== undefined) && (sender.tab.id !== chrome.tabs.TAB_ID_NONE)) {
+                    chrome.tabs.remove(sender.tab.id);
                 }
+
+                sendResponse();
+                return;
             }
         }
 
-        if (did_restore) {
-            // Update the browser action icon after restoring tokens.
-            forceUpdateIcon();
+        if (request.backup !== undefined) {
+            const did_restore: boolean = restorePasses(request.backup);
+
+            if (did_restore) {
+                // Update the browser action icon after restoring tokens.
+                forceUpdateIcon();
+            }
+
+            sendResponse(did_restore);
+            return;
         }
 
-        sendResponse(did_restore);
+        sendResponse();
         return;
     }
 
@@ -107,6 +135,7 @@ export function handleReceivedMessage(request: any, _sender: chrome.runtime.Mess
         // Update the browser action icon after clearing the tokens.
         forceUpdateIcon();
 
+        sendResponse();
         return;
     }
 

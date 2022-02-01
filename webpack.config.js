@@ -90,5 +90,25 @@ const popup = {
     ],
 };
 
+const restore = {
+    ...common,
+    entry: {
+        restore: path.resolve('src/restore/index.ts'),
+    },
+    module: {
+        rules: [tsloader],
+    },
+    resolve: {
+        extensions: ['.ts', '.js'],
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            chunks: ['restore'],
+            filename: 'restore.html',
+            template: 'public/restore.html',
+        }),
+    ],
+};
+
 // Mutiple targets for webpack: https://webpack.js.org/concepts/targets/#multiple-targets
-export default [background, popup];
+export default [background, popup, restore];
