@@ -3,9 +3,9 @@ name: PrivacyPass Challenge Extension
 
 on:
   push:
-    branches: [ v3-rc ]
+    branches: [ master ]
   pull_request:
-    branches: [ v3-rc ]
+    branches: [ master ]
 
 jobs:
   testing:
