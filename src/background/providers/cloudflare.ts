@@ -13,8 +13,7 @@ const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
 const COMMITMENT_URL =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_QUERY_PARAMS = ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'];
-const QUALIFIED_BODY_PARAMS = ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'];
+const QUALIFIED_BODY_PARAMS = ['h-captcha-response', 'cf_captcha_kind'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
@@ -237,13 +236,10 @@ export class CloudflareProvider implements Provider {
             return;
         }
 
-        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some((param) => {
-            return url.searchParams.has(param);
-        });
-        const hasBodyParams = QUALIFIED_BODY_PARAMS.some((param) => {
+        const hasBodyParams = QUALIFIED_BODY_PARAMS.every((param) => {
             return details.requestBody !== null && param in details.requestBody.formData!;
         });
-        if (!hasQueryParams || !hasBodyParams) {
+        if (!hasBodyParams) {
             return;
         }
 
