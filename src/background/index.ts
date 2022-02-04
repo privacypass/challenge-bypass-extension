@@ -21,8 +21,27 @@ declare global {
     }
 }
 
+declare let browser: any;
+
 window.ACTIVE_TAB_ID = chrome.tabs.TAB_ID_NONE;
 window.TABS = new Map<number, Tab>();
+
+const BROWSERS = {
+    CHROME: 'Chrome',
+    FIREFOX: 'Firefox',
+    EDGE: 'Edge',
+} as const;
+type BROWSERS = typeof BROWSERS[keyof typeof BROWSERS];
+
+function getBrowser(): BROWSERS {
+    if (typeof chrome !== 'undefined') {
+        if (typeof browser !== 'undefined') {
+            return BROWSERS.FIREFOX;
+        }
+        return BROWSERS.CHROME;
+    }
+    return BROWSERS.EDGE;
+}
 
 /* Listeners for navigator */
 
@@ -57,10 +76,14 @@ chrome.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<al
     'blocking',
 ]);
 
+const extraInfos = ['requestHeaders', 'blocking'];
+if (getBrowser() === BROWSERS.CHROME) {
+    extraInfos.push('extraHeaders');
+}
 chrome.webRequest.onBeforeSendHeaders.addListener(
     handleBeforeSendHeaders,
     { urls: ['<all_urls>'] },
-    ['requestHeaders', 'blocking'],
+    extraInfos,
 );
 
 chrome.webRequest.onHeadersReceived.addListener(handleHeadersReceived, { urls: ['<all_urls>'] }, [

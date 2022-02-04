@@ -13,11 +13,13 @@ const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
 const COMMITMENT_URL =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_QUERY_PARAMS = ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'];
-const QUALIFIED_BODY_PARAMS = ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'];
+const QUALIFIED_BODY_PARAMS = ['h-captcha-response', 'cf_captcha_kind'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
+
+const REFERER_QUERY_PARAM = '__cf_chl_tk';
+const QUERY_PARAM = '__cf_chl_f_tk';
 
 const VERIFICATION_KEY = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
@@ -31,11 +33,17 @@ interface RedeemInfo {
     token: Token;
 }
 
+interface IssueInfo {
+    requestId: string;
+    formData: { [key: string]: string[] | string };
+}
+
 export class CloudflareProvider implements Provider {
     static readonly ID: number = 1;
     private callbacks: Callbacks;
     private storage: Storage;
 
+    private issueInfo: IssueInfo | null;
     private redeemInfo: RedeemInfo | null;
 
     constructor(storage: Storage, callbacks: Callbacks) {
@@ -45,6 +53,7 @@ export class CloudflareProvider implements Provider {
 
         this.callbacks = callbacks;
         this.storage = storage;
+        this.issueInfo = null;
         this.redeemInfo = null;
     }
 
@@ -191,44 +200,85 @@ export class CloudflareProvider implements Provider {
     handleBeforeSendHeaders(
         details: chrome.webRequest.WebRequestHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        if (this.redeemInfo === null || details.requestId !== this.redeemInfo.requestId) {
-            return;
+        // If we suppose to redeem a token with this request
+        if (this.redeemInfo !== null && details.requestId === this.redeemInfo.requestId) {
+            const url = new URL(details.url);
+
+            const token = this.redeemInfo.token;
+            // Clear the redeem info to indicate that we are already redeeming the token.
+            this.redeemInfo = null;
+
+            const key = token.getMacKey();
+            const binding = voprf.createRequestBinding(key, [
+                voprf.getBytesFromString(url.hostname),
+                voprf.getBytesFromString(details.method + ' ' + url.pathname),
+            ]);
+
+            const contents = [
+                voprf.getBase64FromBytes(token.getInput()),
+                binding,
+                voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
+            ];
+            const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
+
+            const headers = details.requestHeaders ?? [];
+            headers.push({ name: 'challenge-bypass-token', value: redemption });
+
+            this.callbacks.updateIcon(this.getBadgeText());
+
+            return {
+                requestHeaders: headers,
+            };
         }
 
-        const url = new URL(details.url);
+        // If we suppose to issue tokens with this request
+        if (this.issueInfo !== null && details.requestId === this.issueInfo.requestId) {
+            const formData = this.issueInfo.formData;
+            // Clear the issue info to indicate that we are already issuing tokens.
+            this.issueInfo = null;
 
-        const token = this.redeemInfo!.token;
-        // Clear the redeem info to indicate that we are already redeeming the token.
-        this.redeemInfo = null;
+            // We are supposed to also send a Referer header in the issuance request, if there is
+            // any in the original request. But the browsers don't allow us to send a Referer
+            // header according to https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader
+            // So we need to extract the token from the Referer header and send it in the query
+            // param __cf_chl_f_tk instead. (Note that this token is not a Privacy Pass token.
+            let token: string | null = null;
+            if (details.requestHeaders !== undefined) {
+                details.requestHeaders.forEach((header) => {
+                    // Filter only for Referrer header.
+                    if (header.name === 'Referer' && header.value !== undefined) {
+                        const url = new URL(header.value);
+                        token = url.searchParams.get(REFERER_QUERY_PARAM);
+                    }
+                });
+            }
 
-        const key = token.getMacKey();
-        const binding = voprf.createRequestBinding(key, [
-            voprf.getBytesFromString(url.hostname),
-            voprf.getBytesFromString(details.method + ' ' + url.pathname),
-        ]);
+            (async () => {
+                const url = new URL(details.url);
+                if (token !== null) {
+                    url.searchParams.append(QUERY_PARAM, token);
+                }
 
-        const contents = [
-            voprf.getBase64FromBytes(token.getInput()),
-            binding,
-            voprf.getBase64FromString(JSON.stringify(voprf.defaultECSettings)),
-        ];
-        const redemption = btoa(JSON.stringify({ type: 'Redeem', contents }));
+                // Issue tokens.
+                const tokens = await this.issue(url.href, formData);
+                // Store tokens.
+                const cached = this.getStoredTokens();
+                this.setStoredTokens(cached.concat(tokens));
 
-        const headers = details.requestHeaders ?? [];
-        headers.push({ name: 'challenge-bypass-token', value: redemption });
+                this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
+            })();
 
-        this.callbacks.updateIcon(this.getBadgeText());
-
-        return {
-            requestHeaders: headers,
-        };
+            // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue
+            // cancelling the request. However, it seems that we can use image/* except image/svg+html. Let's figure how to
+            // use image data URL later.
+            // https://blog.mozilla.org/security/2017/11/27/blocking-top-level-navigations-data-urls-firefox-59/
+            return { cancel: true };
+        }
     }
 
     handleBeforeRequest(
         details: chrome.webRequest.WebRequestBodyDetails,
     ): chrome.webRequest.BlockingResponse | void {
-        const url = new URL(details.url);
-
         if (
             details.requestBody === null ||
             details.requestBody === undefined ||
@@ -237,13 +287,10 @@ export class CloudflareProvider implements Provider {
             return;
         }
 
-        const hasQueryParams = QUALIFIED_QUERY_PARAMS.some((param) => {
-            return url.searchParams.has(param);
-        });
-        const hasBodyParams = QUALIFIED_BODY_PARAMS.some((param) => {
+        const hasBodyParams = QUALIFIED_BODY_PARAMS.every((param) => {
             return details.requestBody !== null && param in details.requestBody.formData!;
         });
-        if (!hasQueryParams || !hasBodyParams) {
+        if (!hasBodyParams) {
             return;
         }
 
@@ -257,21 +304,7 @@ export class CloudflareProvider implements Provider {
             }
         }
 
-        (async () => {
-            // Issue tokens.
-            const tokens = await this.issue(details.url, flattenFormData);
-            // Store tokens.
-            const cached = this.getStoredTokens();
-            this.setStoredTokens(cached.concat(tokens));
-
-            this.callbacks.navigateUrl(`${url.origin}${url.pathname}`);
-        })();
-
-        // TODO I tried to use redirectUrl with data URL or text/html and text/plain but it didn't work, so I continue
-        // cancelling the request. However, it seems that we can use image/* except image/svg+html. Let's figure how to
-        // use image data URL later.
-        // https://blog.mozilla.org/security/2017/11/27/blocking-top-level-navigations-data-urls-firefox-59/
-        return { cancel: true };
+        this.issueInfo = { requestId: details.requestId, formData: flattenFormData };
     }
 
     handleHeadersReceived(

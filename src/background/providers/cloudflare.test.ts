@@ -57,17 +57,32 @@ test('getBadgeText', () => {
 });
 
 /*
- * The issuance involves handleBeforeRequest listener.
+ * The issuance involves handleBeforeRequest and handleBeforeSendHeaders
+ * listeners. In handleBeforeRequest listener,
  * 1. Firstly, the listener check if the request looks like the one that we
  * should send an issuance request.
- * 2. If it passes the check, the listener returns the cancel command to
- * cancel the request. If not, it returns nothing and let the request
- * continue.
- * 3. At the same time the listener returns, it calls a private method
+ * 2. If it passes the check, The listener sets "issueInfo" property which
+ * includes the request id and the form data of the request. The property
+ * will be used by handleBeforeSendHeaders again to issue the tokens. If not,
+ * it returns nothing and let the request continue.
+ *
+ * In handleBeforeSendHeaders,
+ * 1. The listener will check if the provided request id matches the
+ * request id in "issueInfo". If so, it means that we are issuing the tokens.
+ * If not, it returns nothing and let the request continue.
+ * 2. If it passes the check, the listener extract the form data from
+ * "issueInfo" clears the "issueInfo" property because "issueInfo" is used
+ * already. If not, it returns nothing and let the request continue.
+ * 3. The listener tries to look for the Referer header to get
+ * the (not PP) token from __cf_chl_tk query param in the Referer url.
+ * 4. The listener returns the cancel command to cancel the request.
+ * 5. At the same time the listener returns, it calls a private method
  * "issue" to send an issuance request to the server and the method return
- * an array of issued tokens.
- * 4. The listener stored the issued tokens in the storage.
- * 5. The listener reloads the tab to get the proper web page for the tab.);
+ * an array of issued tokens. In the issuance request, the body will be the
+ * form data extracted from "issueInfo" earlier and also include the
+ * __cf_chl_f_tk query param with the token it got from Step 3 (if any).
+ * 6. The listener stored the issued tokens in the storage.
+ * 7. The listener reloads the tab to get the proper web page for the tab.
  */
 describe('issuance', () => {
     describe('handleBeforeRequest', () => {
@@ -77,12 +92,9 @@ describe('issuance', () => {
             const navigateUrl = jest.fn();
 
             const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
-            const tokens = [new Token(), new Token(), new Token()];
-            const issue = jest.fn(async () => {
-                return tokens;
-            });
+            const issue = jest.fn(async () => []);
             provider['issue'] = issue;
-            const url = 'https://captcha.website/?__cf_chl_captcha_tk__=query-param';
+            const url = 'https://captcha.website';
             const details = {
                 method: 'POST',
                 url,
@@ -95,36 +107,26 @@ describe('issuance', () => {
                 requestBody: {
                     formData: {
                         ['h-captcha-response']: ['body-param'],
+                        ['cf_captcha_kind']: ['body-param'],
                     },
                 },
             };
             const result = await provider.handleBeforeRequest(details);
-            expect(result).toEqual({ cancel: true });
+            expect(result).toBeUndefined();
+            expect(issue).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
 
-            expect(issue.mock.calls.length).toBe(1);
-            expect(issue).toHaveBeenCalledWith(url, {
+            const issueInfo = provider['issueInfo'];
+            expect(issueInfo!.requestId).toEqual(details.requestId);
+            expect(issueInfo!.formData).toStrictEqual({
                 ['h-captcha-response']: 'body-param',
+                ['cf_captcha_kind']: 'body-param',
             });
-
-            expect(navigateUrl.mock.calls.length).toBe(1);
-            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
-
-            // Expect the tokens are added.
-            const storedTokens = provider['getStoredTokens']();
-            expect(storedTokens.map((token) => token.toString())).toEqual(
-                tokens.map((token) => token.toString()),
-            );
         });
 
         /*
-         * The request is invalid if any of the followings is true:
-         * 1. It has no url param of any of the followings:
-         *    a. '__cf_chl_captcha_tk__'
-         *    b. '__cf_chl_managed_tk__'
-         * 2. It has no body param of any of the followings:
-         *    a. 'g-recaptcha-response'
-         *    b. 'h-captcha-response'
-         *    c. 'cf_captcha_kind'
+         * The request is invalid only if the body has both
+         * 'h-captcha-response' and 'cf_captcha_kind' params.
          */
         test('invalid request', async () => {
             const storage = new StorageMock();
@@ -143,9 +145,152 @@ describe('issuance', () => {
                 tabId: 1,
                 type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
                 timeStamp: 1,
-                requestBody: {},
+                requestBody: {
+                    formData: {
+                        ['h-captcha-response']: ['body-param'],
+                    },
+                },
             };
             const result = await provider.handleBeforeRequest(details);
+            expect(result).toBeUndefined();
+            expect(issue).not.toHaveBeenCalled();
+            expect(navigateUrl).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleBeforeSendHeaders', () => {
+        test('with issueInfo with Referer header', async () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const tokens = [new Token(), new Token(), new Token()];
+            const issue = jest.fn(async () => {
+                return tokens;
+            });
+            provider['issue'] = issue;
+            const issueInfo = {
+                requestId: 'xxx',
+                formData: {
+                    ['h-captcha-response']: 'body-param',
+                    ['cf_captcha_kind']: 'body-param',
+                },
+            };
+            provider['issueInfo'] = issueInfo;
+            const details = {
+                method: 'POST',
+                url: 'https://captcha.website',
+                requestId: 'xxx',
+                frameId: 1,
+                parentFrameId: 1,
+                tabId: 1,
+                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+                timeStamp: 1,
+                requestHeaders: [
+                    {
+                        name: 'Referer',
+                        value: 'https://captcha.website/?__cf_chl_tk=token',
+                    },
+                ],
+            };
+            const result = await provider.handleBeforeSendHeaders(details);
+            expect(result).toStrictEqual({ cancel: true });
+            const newIssueInfo = provider['issueInfo'];
+            expect(newIssueInfo).toBeNull();
+
+            expect(issue.mock.calls.length).toBe(1);
+            expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
+                ['h-captcha-response']: 'body-param',
+                ['cf_captcha_kind']: 'body-param',
+            });
+
+            expect(navigateUrl.mock.calls.length).toBe(1);
+            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
+
+            // Expect the tokens are added.
+            const storedTokens = provider['getStoredTokens']();
+            expect(storedTokens.map((token) => token.toString())).toEqual(
+                tokens.map((token) => token.toString()),
+            );
+        });
+
+        test('with issueInfo without Referer header', async () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const tokens = [new Token(), new Token(), new Token()];
+            const issue = jest.fn(async () => {
+                return tokens;
+            });
+            provider['issue'] = issue;
+            const issueInfo = {
+                requestId: 'xxx',
+                formData: {
+                    ['h-captcha-response']: 'body-param',
+                    ['cf_captcha_kind']: 'body-param',
+                },
+            };
+            provider['issueInfo'] = issueInfo;
+            const details = {
+                method: 'POST',
+                url: 'https://captcha.website/?__cf_chl_f_tk=token',
+                requestId: 'xxx',
+                frameId: 1,
+                parentFrameId: 1,
+                tabId: 1,
+                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+                timeStamp: 1,
+                requestHeaders: [],
+            };
+            const result = await provider.handleBeforeSendHeaders(details);
+            expect(result).toStrictEqual({ cancel: true });
+            const newIssueInfo = provider['issueInfo'];
+            expect(newIssueInfo).toBeNull();
+
+            expect(issue.mock.calls.length).toBe(1);
+            expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
+                ['h-captcha-response']: 'body-param',
+                ['cf_captcha_kind']: 'body-param',
+            });
+
+            expect(navigateUrl.mock.calls.length).toBe(1);
+            expect(navigateUrl).toHaveBeenCalledWith('https://captcha.website/');
+
+            // Expect the tokens are added.
+            const storedTokens = provider['getStoredTokens']();
+            expect(storedTokens.map((token) => token.toString())).toEqual(
+                tokens.map((token) => token.toString()),
+            );
+        });
+
+        test('without issueInfo', async () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const issue = jest.fn(async () => []);
+            provider['issue'] = issue;
+            const details = {
+                method: 'POST',
+                url: 'https://captcha.website',
+                requestId: 'xxx',
+                frameId: 1,
+                parentFrameId: 1,
+                tabId: 1,
+                type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+                timeStamp: 1,
+                requestHeaders: [
+                    {
+                        name: 'Referer',
+                        value: 'https://captcha.website/?__cf_chl_tk=token',
+                    },
+                ],
+            };
+            const result = await provider.handleBeforeSendHeaders(details);
             expect(result).toBeUndefined();
             expect(issue).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
