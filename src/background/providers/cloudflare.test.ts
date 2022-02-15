@@ -1,6 +1,6 @@
-import { jest } from '@jest/globals';
 import { CloudflareProvider } from './cloudflare';
 import Token from '../token';
+import { jest } from '@jest/globals';
 
 export class StorageMock {
     store: Map<string, string>;
@@ -40,8 +40,12 @@ test('setStoredTokens', () => {
     const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
     const tokens = [new Token(), new Token()];
     provider['setStoredTokens'](tokens);
-    const storedTokens = JSON.parse(storage.store.get('tokens')!);
-    expect(storedTokens).toEqual(tokens.map((token) => token.toString()));
+    const tok = storage.store.get('tokens');
+    expect(tok).toBeDefined();
+    if (tok !== undefined) {
+        const storedTokens = JSON.parse(tok);
+        expect(storedTokens).toEqual(tokens.map((token) => token.toString()));
+    }
 });
 
 test('getBadgeText', () => {
@@ -117,11 +121,14 @@ describe('issuance', () => {
             expect(navigateUrl).not.toHaveBeenCalled();
 
             const issueInfo = provider['issueInfo'];
-            expect(issueInfo!.requestId).toEqual(details.requestId);
-            expect(issueInfo!.formData).toStrictEqual({
-                ['h-captcha-response']: 'body-param',
-                ['cf_ch_verify']: 'body-param',
-            });
+            expect(issueInfo).not.toBeNull();
+            if (issueInfo !== null) {
+                expect(issueInfo.requestId).toEqual(details.requestId);
+                expect(issueInfo.formData).toStrictEqual({
+                    ['h-captcha-response']: 'body-param',
+                    ['cf_ch_verify']: 'body-param',
+                });
+            }
         });
 
         /*
@@ -355,8 +362,11 @@ describe('redemption', () => {
             expect(result).toEqual({ redirectUrl: details.url });
             // Expect redeemInfo to be set.
             const redeemInfo = provider['redeemInfo'];
-            expect(redeemInfo!.requestId).toEqual(details.requestId);
-            expect(redeemInfo!.token.toString()).toEqual(tokens[0].toString());
+            expect(redeemInfo).not.toBeNull();
+            if (redeemInfo !== null) {
+                expect(redeemInfo.requestId).toEqual(details.requestId);
+                expect(redeemInfo.token.toString()).toEqual(tokens[0].toString());
+            }
             // Expect a token is used.
             const storedTokens = provider['getStoredTokens']();
             expect(storedTokens.map((token) => token.toString())).toEqual(

@@ -1,6 +1,7 @@
 import * as voprf from '../voprf';
 
 import { Callbacks, Provider } from '.';
+
 import { Storage } from '../storage';
 import Token from '../token';
 import axios from 'axios';
@@ -91,7 +92,7 @@ export class CloudflareProvider implements Provider {
 
         // Download the commitment
         const { data } = await axios.get<Response>(COMMITMENT_URL);
-        const commitment = data.CF[version];
+        const commitment = data.CF[version as string];
         if (commitment === undefined) {
             throw new Error(`No commitment for the version ${version} is found`);
         }
@@ -179,7 +180,7 @@ export class CloudflareProvider implements Provider {
         }
 
         tokens.forEach((token, index) => {
-            token.setSignedPoint(returned.points[index]);
+            token.setSignedPoint(returned.points[index as number]);
         });
 
         return tokens;
@@ -242,21 +243,21 @@ export class CloudflareProvider implements Provider {
             // header according to https://xhr.spec.whatwg.org/#dom-xmlhttprequest-setrequestheader
             // So we need to extract the token from the Referer header and send it in the query
             // param __cf_chl_f_tk instead. (Note that this token is not a Privacy Pass token.
-            let token: string | null = null;
+            let atoken: string | null = null;
             if (details.requestHeaders !== undefined) {
                 details.requestHeaders.forEach((header) => {
                     // Filter only for Referrer header.
                     if (header.name === 'Referer' && header.value !== undefined) {
                         const url = new URL(header.value);
-                        token = url.searchParams.get(REFERER_QUERY_PARAM);
+                        atoken = url.searchParams.get(REFERER_QUERY_PARAM);
                     }
                 });
             }
 
             (async () => {
                 const url = new URL(details.url);
-                if (token !== null) {
-                    url.searchParams.append(QUERY_PARAM, token);
+                if (atoken !== null) {
+                    url.searchParams.append(QUERY_PARAM, atoken);
                 }
 
                 // Issue tokens.
@@ -288,7 +289,11 @@ export class CloudflareProvider implements Provider {
         }
 
         const hasBodyParams = QUALIFIED_BODY_PARAMS.every((param) => {
-            return details.requestBody !== null && param in details.requestBody.formData!;
+            return (
+                details.requestBody !== null &&
+                details.requestBody.formData !== undefined &&
+                param in details.requestBody.formData
+            );
         });
         if (!hasBodyParams) {
             return;
@@ -296,11 +301,11 @@ export class CloudflareProvider implements Provider {
 
         const flattenFormData: { [key: string]: string[] | string } = {};
         for (const key in details.requestBody.formData) {
-            if (details.requestBody.formData[key].length == 1) {
-                const [value] = details.requestBody.formData[key];
-                flattenFormData[key] = value;
+            if (details.requestBody.formData[key as string].length == 1) {
+                const [value] = details.requestBody.formData[key as string];
+                flattenFormData[key as string] = value;
             } else {
-                flattenFormData[key] = details.requestBody.formData[key];
+                flattenFormData[key as string] = details.requestBody.formData[key as string];
             }
         }
 
@@ -335,14 +340,14 @@ export class CloudflareProvider implements Provider {
 
         // Get one token.
         const tokens = this.getStoredTokens();
-        const token = tokens.shift();
+        const oneToken = tokens.shift();
         this.setStoredTokens(tokens);
 
-        if (token === undefined) {
+        if (oneToken === undefined) {
             return;
         }
 
-        this.redeemInfo = { requestId: details.requestId, token };
+        this.redeemInfo = { requestId: details.requestId, token: oneToken };
         // Redirect to resend the request attached with the token.
         return {
             redirectUrl: details.url,
