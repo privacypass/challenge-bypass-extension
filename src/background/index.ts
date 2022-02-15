@@ -1,14 +1,14 @@
 import {
-    handleBeforeRequest,
-    handleBeforeSendHeaders,
-    handleHeadersReceived,
-} from './listeners/webRequestListener';
-import {
     handleActivated,
     handleCreated,
     handleRemoved,
     handleReplaced,
 } from './listeners/tabListener';
+import {
+    handleBeforeRequest,
+    handleBeforeSendHeaders,
+    handleHeadersReceived,
+} from './listeners/webRequestListener';
 
 import { Tab } from './tab';
 
@@ -21,7 +21,7 @@ declare global {
     }
 }
 
-declare let browser: any;
+declare let browser: unknown;
 
 window.ACTIVE_TAB_ID = chrome.tabs.TAB_ID_NONE;
 window.TABS = new Map<number, Tab>();
