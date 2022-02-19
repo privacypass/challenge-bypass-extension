@@ -107,7 +107,7 @@ describe('issuance', () => {
                 requestBody: {
                     formData: {
                         ['h-captcha-response']: ['body-param'],
-                        ['cf_captcha_kind']: ['body-param'],
+                        ['cf_ch_verify']: ['body-param'],
                     },
                 },
             };
@@ -120,13 +120,13 @@ describe('issuance', () => {
             expect(issueInfo!.requestId).toEqual(details.requestId);
             expect(issueInfo!.formData).toStrictEqual({
                 ['h-captcha-response']: 'body-param',
-                ['cf_captcha_kind']: 'body-param',
+                ['cf_ch_verify']: 'body-param',
             });
         });
 
         /*
          * The request is invalid only if the body has both
-         * 'h-captcha-response' and 'cf_captcha_kind' params.
+         * 'h-captcha-response' and 'cf_ch_verify' params.
          */
         test('invalid request', async () => {
             const storage = new StorageMock();
@@ -174,7 +174,7 @@ describe('issuance', () => {
                 requestId: 'xxx',
                 formData: {
                     ['h-captcha-response']: 'body-param',
-                    ['cf_captcha_kind']: 'body-param',
+                    ['cf_ch_verify']: 'body-param',
                 },
             };
             provider['issueInfo'] = issueInfo;
@@ -202,7 +202,7 @@ describe('issuance', () => {
             expect(issue.mock.calls.length).toBe(1);
             expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
                 ['h-captcha-response']: 'body-param',
-                ['cf_captcha_kind']: 'body-param',
+                ['cf_ch_verify']: 'body-param',
             });
 
             expect(navigateUrl.mock.calls.length).toBe(1);
@@ -230,7 +230,7 @@ describe('issuance', () => {
                 requestId: 'xxx',
                 formData: {
                     ['h-captcha-response']: 'body-param',
-                    ['cf_captcha_kind']: 'body-param',
+                    ['cf_ch_verify']: 'body-param',
                 },
             };
             provider['issueInfo'] = issueInfo;
@@ -253,7 +253,7 @@ describe('issuance', () => {
             expect(issue.mock.calls.length).toBe(1);
             expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
                 ['h-captcha-response']: 'body-param',
-                ['cf_captcha_kind']: 'body-param',
+                ['cf_ch_verify']: 'body-param',
             });
 
             expect(navigateUrl.mock.calls.length).toBe(1);
