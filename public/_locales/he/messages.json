@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "שם הרחבה הנכלל על ידי 'manifest.json', ומוצג על-ידי '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "תמיכת לקוח עבור Privacy Pass פרוטוקול אישור אנונימי.",
+    "description": "תיאור הרחבה שנכלל על ידי 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "גיבוי",
+    "description": "התווית הכלול בשם ברירת המחדל של JSON גיבויים שנוצרו על-ידי '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "גרסה",
+    "description": "תווית של גרסת ההרחבה הנוכחית המוצגת על ידי '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "שם של Cloudflare ספק המוצג על ידי '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "שם של hCaptcha ספק המוצג על ידי '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "קבלת אישורים נוספים!",
+    "description": "תמליל mouseover המוצג על ידי '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "גיבוי כל הסיסמאות",
+    "description": "המוצג על ידי '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "שחזור סיסמאות מתוך גיבוי",
+    "description": "המוצג על ידי '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "ניקוי כל המעבר",
+    "description": "המוצג על ידי '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "הצגה ב - Github",
+    "description": "המוצג על ידי '@popup/components/GithubButton'."
+  }
+}

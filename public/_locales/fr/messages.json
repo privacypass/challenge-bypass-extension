@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "Nom de l'extension incluse par 'manifest.json', Et affichés par '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Prise en charge du client pour Privacy Pass Protocole d'autorisation anonyme.",
+    "description": "Description de l'extension incluse par 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "Sauvegarde",
+    "description": "étiquette incluse dans le nom de fichier par défaut de JSON Sauvegardes générées par '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Version",
+    "description": "Libellé de la version d'extension en cours affichée par '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Nom de Cloudflare Fournisseur affiché par '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Nom de hCaptcha Fournisseur affiché par '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Obtenir plus de passes!",
+    "description": "Texte mouseover affiché par '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Sauvegarde de tous les passages",
+    "description": "Affiché par '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Restaurer les passages à partir de la sauvegarde",
+    "description": "Affiché par '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Effacer toutes les passes",
+    "description": "Affiché par '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Afficher le Github",
+    "description": "Affiché par '@popup/components/GithubButton'."
+  }
+}

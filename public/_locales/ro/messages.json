@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "Denumirea de extensie inclusă de 'manifest.json', și afișată de '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Suport client pentru Privacy Pass protocol de autorizare anonim.",
+    "description": "Descrierea extensiei incluse de 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "backup",
+    "description": "eticheta inclusă în numele de fișier implicit al JSON backup-uri generate de '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versiune",
+    "description": "eticheta de versiunea de extensie curentă afișată de '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Nume: Cloudflare furnizor afisat de '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Nume: hCaptcha furnizor afisat de '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Obține mai multe treceri!",
+    "description": "mouseover text afișat de '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Backup Toate Trecerile",
+    "description": "afişat de '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Restaurarea Trece De La Backup",
+    "description": "afişat de '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Șterge toate trecerile",
+    "description": "afişat de '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Vizualizare pe Github",
+    "description": "afişat de '@popup/components/GithubButton'."
+  }
+}

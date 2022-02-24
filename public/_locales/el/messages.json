@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "όνομα της επέκτασης που περιλαμβάνεται από: 'manifest.json', και εμφανίζεται από: '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Υποστήριξη πελατών για: Privacy Pass ανώνυμο πρωτόκολλο εξουσιοδότησης.",
+    "description": "περιγραφή της επέκτασης που περιλαμβάνεται: 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "-backup",
+    "description": "ετικέτα που περιλαμβάνεται στο προεπιλεγμένο όνομα αρχείου JSON αντίγραφα ασφαλείας που δημιουργήθηκαν από: '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Έκδοση:",
+    "description": "ετικέτα της τρέχουσας εκδοχής επέκτασης που εμφανίζεται από '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "ονομασια: Cloudflare Ο παροχέας εμφανίζεται από '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "ονομασια: hCaptcha Ο παροχέας εμφανίζεται από '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Πάρτε περισσότερα περάσματα!!",
+    "description": "κείμενο του mouseover που εμφανίζεται '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Εφεδρικά Όλα Τα Passes",
+    "description": "εμφανίζεται από: '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Επαναφορά Passes Από Εφεδρικά",
+    "description": "εμφανίζεται από: '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Εκκαθάριση όλων των Passes",
+    "description": "εμφανίζεται από: '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Προβολή σε: Github",
+    "description": "εμφανίζεται από: '@popup/components/GithubButton'."
+  }
+}

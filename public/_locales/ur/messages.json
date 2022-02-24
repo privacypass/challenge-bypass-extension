@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "توسیع کے نام پر شامل 'manifest.json', اور دکھایا. '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "کے لئے کلائنٹ کی حمایت Privacy Pass گمنام اجازت نامہ.",
+    "description": "توسیع کی تفصیل شامل 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "بیک اپ",
+    "description": "کا لیبل پہلے سے طے شدہ فائل میں شامل JSON کی طرف سے پیدا بیک اپ '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "ورژن",
+    "description": "موجودہ توسیع شدہ ورژن کا لیبل لگا کر آویزاں کریں '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "کا نام Cloudflare فراہم کردہ فراہم کار '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "کا نام hCaptcha فراہم کردہ فراہم کار '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "مزید گزر جاؤ!",
+    "description": "Mouseover کے ٹیکسٹ کی نمائش '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "بیک اپ تمام پاسورڈ",
+    "description": "کی نمائش '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "بیک اپ سے ریمور پاسورڈ",
+    "description": "کی نمائش '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "واضح تمام پاسورڈ",
+    "description": "کی نمائش '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "دیکھیں Github",
+    "description": "کی نمائش '@popup/components/GithubButton'."
+  }
+}

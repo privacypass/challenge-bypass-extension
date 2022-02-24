@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "Laajennuksen nimi, mukaan lukien 'manifest.json', Ja jotka tulevat näkyviin '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Asiakkaan tuki Privacy Pass Nimetön valtuutuspöytäkirja.",
+    "description": "Kuvaus laajennuksesta, johon 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "Tuki",
+    "description": "Nimiön oletustiedostonimi JSON Varmuuskopiot, '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versio",
+    "description": "Nykyisen laajennusversion nimiö '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Nimi: Cloudflare Toimittajan osoittama '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Nimi: hCaptcha Toimittajan osoittama '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Ota lisää passeja!",
+    "description": "Hiirulainen teksti näkyy '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Apujoukot Kaikki Passat",
+    "description": "On oltava '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Palauta Passar-varmistuskopio",
+    "description": "On oltava '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Tyhjennä kaikki",
+    "description": "On oltava '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Näytä Github",
+    "description": "On oltava '@popup/components/GithubButton'."
+  }
+}

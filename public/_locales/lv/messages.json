@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "paplašinājuma nosaukums, ko iekļauj 'manifest.json', , un parāda '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Klientu atbalsts Privacy Pass anonīms atļaujas protokols.",
+    "description": "paplašinājuma apraksts, kas iekļauts 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "Dublējums",
+    "description": "Noklusētā faila nosaukums JSON , ko ģenerē '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versija",
+    "description": "pašreizējā paplašinājuma versija, ko attēlo '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "vārds, uzvārds Cloudflare Pakalpojumu sniedzējs '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "vārds, uzvārds hCaptcha Pakalpojumu sniedzējs '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Iegūt vairāk caurlaides!",
+    "description": "iemusever teksts, ko attēlo '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Rezerves kopēšana",
+    "description": ", kas '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Atjaunot Caurlaides No Rezerves",
+    "description": ", kas '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Tīrīt visas caurlaides",
+    "description": ", kas '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Skats uz Github",
+    "description": ", kas '@popup/components/GithubButton'."
+  }
+}

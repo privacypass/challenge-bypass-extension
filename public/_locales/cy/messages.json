@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "enw estyniad wedi ei gynnwys gan 'manifest.json', ac fe'i dangosir gan '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Cymorth cleient i Privacy Pass protocol awdurdodi anhysbys.",
+    "description": "disgrifiad o'r estyniad a gynhwysir ynddo 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "wrth gefn",
+    "description": "label wedi ei gynnwys yn enw ffeil rhagosodedig JSON llif gefn a gynhyrchir gan '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Fersiwn",
+    "description": "label y fersiwn estyniad cyfredol a ddangosir gan '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "enw Cloudflare darparwr a ddangosir gan '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "enw hCaptcha darparwr a ddangosir gan '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Estyn rhagor o docynnau!",
+    "description": "Dangos y llygoden dros destun a ddangosir gan '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Cadw Copi Wrth Gefn",
+    "description": "a ddangosir gan '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Adfer Y Cardiau Wrth Gefn",
+    "description": "a ddangosir gan '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Clirio'r Holl Docynnau",
+    "description": "a ddangosir gan '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Golwg ar Github",
+    "description": "a ddangosir gan '@popup/components/GithubButton'."
+  }
+}

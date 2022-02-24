@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "ime ekstenzije uključeno u 'manifest.json', i prikazuje '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Podrška klijenta za Privacy Pass anonimni protokol autorizacije.",
+    "description": "opis proširenja uključenih u 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "sigurnosno kopiranje",
+    "description": "oznaka uključena u default ime datoteke JSON sigurnosne kopije generirane po '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Inačica",
+    "description": "oznaka trenutne verzije proširenja koja je prikazana '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "ime Cloudflare pružatelj usluge prikazan '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "ime hCaptcha pružatelj usluge prikazan '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Dobiti više prolaza!",
+    "description": "tekst za mouseover prikazan s '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Sigurnosno Kopiranje Svih Propusnica",
+    "description": "prikazan po '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Vraćanje Prolaza Iz Sigurnosne Kopije",
+    "description": "prikazan po '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Očisti Sve Propusnice",
+    "description": "prikazan po '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Pogled na Github",
+    "description": "prikazan po '@popup/components/GithubButton'."
+  }
+}

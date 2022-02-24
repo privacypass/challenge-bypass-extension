@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "tên phần mở rộng bao gồm bởi 'manifest.json', và hiển thị bởi '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Hỗ trợ khách hàng cho Privacy Pass giao thức ủy quyền.",
+    "description": "mô tả phần mở rộng bao gồm 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "sao lưu",
+    "description": "Nhãn bao gồm tên tập tin mặc định của JSON lưu lại sau khi tạo '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Phiên bản",
+    "description": "nhãn phiên bản mở rộng hiện tại hiển thị bởi '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "tên của Cloudflare được hiển thị bởi '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "tên của hCaptcha được hiển thị bởi '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Get more passes!",
+    "description": "Văn bản mouseover hiển thị bởi '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Sao lưu tất cả",
+    "description": "hiển thị bởi '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Khôi Phục Thông Qua Sao Lưu",
+    "description": "hiển thị bởi '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Xóa tất cả",
+    "description": "hiển thị bởi '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Xem trên Github",
+    "description": "hiển thị bởi '@popup/components/GithubButton'."
+  }
+}

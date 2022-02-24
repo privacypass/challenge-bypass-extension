@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "išplėtimo pavadinimas, kurį sudaro: 'manifest.json', ir rodoma: '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Kliento parama Privacy Pass anoniminio leidimo protokolas.",
+    "description": "išplėtimas, kurį apima: 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "atsarginė kopija",
+    "description": "etiketė, įtraukta į numatytąjį failo pavadinimą JSON atsargines kopijas, sukurtas pagal '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versija",
+    "description": "Esamos plėtinės versijos ženklas, matomas '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "pavadinimas Cloudflare Paslaugų teikėjas: '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "pavadinimas hCaptcha Paslaugų teikėjas: '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Gaukite daugiau leidimų!",
+    "description": "mouseover tekstas, rodomas '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Atsarginės kopijos visi praėjimai",
+    "description": "rodomi pagal '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Atstatyti pravažiavimas iš atsarginės kopijos",
+    "description": "rodomi pagal '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Išvalyti Visus Leidimus",
+    "description": "rodomi pagal '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Vaizdas į Github",
+    "description": "rodomi pagal '@popup/components/GithubButton'."
+  }
+}

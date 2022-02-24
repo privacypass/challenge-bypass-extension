@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "ఎక్స్టెన్షన్ పేరును 'manifest.json', మరియు ప్రదర్శించబడినది '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "క్లయింట్ మద్దతుName Privacy Pass అనామక అధికారిత ప్రోటోకాల్.",
+    "description": "విస్తీర్ణము యొక్క వివరణ 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "బ్యాకప్",
+    "description": "లేబుల్ అప్రమేయ ఫైల్ పేరు JSON Name '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "వెర్షన్",
+    "description": "ద్వారా ప్రదర్శించబడిన ప్రస్తుత విస్తరణ వెర్షన్ యొక్క లేబుల్ '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "పేరు Cloudflare ప్రొవైడర్ ద్వారా ప్రదర్శించబడినది '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "పేరు hCaptcha ప్రొవైడర్ ద్వారా ప్రదర్శించబడినది '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "ఎక్కువ పాస్ పొందండి!",
+    "description": "వున్న వచనమును చూపుము '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "బ్యాక్అప్ అన్ని పాస్",
+    "description": "ప్రదర్శించబడినది '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "బ్యాక్అప్ నుండి పాస్ ను పునఃప్రారంభించుము",
+    "description": "ప్రదర్శించబడినది '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "అన్ని పాస్ లను శుభ్రముచేయుము",
+    "description": "ప్రదర్శించబడినది '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "వీక్షణం Github",
+    "description": "ప్రదర్శించబడినది '@popup/components/GithubButton'."
+  }
+}

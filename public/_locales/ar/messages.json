@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "اسم الامتداد المتضمن بواسطة 'manifest.json', وعرضه بواسطة '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "دعم Client ل ـ Privacy Pass بروتوكول التفويض غير المعروف.",
+    "description": "وصف اللاحقة المتضمنة بواسطة 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "نسخة احتياطية",
+    "description": "العلامة المميزة المتضمنة في اسم الملف المفترض JSON عمل نسخ احتياطية بواسطة '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "النسخة",
+    "description": "التسمية الخاصة بنسخة الامتداد الحالية التي يتم عرضها بواسطة '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "اسم Cloudflare عرض جهة الاتاحة بواسطة '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "اسم hCaptcha عرض جهة الاتاحة بواسطة '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "الحصول على المزيد من التصاريح!",
+    "description": "يتم عرض نص mouseover بواسطة '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "عمل نسخة احتياطية لكل المؤخرات",
+    "description": "معروض بواسطة '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "استعادة P من النسخة الاحتياطية",
+    "description": "معروض بواسطة '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "محو كل الحمير",
+    "description": "معروض بواسطة '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "مشاهدة على Github",
+    "description": "معروض بواسطة '@popup/components/GithubButton'."
+  }
+}

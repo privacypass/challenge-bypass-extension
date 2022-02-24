@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "એક્સટેન્સનો નામ દ્વારા સમાવેશ થાય છે 'manifest.json', અને પ્રદર્શિત '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "માટે ક્લાયન્ટ આધાર Privacy Pass અનામિક સત્તાધિકરણ પ્રોટોકોલ.",
+    "description": "એક્સટેન્સનો વર્ણન 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "બેકઅપ",
+    "description": "લેબલ મૂળભૂત ફાઈલનામને સમાવેલ છે JSON દ્વારા પેદા થયેલ બેકઅપ '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "આવૃત્તિ",
+    "description": "વર્તમાન એક્સટેન્સન આવૃત્તિનું લેબલ પ્રદર્શિત '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "નું નામ Cloudflare પ્રદર્શિત પ્રદર્શિત '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "નું નામ hCaptcha પ્રદર્શિત પ્રદર્શિત '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "વધારે પાસ મેળવો!",
+    "description": "માઉસવેર લખાણ દ્વારા દર્શાવેલ છે '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "બધા પાસા બેકઅપ કરો",
+    "description": "પ્રદર્શિત '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "બેકઅપ માંથી પાસ પુનઃસંગ્રહો",
+    "description": "પ્રદર્શિત '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "બધા પાસા સાફ કરો",
+    "description": "પ્રદર્શિત '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "પર જુઓ Github",
+    "description": "પ્રદર્શિત '@popup/components/GithubButton'."
+  }
+}

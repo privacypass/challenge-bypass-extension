@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "име на разширението, включено в 'manifest.json', и се показва от '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Клиентска поддръжка за Privacy Pass Анонимно разрешение протокол.",
+    "description": "описание на разширението, включено в 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "архивиране.",
+    "description": "етикет, включен в името на файла по подразбиране на JSON резервни копия, генерирани от '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Версия:",
+    "description": "етикет на текущата версия на разширение, показвана от '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Име: Cloudflare доставчик, показан от '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Име: hCaptcha доставчик, показан от '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Още пасове.!",
+    "description": "mouseover текст, показан от '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Архивиране на всички пропуски",
+    "description": "се показва от '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Възстановяване на пропуски от архив",
+    "description": "се показва от '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Изчистете всички.",
+    "description": "се показва от '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Преглед на: Github",
+    "description": "се показва от '@popup/components/GithubButton'."
+  }
+}

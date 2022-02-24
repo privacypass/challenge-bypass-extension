@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "விரிவாக்கத்தின் பெயர் 'manifest.json', & மூலம் தெரியும் '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "உறுப்பினர் ஆதரவு Privacy Pass அநாமதேய அதிகார நெறிமுறை.",
+    "description": "விரிவாக்கத்தின் விவரம் 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "காப்பு",
+    "description": "லேபல் முன்னிருப்பு கோப்புப் பெயரில் சேர்க்கப்பட்டது JSON @ info: status '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "பதிப்பு",
+    "description": "தற்போதைய விரிவான பதிப்பின் விளக்கம் '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "பெயரை Cloudflare வழங்குபவர் '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "பெயரை hCaptcha வழங்குபவர் '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "அதிக கடவுச்சொற்கள்!",
+    "description": "முழுமையான உரை மூலம் தெரியும் '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "எல்லா கடவுச்சொல்",
+    "description": "Name '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "பின்புலிருந்து கடவுச்சொல் மீட்கவும்",
+    "description": "Name '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "அனைத்து வாசிகளையும் துடைக்க",
+    "description": "Name '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "காட்சி Github",
+    "description": "Name '@popup/components/GithubButton'."
+  }
+}

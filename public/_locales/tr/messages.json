@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "buna dahil olan uzantı adı 'manifest.json', ve görüntülenen '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "İstemci desteği Privacy Pass anonim yetkilendirme iletişim kuralı.",
+    "description": "içinde yer alan uzantının açıklaması 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "yedekleme",
+    "description": "varsayılan dosya adı olan etiket JSON tarafından oluşturulan yedeklemeler '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Sürüm",
+    "description": "Görüntülenen yürürlükteki uzantı sürümünün etiketi: '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "adı Cloudflare sağlayıcı tarafından görüntülenen '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "adı hCaptcha sağlayıcı tarafından görüntülenen '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Daha fazla pas al!",
+    "description": "fare tarafından görüntülenen mouseover metni '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Tüm Geçişleri Yedekle",
+    "description": "görüntülenen '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Yedekten Geçişleri Geri Yükle",
+    "description": "görüntülenen '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Tüm Geçişleri Temizle",
+    "description": "görüntülenen '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Görüntüle: Github",
+    "description": "görüntülenen '@popup/components/GithubButton'."
+  }
+}

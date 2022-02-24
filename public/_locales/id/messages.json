@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "nama dari ekstensi yang dimasukkan oleh 'manifest.json', dan ditampilkan oleh '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Dukungan Klien untuk Privacy Pass protokol otorisasi anonim.",
+    "description": "deskripsi dari ekstensi yang disertakan oleh 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "backup",
+    "description": "label termasuk dalam nama berkas baku dari JSON Backup yang dihasilkan oleh '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versi",
+    "description": "label dari versi ekstensi saat ini ditampilkan oleh '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "nama dari Cloudflare penyedia yang ditampilkan oleh '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "nama dari hCaptcha penyedia yang ditampilkan oleh '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Dapatkan lebih banyak berlalu!",
+    "description": "teks mouseover yang ditampilkan oleh '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Backup Semua Melewati",
+    "description": "Ditampilkan oleh '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Pulihkan Operan Dari Backup",
+    "description": "Ditampilkan oleh '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Bersihkan Semua Lewat",
+    "description": "Ditampilkan oleh '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Tampilkan pada Github",
+    "description": "Ditampilkan oleh '@popup/components/GithubButton'."
+  }
+}

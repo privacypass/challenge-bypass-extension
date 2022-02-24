@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "Navn på udvidelse inkluderet af 'manifest.json', og vises af '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Kundesupport til Privacy Pass anonym godkendelsesprotokol.",
+    "description": "Beskrivelse af udvidelse inkluderet af 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "sikkerhedskopi",
+    "description": "etiket, der er inkluderet i standardfilnavn på JSON backups genereret af '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Version",
+    "description": "etiket for den aktuelle udvidelsesversion, der vises af '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "navn på Cloudflare Udbyder vist af '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "navn på hCaptcha Udbyder vist af '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Hent flere adgangskort!",
+    "description": "overtalens tekst, der vises af '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Sikkerhedskopiér alle passager",
+    "description": "vises af '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Genindlæs adgangskoder fra backup",
+    "description": "vises af '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Ryd alle adgangskoder",
+    "description": "vises af '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Vis på Github",
+    "description": "vises af '@popup/components/GithubButton'."
+  }
+}

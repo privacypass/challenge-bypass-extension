@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "Nazwa rozszerzenia dołączonego przez 'manifest.json', i wyświetlane przez '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Obsługa klienta dla Privacy Pass anonimowy protokół autoryzacji.",
+    "description": "opis rozszerzenia dołączonego przez 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "kopia zapasowa",
+    "description": "etykieta dołączona do domyślnej nazwy pliku JSON kopie zapasowe utworzone przez '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Wersja",
+    "description": "etykieta bieżącej wersji rozszerzenia wyświetlana przez '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "nazwa Cloudflare Dostawca wyświetlany przez '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "nazwa hCaptcha Dostawca wyświetlany przez '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Pobierz więcej wejściów!",
+    "description": "tekst wyświetlany przez użytkownika mouseover '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Wszystkie wejściówki kopii zapasowej",
+    "description": "wyświetlane przez '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Odtwórz kopie zapasowe z kopii zapasowej",
+    "description": "wyświetlane przez '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Wyczyść wszystkie wejściówki",
+    "description": "wyświetlane przez '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Wyświetl na Github",
+    "description": "wyświetlane przez '@popup/components/GithubButton'."
+  }
+}

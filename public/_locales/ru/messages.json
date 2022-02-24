@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "имя расширения, включаное в 'manifest.json', и показанные '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Поддержка клиента для Privacy Pass анонимный протокол авторизации.",
+    "description": "Описание расширения 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "резервное копирование",
+    "description": "label включена в имя файла по умолчанию JSON резервные копии, созданные '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Версия",
+    "description": "метка текущей версии расширения, отображаемого '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "имя Cloudflare провайдер, показанные '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "имя hCaptcha провайдер, показанные '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Получить больше пропусков!",
+    "description": "текст mouseover, отображаемый '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Резервное копирование всех пропусков",
+    "description": "показанные на '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Восстановить проходы из резервной копии",
+    "description": "показанные на '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Очистить все проходы",
+    "description": "показанные на '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Показать на Github",
+    "description": "показанные на '@popup/components/GithubButton'."
+  }
+}

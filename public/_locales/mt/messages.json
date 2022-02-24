@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "isem ta ' estensjoni inkluż minn 'manifest.json', u murija minn '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Klijent appoġġ għall Privacy Pass protokoll awtorizzazzjoni anonima.",
+    "description": "deskrizzjoni ta ' estensjoni inkluża minn 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "backup",
+    "description": "tikketta inkluża fil-filename default ta ' JSON backups iġġenerat minn '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Verżjoni",
+    "description": "tikketta tal-verżjoni tal-estensjoni attwali murija minn '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "isem ta ' Cloudflare fornitur muri minn '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "isem ta ' hCaptcha fornitur muri minn '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Ikseb aktar tgħaddi!",
+    "description": "test mousever murija minn '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Backup Kollha Jgħaddi",
+    "description": "murija minn '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Jirrestawraw Jgħaddi Minn Backup",
+    "description": "murija minn '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Clear All Passe",
+    "description": "murija minn '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "View on Github",
+    "description": "murija minn '@popup/components/GithubButton'."
+  }
+}

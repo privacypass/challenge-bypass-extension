@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "포함된 확장자의 이름 'manifest.json', 로 표시되고 '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "클라이언트 지원 Privacy Pass 익명의 권한 부여 프로토콜.",
+    "description": "에 의해 포함된 확장에 대한 설명 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "백업",
+    "description": "기본 파일 이름에 레이블이 포함되어 있습니다. JSON 백업에 의해 생성된 백업 '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "버전",
+    "description": "표시된 현재 확장 버전의 레이블 '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "이름 Cloudflare 공급자에 의해 표시되는 '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "이름 hCaptcha 공급자에 의해 표시되는 '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "더 많은 패스 가져오기!",
+    "description": "다음으로 표시되는 마우스오버 텍스트 '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "모든 패스 백업",
+    "description": "표시된 '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "백업으로부터 풀 복원",
+    "description": "표시된 '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "모든 패스 지우기",
+    "description": "표시된 '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "보기 Github",
+    "description": "표시된 '@popup/components/GithubButton'."
+  }
+}

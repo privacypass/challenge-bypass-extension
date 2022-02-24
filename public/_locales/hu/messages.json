@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "A által tartalmazott kiterjesztés neve 'manifest.json', és megjelenítve '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Ügyfél támogatás Privacy Pass Anonim jogosultsági protokoll.",
+    "description": "A által tartalmazott kiterjesztés leírása 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "Mentés",
+    "description": "Az alapértelmezett fájlnévben szereplő címke JSON által előállított mentések '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Változat",
+    "description": "Az által megjelenített aktuális kiterjesztési változat címkéje '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "A neve Cloudflare Szolgáltató által megjelenített '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "A neve hCaptcha Szolgáltató által megjelenített '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Szerezz több belépőt!",
+    "description": "Szöveg által megjelenített szöveg '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Összes tartalék mentése",
+    "description": "Megjelenítve: '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Mentési osztályok visszaállítása",
+    "description": "Megjelenítve: '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Összes tábla törlése",
+    "description": "Megjelenítve: '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Nézet be Github",
+    "description": "Megjelenítve: '@popup/components/GithubButton'."
+  }
+}

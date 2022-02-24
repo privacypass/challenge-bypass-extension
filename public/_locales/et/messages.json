@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "pikendamise nimi, mis on esitatud 'manifest.json', ja kuvatakse '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Klienditugi Privacy Pass anonüümne autentimise.",
+    "description": "laiendamise kirjeldus, mis on esitatud 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "backup",
+    "description": "pealdis sisaldub vaikimisi failinimi JSON Varukoopiate genereerimisest '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versioon",
+    "description": "label of cure extension version kuvatakse '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Ravimi nimetus Cloudflare pakkuja kuvamine '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Ravimi nimetus hCaptcha pakkuja kuvamine '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Tooge rohkem läbipääsuload!",
+    "description": "mouseover tekst kuvatakse '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Varundamine",
+    "description": "kuvatav '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Taasta Varukoopia Varukoopia",
+    "description": "kuvatav '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Tühjendage kõik läbipääsuload",
+    "description": "kuvatav '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Vaade Github",
+    "description": "kuvatav '@popup/components/GithubButton'."
+  }
+}

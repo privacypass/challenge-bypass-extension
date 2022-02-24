@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "විසින් ඇතුලත් කරන ලද දිගුවක් 'manifest.json', විසින් පෙන්වයි. '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "සඳහා සහායක සහායක Privacy Pass නිර්නාමික අවසර පත්රය.",
+    "description": "විසින් ඇතුලත් කරන ලද දිගුවන විස්තරය 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "උපස්ථ",
+    "description": "ලේබලය ඇතුලත් පෙරනිමි ගොනු නාමය JSON Name '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "සංස්කරණය",
+    "description": "විසින් පෙන්වන ලද වර්තමාන දිගහැරිම සංස්කරණය '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "නම Cloudflare විසින් පෙන්වන ලද සපයන්නා '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "නම hCaptcha විසින් පෙන්වන ලද සපයන්නා '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "තව පාස් වෙන්න.!",
+    "description": "විසින් ප්රදර්ශනය කරන ලද පෙළ '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "සියළුම මගපෙන්වීම",
+    "description": "විසින් පෙන්විය '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "බැකප් වලින් පාස් නැවත පිහිටුවන්න",
+    "description": "විසින් පෙන්විය '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "සියළු ගමන් මග පිරිසිදු කරන්න",
+    "description": "විසින් පෙන්විය '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "දසුන Github",
+    "description": "විසින් පෙන්විය '@popup/components/GithubButton'."
+  }
+}

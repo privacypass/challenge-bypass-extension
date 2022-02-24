@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "含まれる拡張の名前 'manifest.json', で表示される '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "クライアント・サポート Privacy Pass 匿名許可プロトコル.",
+    "description": "含まれる拡張の説明 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "バックアップ",
+    "description": "デフォルトのファイル名に含まれるラベル JSON バックアップの生成者 '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "バージョン",
+    "description": "表示される現行拡張バージョンのラベル '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "の名前 Cloudflare 表示されるプロバイダー '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "の名前 hCaptcha 表示されるプロバイダー '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "パスをさらに取得!",
+    "description": "表示されるムーズオーバー・テキスト '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "すべてのパスのバックアップ",
+    "description": "表示者 '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "バックアップからのパスの復元",
+    "description": "表示者 '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "すべてのパスをクリア",
+    "description": "表示者 '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "表示 Github",
+    "description": "表示者 '@popup/components/GithubButton'."
+  }
+}

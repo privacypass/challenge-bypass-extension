@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "ainm an fhadaithe atá san áireamh 'manifest.json', agus ar taispeáint ag '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Tacaíocht cliaint le haghaidh Privacy Pass @ info: inonyName.",
+    "description": "cur síos ar an síneadh san áireamh 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "cúltaca",
+    "description": "lipéad ar áireamh i réamhainm réamhshocraithe JSON Gineadh an t-inneall '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Leagan",
+    "description": "lipéid le leagan amach reatha a thaispeánfar ag '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "ainm na Cloudflare soláthraí ar taispeáint ag '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "ainm na hCaptcha soláthraí ar taispeáint ag '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Faigh pasanna níos mó!",
+    "description": "@ info: textnot need a translation '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Cúltaca Gach Pasanna",
+    "description": "taispeáint ag '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Athchóirigh Pasanna Ó Chúltaca",
+    "description": "taispeáint ag '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Glan Gach Pasanna",
+    "description": "taispeáint ag '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Amharc ar Github",
+    "description": "taispeáint ag '@popup/components/GithubButton'."
+  }
+}

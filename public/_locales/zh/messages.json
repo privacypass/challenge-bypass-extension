@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "扩展名所包含的扩展名的名称 'manifest.json', 并显示为 '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "客户机支持 Privacy Pass 匿名授权协议.",
+    "description": "扩展的描述 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "备份",
+    "description": "缺省文件名中包含的标签 JSON 生成的备份 '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "版本",
+    "description": "当前扩展版本显示的标签 '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "名称 Cloudflare 提供者显示者 '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "名称 hCaptcha 提供者显示者 '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "获取更多通行证!",
+    "description": "显示的鼠标悬停文本 '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "备份所有传递",
+    "description": "显示的 '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "从备份恢复传递",
+    "description": "显示的 '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "清除所有传递",
+    "description": "显示的 '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "查看 Github",
+    "description": "显示的 '@popup/components/GithubButton'."
+  }
+}

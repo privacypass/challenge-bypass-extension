@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "naam van de uitbreiding, inclusief 'manifest.json', en wordt afgebeeld door '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Clientondersteuning voor Privacy Pass anoniem machtigingsprotocol.",
+    "description": "beschrijving van de uitbreiding, inclusief 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "backup maken",
+    "description": "label in standaard bestandsnaam van JSON backups gegenereerd door '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Versie",
+    "description": "label van huidige uitbreidingsversie weergegeven door '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "naam van Cloudflare provider afgebeeld door '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "naam van hCaptcha provider afgebeeld door '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Meer pasjes!",
+    "description": "Mouseover-tekst wordt afgebeeld door '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Backup van alle passen",
+    "description": "afgebeeld door '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Terugzetdoorloopt vanaf backup",
+    "description": "afgebeeld door '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Alle passen wissen",
+    "description": "afgebeeld door '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Bekijken op Github",
+    "description": "afgebeeld door '@popup/components/GithubButton'."
+  }
+}

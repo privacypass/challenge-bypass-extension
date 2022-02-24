@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "包含的延伸名稱 'manifest.json', 並由顯示 '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "的用戶端支援 Privacy Pass 匿名授權通訊協定.",
+    "description": "說明的延伸說明 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "備份",
+    "description": "預設檔名中包含的標籤 JSON 備份產生的 '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "版本",
+    "description": "顯示現行延伸版本的標籤 '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "名 Cloudflare 顯示的提供者 '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "名 hCaptcha 顯示的提供者 '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "取得更多通行證!",
+    "description": "顯示的 mouseover 文字 '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "備份所有通道",
+    "description": "顯示者 '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "從備份還原傳遞",
+    "description": "顯示者 '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "清除所有傳遞",
+    "description": "顯示者 '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "檢視於 Github",
+    "description": "顯示者 '@popup/components/GithubButton'."
+  }
+}

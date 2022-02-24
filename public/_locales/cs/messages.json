@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "název rozšíření zahrnutého 'manifest.json', a zobrazí se '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Podpora klienta pro Privacy Pass anonymní autorizační protokol.",
+    "description": "popis rozšíření zahrnutou 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "zálohování",
+    "description": "popisek je obsažen ve výchozím názvu souboru JSON zálohy generované '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Verze",
+    "description": "jmenovka aktuální verze rozšíření zobrazená pomocí '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "název Cloudflare poskytovatel zobrazený dle '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "název hCaptcha poskytovatel zobrazený dle '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Získat více průchodů!",
+    "description": "mouseover text zobrazený pomocí '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Zálohovat všechny pasy",
+    "description": "zobrazit podle '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Obnovit pasy ze zálohy",
+    "description": "zobrazit podle '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Vymazat všechny pasy",
+    "description": "zobrazit podle '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Pohled na Github",
+    "description": "zobrazit podle '@popup/components/GithubButton'."
+  }
+}

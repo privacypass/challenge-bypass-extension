@@ -8,4 +8,6 @@
 /dist/PrivacyPass.xpi
 /dist/.bin/**/temp/
 
+/public/_locales/debug.en.txt
+
 *.swp

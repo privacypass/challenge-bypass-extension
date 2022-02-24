@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "এর মধ্যে অন্তর্ভুক্ত এক্সটেনশনের নাম 'manifest.json', এবং প্রদর্শিত '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "ক্লায়েন্ট সমর্থন Privacy Pass অজ্ঞাতনামা অনুমোদনের প্রোটোকল.",
+    "description": "এক্সটেনশন এর বর্ণনা 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "ব্যাকআপ",
+    "description": "লেবেল অন্তর্ভুক্ত ছিল ডিফল্ট ফাইলের নাম JSON @ info: status '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "সংস্করণ",
+    "description": "দ্বারা প্রদর্শিত বর্তমান এক্সটেনশন সংস্করণের লেবেল '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "নাম: Cloudflare প্রদানকারী দ্বারা প্রদর্শিত '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "নাম: hCaptcha প্রদানকারী দ্বারা প্রদর্শিত '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "আরো পাশ নিয়ে যাও!",
+    "description": "দ্বারা প্রদর্শিত মুখ্য লেখা '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "সমস্ত পাসওয়ার্ড ব্যাকআপ করো",
+    "description": "দ্বারা প্রদর্শিত '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "ব্যাকআপ থেকে পাসওয়ার্ড পুনরুদ্ধার করুন",
+    "description": "দ্বারা প্রদর্শিত '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "সমস্ত পাসওয়ার্ড মুছে ফেলুন",
+    "description": "দ্বারা প্রদর্শিত '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "ভিউ Github",
+    "description": "দ্বারা প্রদর্শিত '@popup/components/GithubButton'."
+  }
+}

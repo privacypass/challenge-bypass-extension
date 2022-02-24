@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "ชื่อของส่วนขยายที่รวมไว้โดย 'manifest.json', และแสดงโดย '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "การสนับสนุนไคลเอ็นต์สำหรับ Privacy Pass โปรโตคอลการพิสูจน์ตัวตน.",
+    "description": "รายละเอียดของส่วนขยายที่รวมโดย 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "สำรองข้อมูล",
+    "description": "เลเบลรวมอยู่ในชื่อไฟล์ดีฟอลต์ของ JSON สำรองข้อมูลที่สร้างโดย '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "เวอร์ชัน",
+    "description": "เลเบลของเวอร์ชันส่วนขยายปัจจุบันที่แสดงโดย '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "ชื่อของ Cloudflare ผู้ให้บริการที่แสดงโดย '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "ชื่อของ hCaptcha ผู้ให้บริการที่แสดงโดย '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "รับบัตรผ่าน!",
+    "description": "Mouse over ข้อความที่แสดงโดย '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "สำรองข้อมูลผ่านทั้งหมด",
+    "description": "แสดงโดย '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "เรียกคืนผ่านจากสำเนาสำรอง",
+    "description": "แสดงโดย '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "ล้างรหัสผ่านทั้งหมด",
+    "description": "แสดงโดย '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "ดูบน Github",
+    "description": "แสดงโดย '@popup/components/GithubButton'."
+  }
+}

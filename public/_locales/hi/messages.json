@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "द्वारा शामिल विस्तार का नाम 'manifest.json', द्वारा प्रदर्शित '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "क्लाइंट समर्थन के लिए Privacy Pass अनाम प्राधिकरण प्रोटोकॉल.",
+    "description": "द्वारा शामिल विस्तार का विवरण 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "बैकअप",
+    "description": "के डिफ़ॉल्ट फ़ाइलनाम में लेबल शामिल है JSON द्वारा उत्पन्न बैकअप '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "संस्करण",
+    "description": "के द्वारा प्रदर्शित वर्तमान एक्सटेंशन संस्करण का लेबल '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "का नाम Cloudflare द्वारा प्रदर्शित '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "का नाम hCaptcha द्वारा प्रदर्शित '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "अधिक पास प्राप्त करें!",
+    "description": "द्वारा प्रदर्शित किया जा रहा है '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "सभी बैकअप को बैकअप करें",
+    "description": "द्वारा प्रदर्शित '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "बैकअप से फिर भंडारित करें (R)",
+    "description": "द्वारा प्रदर्शित '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "सभी पास साफ करें",
+    "description": "द्वारा प्रदर्शित '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "पर देखें Github",
+    "description": "द्वारा प्रदर्शित '@popup/components/GithubButton'."
+  }
+}

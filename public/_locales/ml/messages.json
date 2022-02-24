@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "എക്സ്റ്റെന്ഷനിന്റെ പേരു് 'manifest.json', പ്രദര്ശിപ്പിക്കുക '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "ക്ലൈന്റ് പിന്തുണ Privacy Pass അജ്ഞാതമായ അധികാരം പ്രോട്ടോക്കോൾ.",
+    "description": "എക്സ്റ്റൻഷനുകൾ ഉൾപ്പെടുത്തിയുള്ള വിശദീകരണം 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "ബാക്കപ്പ്",
+    "description": "ലേബലിന്റെ സ്വതവേയുള്ള ഫയലിന്റെ പേരു് JSON ബാക്ക്പ് സൃഷ്ടിക്കപ്പെട്ടിരിക്കുന്നു '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "പതിപ്പ്",
+    "description": "നിലവിലുള്ള എക്സ്റ്റെന്ഷന് പതിപ്പിന്റെ ലേബല് '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "പേരു് Cloudflare പ്രദര്ശിപ്പിച്ച പ്രദര്ശനം '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "പേരു് hCaptcha പ്രദര്ശിപ്പിച്ച പ്രദര്ശനം '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "കൂടുതല് കടന്നുപോകൂ!",
+    "description": "പ്രദര്ശിപ്പിക്കുന്ന പദാവലി '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "എല്ലാ പാസ്സുകളെയും ബാക്കപ്പ് ചെയ്യുക",
+    "description": "പ്രദര്ശിപ്പിക്കുക '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "ബാക്കപ്പ് മുതല് പാസ്സുകള് വീണ്ടെടുക്കുക",
+    "description": "പ്രദര്ശിപ്പിക്കുക '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "എല്ലാ പാസ്സും വൃത്തിയാക്കുക",
+    "description": "പ്രദര്ശിപ്പിക്കുക '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "കാണുക Github",
+    "description": "പ്രദര്ശിപ്പിക്കുക '@popup/components/GithubButton'."
+  }
+}

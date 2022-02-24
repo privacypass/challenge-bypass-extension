@@ -1,0 +1,46 @@
+{
+  "appName": {
+    "message": "Privacy Pass",
+    "description": "namn på utökningar som ingår i 'manifest.json', och visas av '@popup/components/Header'."
+  },
+  "appDescription": {
+    "message": "Klientfunktioner för Privacy Pass anonymt behörighetsprotokoll.",
+    "description": "Beskrivning av den utökning som ingår i 'manifest.json'."
+  },
+  "labelFileBackup": {
+    "message": "säkerhetskopiera",
+    "description": "etikett som ingår i standardfilnamnet för JSON säkerhetskopior som genereras av '@popup/store'."
+  },
+  "labelAppVersion": {
+    "message": "Version",
+    "description": "Etikett för aktuell utökningsversion som visas av '@popup/components/Header'."
+  },
+  "providerNameCloudflare": {
+    "message": "Cloudflare",
+    "description": "Namn på Cloudflare leverantör som visas av '@popup/components/CloudflareButton'."
+  },
+  "providerNameHcaptcha": {
+    "message": "hCaptcha",
+    "description": "Namn på hCaptcha leverantör som visas av '@popup/components/HcaptchaButton'."
+  },
+  "ctaGetMorePasses": {
+    "message": "Få fler passningar!",
+    "description": "mouseoverstext som visas av '@popup/components/PassButton'."
+  },
+  "ctaBackupAllPasses": {
+    "message": "Säkerhetskopiera alla Passes",
+    "description": "visas av '@popup/components/BackupButton'."
+  },
+  "ctaRestorePasses": {
+    "message": "Återställ Passes från backup",
+    "description": "visas av '@popup/components/RestoreButton'."
+  },
+  "ctaClearAllPasses": {
+    "message": "Rensa alla Passes",
+    "description": "visas av '@popup/components/ClearButton'."
+  },
+  "ctaViewOnGithub": {
+    "message": "Visa på Github",
+    "description": "visas av '@popup/components/GithubButton'."
+  }
+}
