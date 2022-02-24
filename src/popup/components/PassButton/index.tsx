@@ -22,8 +22,16 @@ export function PassButton(props: Props): JSX.Element {
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
         >
-            <div className={styles.content}>{element}</div>
-            <div className={styles.value}>{props.value}</div>
+            <table className={styles.table}>
+                <tr>
+                    <td className={styles.content}>
+                        {element}
+                    </td>
+                    <td className={styles.value}>
+                        {props.value}
+                    </td>
+                </tr>
+            </table>
         </div>
     );
 }

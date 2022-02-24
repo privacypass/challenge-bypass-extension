@@ -10,17 +10,20 @@ $_font-weight: 200;
     background-color: colors.$light-grey;
     font-size:   $_font-size;
     font-weight: $_font-weight;
+}
 
-    white-space: nowrap;
-    line-height: 1em;
-    height: 1em;
-    clear: both;
+.table {
+    width: 100%;
+    box-sizing: border-box;
+    border-collapse: collapse;
 }
 
 .content {
-    float: left;
+    width: 100%;
+    text-align: left;
+    padding-right: 1em;
 }
 
 .value {
-    float: right;
+    text-align: right;
 }
