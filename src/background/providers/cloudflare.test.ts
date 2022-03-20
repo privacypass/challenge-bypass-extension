@@ -102,7 +102,7 @@ describe('issuance', () => {
 
         const validDetails: chrome.webRequest.WebRequestBodyDetails = {
             method: 'POST',
-            url: 'https://captcha.website/?__cf_chl_captcha_tk__=query-param',
+            url: 'https://captcha.website/?__cf_chl_f_tk=query-param',
             requestId: 'xxx',
             frameId: 1,
             parentFrameId: 1,
@@ -208,7 +208,7 @@ describe('issuance', () => {
             const headDetails: any = {
                 ...validDetails,
                 requestHeaders: [
-                    { name: "referer", value: validDetails.url.replace('__cf_chl_captcha_tk__', '__cf_chl_tk') },
+                    { name: "referer", value: validDetails.url.replace('__cf_chl_f_tk', '__cf_chl_tk') },
                 ],
             };
             delete headDetails.requestBody;
@@ -246,12 +246,14 @@ describe('issuance', () => {
         /*
          * The request is invalid if any of the followings is true:
          * 1. It has no url param of any of the followings:
-         *    a. '__cf_chl_captcha_tk__'
-         *    b. '__cf_chl_managed_tk__'
+         *    a. '__cf_chl_f_tk'
+         *    b. '__cf_chl_captcha_tk__'
+         *    c. '__cf_chl_managed_tk__'
          * 2. It has no body param of any of the followings:
          *    a. 'g-recaptcha-response'
          *    b. 'h-captcha-response'
          *    c. 'cf_captcha_kind'
+         *    d. 'cf_ch_verify'
          */
 
         test('invalid request: no query param', () => {

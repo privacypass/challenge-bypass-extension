@@ -6,11 +6,13 @@ import Token from '../token';
 import axios from 'axios';
 import qs from 'qs';
 
-const NUMBER_OF_REQUESTED_TOKENS: number = 30;
-const DEFAULT_ISSUING_HOSTNAME:   string = 'captcha.website';
-const CHL_BYPASS_SUPPORT:         string = 'cf-chl-bypass';
-const ISSUE_HEADER_NAME:          string = 'cf-chl-bypass';
-const ISSUANCE_BODY_PARAM_NAME:   string = 'blinded-tokens';
+const NUMBER_OF_REQUESTED_TOKENS:  number = 30;
+const DEFAULT_ISSUING_HOSTNAME:    string = 'captcha.website';
+const DEFAULT_ISSUING_QUERY_PARAM: string = '__cf_chl_f_tk';
+const CHL_BYPASS_SUPPORT:          string = 'cf-chl-bypass';
+const ISSUE_HEADER_NAME:           string = 'cf-chl-bypass';
+const ISSUANCE_BODY_PARAM_NAME:    string = 'blinded-tokens';
+const ISSUANCE_REFERER_REGEX:      RegExp = /^(.*[\?&])(?:__cf_chl_tk)([=].*)$/ig;
 
 const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
@@ -29,10 +31,10 @@ const ALL_ISSUING_CRITERIA: {
         exact :   ['/'],
     },
     QUERY_PARAMS: {
-        some:     ['__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
+        some:     [DEFAULT_ISSUING_QUERY_PARAM, '__cf_chl_captcha_tk__', '__cf_chl_managed_tk__'],
     },
     BODY_PARAMS: {
-        some:     ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind'],
+        some:     ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind', 'cf_ch_verify'],
     },
 }
 
@@ -280,8 +282,8 @@ export class CloudflareProvider extends Provider {
         if (details.requestHeaders) {
             const ref_header = details.requestHeaders.find(h => (h !== undefined) && h.name && h.value && (h.name.toLowerCase() === 'referer'));
 
-            if (ref_header !== undefined) {
-                href = ref_header.value!.replace(/([\?&])(?:__cf_chl_tk)([=])/ig, ('$1' + '__cf_chl_captcha_tk__' + '$2'));
+            if ((ref_header !== undefined) && (ref_header.value !== undefined) && ISSUANCE_REFERER_REGEX.test(ref_header.value)) {
+                href = ref_header.value.replace(ISSUANCE_REFERER_REGEX, ('$1' + DEFAULT_ISSUING_QUERY_PARAM + '$2'));
                 url  = new URL(href);
 
                 // Only issue tokens when querystring parameters pass defined criteria.
