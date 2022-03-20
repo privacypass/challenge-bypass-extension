@@ -12,7 +12,6 @@ const DEFAULT_ISSUING_QUERY_PARAM: string = '__cf_chl_f_tk';
 const CHL_BYPASS_SUPPORT:          string = 'cf-chl-bypass';
 const ISSUE_HEADER_NAME:           string = 'cf-chl-bypass';
 const ISSUANCE_BODY_PARAM_NAME:    string = 'blinded-tokens';
-const ISSUANCE_REFERER_REGEX:      RegExp = /^(.*[\?&])(?:__cf_chl_tk)([=].*)$/ig;
 
 const COMMITMENT_URL: string =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
@@ -37,6 +36,9 @@ const ALL_ISSUING_CRITERIA: {
         some:     ['g-recaptcha-response', 'h-captcha-response', 'cf_captcha_kind', 'cf_ch_verify'],
     },
 }
+
+const ISSUANCE_REFERER_REGEX:      RegExp = /^(.*[\?&])(?:__cf_chl_tk)([=].*)$/i;
+const ISSUANCE_QUERY_PARAM_REGEX:  RegExp = new RegExp('^(.*[\\?&])(?:' + ALL_ISSUING_CRITERIA.QUERY_PARAMS!.some!.join('|') + ')([=].*)$', 'i');
 
 const VERIFICATION_KEY: string = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExf0AftemLr0YSz5odoj3eJv6SkOF
@@ -274,23 +276,24 @@ export class CloudflareProvider extends Provider {
         href = this.issueInfo.url;
         url  = new URL(href);
 
-        // Only issue tokens when querystring parameters pass defined criteria.
+        // Issue tokens when querystring parameters pass defined criteria.
         if (areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
+            if (href.indexOf(DEFAULT_ISSUING_QUERY_PARAM) === -1) {
+                // Normalize name of querystring parameter
+                href = href.replace(ISSUANCE_QUERY_PARAM_REGEX, ('$1' + DEFAULT_ISSUING_QUERY_PARAM + '$2'));
+                this.issueInfo.url = href;
+            }
             return true;
         }
 
+        // Issue tokens when querystring parameters in value of 'Referer' request header pass defined criteria.
         if (details.requestHeaders) {
             const ref_header = details.requestHeaders.find(h => (h !== undefined) && h.name && h.value && (h.name.toLowerCase() === 'referer'));
 
             if ((ref_header !== undefined) && (ref_header.value !== undefined) && ISSUANCE_REFERER_REGEX.test(ref_header.value)) {
                 href = ref_header.value.replace(ISSUANCE_REFERER_REGEX, ('$1' + DEFAULT_ISSUING_QUERY_PARAM + '$2'));
-                url  = new URL(href);
-
-                // Only issue tokens when querystring parameters pass defined criteria.
-                if (areQualifiedQueryParams(ALL_ISSUING_CRITERIA.QUERY_PARAMS, url)) {
-                    this.issueInfo.url = href;
-                    return true;
-                }
+                this.issueInfo.url = href;
+                return true;
             }
         }
 
