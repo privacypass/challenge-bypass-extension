@@ -8,6 +8,9 @@
     "main": "index.js",
     "license": "BSD-3-Clause",
     "type": "module",
+    "engines": {
+        "node": ">=16"
+    },
     "scripts": {
         "sjcl": "cd node_modules/sjcl && perl configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
         "prebuild": "npm run sjcl",
