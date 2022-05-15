@@ -20,6 +20,12 @@
         "plugin:prettier/recommended",
         "prettier"
     ],
+    "ignorePatterns": [
+        "**/*.d.ts",
+        "**/*.js",
+        "coverage/*",
+        "lib/*"
+    ],
     "rules": {
         "@typescript-eslint/member-delimiter-style": 0,
         "@typescript-eslint/no-namespace": [
