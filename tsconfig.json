@@ -28,6 +28,12 @@
     "include": [],
     "references": [
         {
+            "path": "./src/blindrsa/sjcl"
+        },
+        {
+            "path": "./src/blindrsa"
+        },
+        {
             "path": "./src/background"
         },
         {

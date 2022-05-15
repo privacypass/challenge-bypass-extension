@@ -17,7 +17,7 @@
         "build": "webpack",
         "pretest": "npm run sjcl",
         "test": "tsc -b && node --experimental-vm-modules node_modules/jest/bin/jest.js --ci",
-        "lint": "eslint ./src/**/*.{ts,tsx}",
+        "lint": "eslint .",
         "clean": "rimraf dist"
     },
     "dependencies": {

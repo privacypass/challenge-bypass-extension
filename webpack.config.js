@@ -48,6 +48,24 @@ const background = {
     },
 };
 
+const blindrsa = {
+    ...common,
+    entry: {
+        blindrsa: path.resolve('src/blindrsa/index.ts'),
+    },
+    externals: { crypto: 'null' },
+    module: {
+        rules: [tsloader],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+        fallback: {
+            // 'buffer': buffer,
+            // 'stream': streamBrowserify,
+        },
+    },
+};
+
 const popup = {
     ...common,
     entry: {
@@ -86,4 +104,4 @@ const popup = {
 };
 
 // Mutiple targets for webpack: https://webpack.js.org/concepts/targets/#multiple-targets
-export default [background, popup];
+export default [blindrsa, background, popup];
