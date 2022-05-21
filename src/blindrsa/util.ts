@@ -160,10 +160,12 @@ export async function emsa_pss_encode(
     //
     // 2.  Let mHash = Hash(M), an octet string of length hLen.
     const mHash = new Uint8Array(await crypto.subtle.digest(hash, msg));
+
     // 3.  If emLen < hLen + sLen + 2, output "encoding error" and stop.
     if (emLen < hLen + sLen + 2) {
         throw new Error('encoding error');
     }
+
     // 4.  Generate a random octet string salt of length sLen; if sLen = 0,
     //     then salt is the empty string.
     const salt = crypto.getRandomValues(new Uint8Array(sLen));

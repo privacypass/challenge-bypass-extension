@@ -13,7 +13,9 @@ function hexToUint8(x: string): Uint8Array {
     return new Uint8Array(Buffer.from(x, 'hex'));
 }
 
-function paramsFromVector(v: typeof vectors[number]): {
+type Vectors = typeof vectors[number];
+
+function paramsFromVector(v: Vectors): {
     n: string;
     e: string;
     d: string;
@@ -40,10 +42,7 @@ function paramsFromVector(v: typeof vectors[number]): {
     return { n, e, d, p, q, dp, dq, qi };
 }
 
-async function keysFromVector(
-    v: typeof vectors[number],
-    extractable: boolean,
-): Promise<CryptoKeyPair> {
+async function keysFromVector(v: Vectors, extractable: boolean): Promise<CryptoKeyPair> {
     const params = paramsFromVector(v);
     const { n, e } = params;
     const publicKey = await crypto.subtle.importKey(
@@ -64,7 +63,7 @@ async function keysFromVector(
     return { privateKey, publicKey };
 }
 
-describe.each(vectors)('BlindRSA-vec$#', (v: typeof vectors[number]) => {
+describe.each(vectors)('BlindRSA-vec$#', (v: Vectors) => {
     test('test-vector', async () => {
         const r_inv = new sjcl.bn(v.inv);
         const r = r_inv.inverseMod(new sjcl.bn(v.n));
