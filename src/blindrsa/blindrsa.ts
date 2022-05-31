@@ -33,8 +33,8 @@ export async function blind(
     if (!jwkKey.n || !jwkKey.e) {
         throw new Error('key has invalid parameters');
     }
-    const n = new sjcl.bn(Buffer.from(jwkKey.n, 'base64url').toString('hex'));
-    const e = new sjcl.bn(Buffer.from(jwkKey.e, 'base64url').toString('hex'));
+    const n = sjcl.bn.fromBits(sjcl.codec.base64url.toBits(jwkKey.n));
+    const e = sjcl.bn.fromBits(sjcl.codec.base64url.toBits(jwkKey.e));
 
     // 4. r = random_integer_uniform(1, n)
     let r: sjcl.bn;
@@ -47,7 +47,7 @@ export async function blind(
     //    and stop
     let r_inv: sjcl.bn;
     try {
-        r_inv = r.inverseMod(new sjcl.bn(n));
+        r_inv = r.inverseMod(n);
     } catch (e) {
         throw new Error('invalid blind');
     }
@@ -100,7 +100,7 @@ export async function finalize(
     if (!jwkKey.n) {
         throw new Error('key has invalid parameters');
     }
-    const n = new sjcl.bn(Buffer.from(jwkKey.n, 'base64url').toString('hex'));
+    const n = sjcl.bn.fromBits(sjcl.codec.base64url.toBits(jwkKey.n));
     const s = z.mulmod(r_inv, n);
 
     // 6. sig = int_to_bytes(s, kLen)
@@ -141,8 +141,8 @@ export async function blindSign(privateKey: CryptoKey, blindMsg: Uint8Array): Pr
     if (!jwkKey.n || !jwkKey.d) {
         throw new Error('key is not a private key');
     }
-    const n = new sjcl.bn(Buffer.from(jwkKey.n, 'base64url').toString('hex'));
-    const d = new sjcl.bn(Buffer.from(jwkKey.d, 'base64url').toString('hex'));
+    const n = sjcl.bn.fromBits(sjcl.codec.base64url.toBits(jwkKey.n));
+    const d = sjcl.bn.fromBits(sjcl.codec.base64url.toBits(jwkKey.d));
     if (m.greaterEquals(n)) {
         throw new Error('invalid message length');
     }

@@ -25,12 +25,15 @@ function getHashParams(hash: string): HashParams {
 }
 
 export function os2ip(bytes: Uint8Array): sjcl.bn {
-    return sjcl.bn.fromBits(sjcl.codec.bytes.toBits(Array.from(bytes)));
+    return sjcl.bn.fromBits(sjcl.codec.bytes.toBits(bytes));
 }
 
 export function i2osp(num: sjcl.bn, byteLength: number): Uint8Array {
+    if (Math.ceil(num.bitLength() / 8) > byteLength) {
+        throw new Error(`number does not fit in ${byteLength} bytes`);
+    }
     const bytes = new Uint8Array(byteLength);
-    const unpadded = new Uint8Array(sjcl.codec.arrayBuffer.fromBits(num.toBits(undefined), false));
+    const unpadded = new Uint8Array(sjcl.codec.bytes.fromBits(num.toBits(undefined), false));
     bytes.set(unpadded, byteLength - unpadded.length);
     return bytes;
 }
@@ -160,12 +163,10 @@ export async function emsa_pss_encode(
     //
     // 2.  Let mHash = Hash(M), an octet string of length hLen.
     const mHash = new Uint8Array(await crypto.subtle.digest(hash, msg));
-
     // 3.  If emLen < hLen + sLen + 2, output "encoding error" and stop.
     if (emLen < hLen + sLen + 2) {
         throw new Error('encoding error');
     }
-
     // 4.  Generate a random octet string salt of length sLen; if sLen = 0,
     //     then salt is the empty string.
     const salt = crypto.getRandomValues(new Uint8Array(sLen));

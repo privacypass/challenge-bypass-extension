@@ -1,4 +1,5 @@
-import blindRSA from './index';
+import * as blindRSA from './index';
+
 import { jest } from '@jest/globals';
 import sjcl from './sjcl';
 // Test vector
@@ -6,11 +7,11 @@ import sjcl from './sjcl';
 import vectors from './testdata/rsablind_vectors.json';
 
 function hexToB64URL(x: string): string {
-    return Buffer.from(x, 'hex').toString('base64url');
+    return sjcl.codec.base64url.fromBits(sjcl.codec.hex.toBits(x));
 }
 
 function hexToUint8(x: string): Uint8Array {
-    return new Uint8Array(Buffer.from(x, 'hex'));
+    return new Uint8Array(sjcl.codec.bytes.fromBits(sjcl.codec.hex.toBits(x)));
 }
 
 type Vectors = typeof vectors[number];
