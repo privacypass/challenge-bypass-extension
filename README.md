@@ -150,6 +150,10 @@ to modify the headers of a request. According to documentation,
 the more recent installed extension is the one that can update
 headers, while others will fail.
 
+Compounded to that, Cloudflare will ignore clearance cookies when the
+user-agent request does not match the one used when obtaining the
+cookie.
+
 ### hCaptcha support.
 
 As of version 3.x.x, support for hCaptcha tokens is paused. Only
