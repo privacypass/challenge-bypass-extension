@@ -1,0 +1,43 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "es2020",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "composite": true,
+        "incremental": true,
+        "removeComments": true,
+        "isolatedModules": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "noEmitOnError": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "allowSyntheticDefaultImports": true,
+        "rootDir": ".",
+        "outDir": "lib"
+    },
+    "files": [],
+    "include": [],
+    "references": [
+        {
+            "path": "./src/blindrsa/sjcl"
+        },
+        {
+            "path": "./src/blindrsa"
+        },
+        {
+            "path": "./src/background"
+        },
+        {
+            "path": "./src/popup"
+        }
+    ]
+}

@@ -1,3 +1,0 @@
-[submodule "src/crypto/sjcl"]
-	path = src/crypto/sjcl
-	url = git@github.com:bitwiseshiftleft/sjcl.git

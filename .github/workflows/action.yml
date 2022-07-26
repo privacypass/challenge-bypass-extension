@@ -1,0 +1,31 @@
+---
+name: PrivacyPass Challenge Extension
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  testing:
+    name: Running on Node v${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 16]
+    steps:
+      - name: Checking out
+        uses: actions/checkout@v3
+      - name: Setup Node v${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Installing
+        run: npm ci
+      - name: Linting
+        run: npm run lint
+      - name: Building
+        run: npm run build
+      - name: Testing
+        run: npm test

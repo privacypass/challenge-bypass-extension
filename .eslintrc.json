@@ -1,118 +1,51 @@
 {
-    "env": {
-        "browser": true,
-        "es6": true,
-        "jest": true
-    },
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 8,
-        "sourceType": "script"
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
     },
-    "extends": ["eslint:recommended", "./node_modules/eslint-config-google/index.js"],
-    "globals": {
-        "browser": true,
-        "chrome": true,
-        "blindPoint": true,
-        "compressPoint": true,
-        "decompressPoint": true,
-        "encodeStorablePoint": true,
-        "decodeStorablePoint": true,
-        "newRandomPoint": true,
-        "unblindPoint": true,
-        "GenerateNewTokens": true,
-        "BuildRedeemHeader": true,
-        "verifyProof": true,
-        "createShake256": true,
-        "handleCompletion": true,
-        "handleMessage": true,
-        "processRedirect": true,
-        "processHeaders": true,
-        "beforeSendHeaders": true,
-        "beforeRequest": true,
-        "resetSpendVars": true,
-        "committedNavigation": true,
-        "reloadTabForCookie": true,
-        "chlCaptchaDomain": true,
-        "chlClearanceCookie": true,
-        "dev": true,
-        "commitments": true,
-        "spentTab": true,
-        "sentTokens": true,
-        "timeSinceLastResp": true,
-        "futureReload": true,
-        "attemptRedeem": true,
-        "setSpendFlag": true,
-        "getSpendFlag": true,
-        "getTabId": true,
-        "updateIcon": true,
-        "updateBrowserTab": true,
-        "reloadBrowserTab": true,
-        "isErrorPage": true,
-        "isFaviconUrl": true,
-        "clear": true,
-        "get": true,
-        "set": true,
-        "UpdateCallback": true,
-        "checkCookies": true,
-        "redeemMethod": true,
-        "reloadOnSign": true,
-        "PPConfigs": true,
-        "CHL_BYPASS_SUPPORT": true,
-        "CHL_BYPASS_RESPONSE": true,
-        "activeConfig": true,
-        "storeNewTokens": true,
-        "storeTokens": true,
-        "loadTokens": true,
-        "countStoredTokens": true,
-        "storageKeyTokens": true,
-        "storageKeyCount": true,
-        "initECSettings": true,
-        "getCurvePoints": true,
-        "h2Curve": true,
-        "h2cParams": true,
-        "sendH2CParams": true,
-        "maxTokens": true,
-        "signResponseFMT": true,
-        "tokensPerRequest": true,
-        "CACHED_COMMITMENTS_STRING": true,
-        "clearCachedCommitments": true,
-        "getBigNumFromBytes": true,
-        "signReqCF": true,
-        "sendXhrSignReq": true,
-        "sec1EncodePoint": true,
-        "CONFIG_ID": true,
-        "signReqHC": true,
-        "patternToRegExp": true,
-        "getActiveECSettings": true,
-        "issueActionUrls": true,
-        "LISTENER_URLS": true,
-        "getTarget": true,
-        "setFutureReload": true,
-        "commitmentsKey": true
-    },
+    "plugins": [
+        "@typescript-eslint",
+        "security",
+        "prettier"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:security/recommended",
+        "plugin:prettier/recommended",
+        "prettier"
+    ],
+    "ignorePatterns": [
+        "**/*.d.ts",
+        "**/*.js",
+        "coverage/*",
+        "lib/*"
+    ],
     "rules": {
-        "new-cap": 0,
-        "no-trailing-spaces": "error",
-        "linebreak-style": [
-            "error",
-            "unix"
+        "@typescript-eslint/member-delimiter-style": 0,
+        "@typescript-eslint/no-namespace": [
+            "warn"
         ],
-        "quotes": [
+        "@typescript-eslint/no-unused-vars": [
             "error",
-            "double",
-            { "allowTemplateLiterals": true }
-        ],
-        "no-unused-vars": [
-            "error", {
-                "args": "none"
+            {
+                "argsIgnorePattern": "^_"
             }
         ],
+        "no-case-declarations": 0,
         "no-console": [
-            "error", {
-                "allow": ["error", "warn"]
+            "error",
+            {
+                "allow": [
+                    "warn",
+                    "error"
+                ]
             }
-        ],
-        "indent": ["error", 4],
-        "max-len": 0
+        ]
     }
 }

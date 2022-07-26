@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "baseUrl": ".",
+        "paths": {
+            "@root/*": [
+                "../../*"
+            ],
+            "@popup/*": [
+                "./*"
+            ],
+            "@public/*": [
+                "../../public/*"
+            ]
+        }
+    },
+    "extends": "../../tsconfig.json",
+    "include": [
+        "."
+    ]
+}

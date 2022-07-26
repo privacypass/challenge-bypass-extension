@@ -1,36 +1,63 @@
 {
-  "dependencies": {
-    "atob": "^2.1.2",
-    "babel-core": "^6.26.3",
-    "babel-jest": "^23.6.0",
-    "babel-plugin-rewire": "^1.2.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-preset-env": "^1.7.0",
-    "bestzip": "^2.1.2",
-    "btoa": "^1.2.1",
-    "eslint-config-google": "^0.12.0",
-    "google-closure-compiler": "^20181028.0.1",
-    "jest": "^23.6.0",
-    "json": "^9.0.6",
-    "puppeteer": "^1.9.0",
-    "regenerator-runtime": "^0.12.1",
-    "rewire": "^4.0.1",
-    "stringify": "^5.2.0"
-  },
-  "scripts": {
-    "all": "yarn lint && yarn build:all && yarn test:all",
-    "build:all": "yarn build:sjcl && yarn build:ext",
-    "test:all": "yarn test:sjcl && yarn test:ext",
-    "build:ext": "mkdir -p addon/compiled && google-closure-compiler src/ext/utils.js src/crypto/sjcl/sjcl.js src/ext/config.js src/ext/h2c.js src/crypto/local.js src/ext/tokens.js src/ext/issuance.js src/ext/redemption.js src/ext/browserUtils.js src/ext/background.js src/ext/listeners.js src/crypto/keccak/keccak.js > addon/compiled/bg_compiled.js",
-    "test:ext": "mkdir -p addon/compiled && google-closure-compiler src/ext/utils.js src/crypto/sjcl/sjcl.js src/ext/config.js src/ext/h2c.js src/crypto/local.js src/ext/tokens.js src/ext/issuance.js src/ext/redemption.js src/ext/browserUtils.js src/ext/background.js src/crypto/keccak/keccak.js > addon/compiled/test_compiled.js && jest",
-    "test:ext-quick": "jest",
-    "build:sjcl": "cd src/crypto/sjcl && ./configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex && make sjcl.js",
-    "test:sjcl": "make test -C src/crypto/sjcl",
-    "test:watch": "yarn test:all --watch",
-    "lint": "eslint . && cd test && eslint --config .eslintrc.tests.json --ext .test.js .",
-    "dist": "mkdir -p ./dist && cp -a addon/* ./dist/ && rm -rf ./dist/scripts && bestzip ext.zip ./dist && rm -rf ./dist"
-  },
-  "devDependencies": {
-    "jest-each": "^24.5.0"
-  }
+    "name": "privacy-pass",
+    "version": "3.0.5",
+    "contributors": [
+        "Suphanat Chunhapanya <pop@cloudflare.com>",
+        "Armando Faz <armfazh@cloudflare.com>"
+    ],
+    "main": "index.js",
+    "license": "BSD-3-Clause",
+    "type": "module",
+    "engines": {
+        "node": ">=16"
+    },
+    "scripts": {
+        "sjcl": "cd node_modules/sjcl && perl configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
+        "prebuild": "npm run sjcl",
+        "build": "webpack",
+        "pretest": "npm run sjcl",
+        "test": "tsc -b && node --experimental-vm-modules node_modules/jest/bin/jest.js --ci",
+        "lint": "eslint .",
+        "clean": "rimraf dist"
+    },
+    "dependencies": {
+        "asn1-parser": "1.1.8",
+        "axios": "0.23.0",
+        "buffer": "6.0.3",
+        "keccak": "3.0.1",
+        "qs": "6.10.1",
+        "react": "17.0.2",
+        "react-dom": "17.0.2",
+        "react-redux": "7.2.5",
+        "redux": "4.1.1",
+        "sjcl": "1.0.8",
+        "stream-browserify": "3.0.0"
+    },
+    "devDependencies": {
+        "@types/chrome": "0.0.159",
+        "@types/jest": "27.0.2",
+        "@types/qs": "6.9.6",
+        "@types/react": "17.0.5",
+        "@types/react-dom": "17.0.5",
+        "@typescript-eslint/eslint-plugin": "5.1.0",
+        "@typescript-eslint/parser": "5.1.0",
+        "copy-webpack-plugin": "8.1.1",
+        "css-loader": "5.2.4",
+        "eslint": "7.32.0",
+        "eslint-config-prettier": "8.3.0",
+        "eslint-plugin-prettier": "4.0.0",
+        "eslint-plugin-security": "1.4.0",
+        "file-loader": "6.2.0",
+        "html-webpack-plugin": "5.3.1",
+        "jest": "28.1.0",
+        "mini-css-extract-plugin": "1.6.0",
+        "prettier": "2.3.2",
+        "rimraf": "3.0.2",
+        "sass": "1.32.13",
+        "sass-loader": "11.1.1",
+        "ts-loader": "9.2.8",
+        "tsconfig-paths-webpack-plugin": "3.5.1",
+        "typescript": "4.6.3",
+        "webpack-cli": "4.9.2"
+    }
 }

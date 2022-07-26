@@ -1,0 +1,9 @@
+@use '@popup/styles/colors';
+
+$_app-width: 260px;
+
+.app {
+    width: $_app-width;
+    background-color: colors.$white;
+    font-family: helvetica;
+}
