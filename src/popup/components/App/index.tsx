@@ -5,6 +5,7 @@ import { GithubButton } from '@popup/components/GithubButton';
 import { Header } from '@popup/components/Header';
 import React from 'react';
 import styles from './styles.module.scss';
+import { HcaptchaButton } from '@popup/components/HcaptchaButton';
 
 export function App(): JSX.Element {
     return (
@@ -12,6 +13,7 @@ export function App(): JSX.Element {
             <Header />
             <Container>
                 <CloudflareButton />
+                <HcaptchaButton />
                 <ClearButton />
                 <GithubButton />
             </Container>
