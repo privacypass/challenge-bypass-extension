@@ -115,7 +115,7 @@ export class Tab {
             !(this.context instanceof CloudflareProvider) &&
             !(this.context instanceof HcaptchaProvider)
         ) {
-            this.context = new HcaptchaProvider({
+            this.context = new HcaptchaProvider(new LocalStorage('hc'), {
                 updateIcon: this.updateIcon,
                 navigateUrl: this.navigateUrl,
             });

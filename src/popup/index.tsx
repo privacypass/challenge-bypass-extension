@@ -24,3 +24,12 @@ chrome.runtime.sendMessage({ key: 'cf-tokens' }, (response) => {
         });
     }
 });
+chrome.runtime.sendMessage({ key: 'hc-tokens' }, (response) => {
+    if (response !== undefined && typeof response === 'string') {
+        store.dispatch({
+            type: 'UPDATE_STATE',
+            key: 'hc-tokens',
+            value: response,
+        });
+    }
+});

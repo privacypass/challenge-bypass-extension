@@ -9,6 +9,8 @@ import 'asn1-parser';
 
 import sjcl from 'sjcl';
 
+import createKeccakHash from 'keccak';
+
 let PEM;
 let ASN1;
 if (typeof window !== 'undefined') {
@@ -16,8 +18,8 @@ if (typeof window !== 'undefined') {
     ASN1 = window.ASN1;
 }
 
-export let shake256 = () => {
-    return createShake256();
+export const shake256 = () => {
+    return createKeccakHash("shake256", {});
 };
 
 const BATCH_PROOF_PREFIX = 'batch-proof=';
@@ -55,14 +57,14 @@ export function initECSettings(h2cParams) {
     const methodStr = h2cParams.method;
     switch (curveStr) {
         case 'p256':
-            if (methodStr != 'swu' && methodStr != 'increment') {
+            if (methodStr !== 'swu' && methodStr !== 'increment') {
                 throw new Error(
                     "[privacy-pass]: Incompatible h2c method: '" +
                         methodStr +
                         "', for curve " +
                         curveStr,
                 );
-            } else if (hashStr != 'sha256') {
+            } else if (hashStr !== 'sha256') {
                 throw new Error(
                     "[privacy-pass]: Incompatible h2c hash: '" +
                         hashStr +

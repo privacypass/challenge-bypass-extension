@@ -4,6 +4,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import webpack from 'webpack';
 
 // import buffer from "buffer";
 // import streamBrowserify from "stream-browserify";
@@ -28,6 +29,11 @@ const common = {
     optimization: {
         minimize: false,
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer']
+        })
+    ]
 };
 
 const background = {
