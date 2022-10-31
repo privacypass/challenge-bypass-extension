@@ -6,8 +6,6 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import webpack from 'webpack';
 
-// import buffer from "buffer";
-// import streamBrowserify from "stream-browserify";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
