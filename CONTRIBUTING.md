@@ -5,7 +5,7 @@
 Code is written in TypeScript and is automatically formatted with prettier.
 
 ```
- $ npm run lint
+ $ npm run lint -- --fix
 ```
 
 ### Naming convention
