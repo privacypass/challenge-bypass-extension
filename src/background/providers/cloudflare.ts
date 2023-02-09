@@ -14,7 +14,7 @@ const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
 const COMMITMENT_URL =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_BODY_PARAMS = ['md', 'r'];
+const QUALIFIED_BODY_PARAMS = ['md'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
