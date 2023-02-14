@@ -111,7 +111,6 @@ describe('issuance', () => {
                 requestBody: {
                     formData: {
                         ['md']: ['body-param'],
-                        ['r']: ['body-param'],
                     },
                 },
             };
@@ -126,14 +125,12 @@ describe('issuance', () => {
                 expect(issueInfo.requestId).toEqual(details.requestId);
                 expect(issueInfo.formData).toStrictEqual({
                     ['md']: 'body-param',
-                    ['r']: 'body-param',
                 });
             }
         });
 
         /*
-         * The request is invalid only if the body has both
-         * 'md' and 'r' params.
+         * The request is invalid if the body has no 'md' parameter.
          */
         test('invalid request', async () => {
             const storage = new StorageMock();
@@ -154,7 +151,7 @@ describe('issuance', () => {
                 timeStamp: 1,
                 requestBody: {
                     formData: {
-                        ['md']: ['body-param'],
+                        /* remove 'md' parameter. */
                     },
                 },
             };
@@ -162,6 +159,8 @@ describe('issuance', () => {
             expect(result).toBeUndefined();
             expect(issue).not.toHaveBeenCalled();
             expect(navigateUrl).not.toHaveBeenCalled();
+            const issueInfo = provider['issueInfo'];
+            expect(issueInfo).toBeNull();
         });
     });
 
@@ -181,7 +180,6 @@ describe('issuance', () => {
                 requestId: 'xxx',
                 formData: {
                     ['md']: 'body-param',
-                    ['r']: 'body-param',
                 },
             };
             provider['issueInfo'] = issueInfo;
@@ -209,7 +207,6 @@ describe('issuance', () => {
             expect(issue.mock.calls.length).toBe(1);
             expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
                 ['md']: 'body-param',
-                ['r']: 'body-param',
             });
 
             expect(navigateUrl.mock.calls.length).toBe(1);
@@ -237,7 +234,6 @@ describe('issuance', () => {
                 requestId: 'xxx',
                 formData: {
                     ['md']: 'body-param',
-                    ['r']: 'body-param',
                 },
             };
             provider['issueInfo'] = issueInfo;
@@ -260,7 +256,6 @@ describe('issuance', () => {
             expect(issue.mock.calls.length).toBe(1);
             expect(issue).toHaveBeenCalledWith('https://captcha.website/?__cf_chl_f_tk=token', {
                 ['md']: 'body-param',
-                ['r']: 'body-param',
             });
 
             expect(navigateUrl.mock.calls.length).toBe(1);
