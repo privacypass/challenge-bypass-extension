@@ -1,7 +1,7 @@
 $_badge-height:    55px;
 $_header-height:   100px;
 $_big-font-size:   23px;
-$_small-font-size: 13px;
+$_small-font-size: 16px;
 $_margin:          10px;
 
 .badge {
@@ -10,6 +10,7 @@ $_margin:          10px;
 }
 
 .version {
+    margin-top: $_margin;
     font-size: $_small-font-size;
 }
 
