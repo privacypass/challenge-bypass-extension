@@ -12,7 +12,7 @@ interface ClearTokensAction {
 
 type Action = UpdateStateAction | ClearTokensAction;
 
-const reducer = (state: any | undefined, action: Action) => {
+const reducer = (state: Record<string, unknown> | undefined, action: Action) => {
     switch (action.type) {
         case 'UPDATE_STATE':
             return {
