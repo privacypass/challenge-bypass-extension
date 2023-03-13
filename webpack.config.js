@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import webpack from 'webpack';
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const tsloader = {
@@ -52,10 +51,10 @@ const background = {
     },
 };
 
-const blindrsa = {
+const privacypass = {
     ...common,
     entry: {
-        blindrsa: path.resolve('src/blindrsa/index.ts'),
+        privacypass: path.resolve('src/privacypass/index.ts'),
     },
     externals: { crypto: 'null' },
     module: {
@@ -68,6 +67,11 @@ const blindrsa = {
             // 'stream': streamBrowserify,
         },
     },
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [{ from: 'public/icons', to: 'icons' }, { from: 'public/manifest.json' }],
+        }),
+    ]
 };
 
 const popup = {
@@ -107,5 +111,6 @@ const popup = {
     ],
 };
 
+export const X = [privacypass, background, popup];
 // Mutiple targets for webpack: https://webpack.js.org/concepts/targets/#multiple-targets
-export default [blindrsa, background, popup];
+export default [privacypass]

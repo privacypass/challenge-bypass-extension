@@ -1,8 +1,8 @@
 {
     "name": "Privacy Pass",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "description": "Client support for Privacy Pass anonymous authorization protocol.",
-    "version": "3.0.5",
+    "version": "4.0.0",
     "icons": {
         "32": "icons/32/gold.png",
         "48": "icons/48/gold.png",
@@ -10,19 +10,18 @@
         "128": "icons/128/gold.png"
     },
     "background": {
-        "scripts": [
-            "background.js"
-        ]
+        "service_worker": "privacypass.js",
+        "type": "module"
     },
     "permissions": [
-        "<all_urls>",
-        "cookies",
-        "webRequest",
-        "webRequestBlocking"
+        "declarativeNetRequest",
+        "storage",
+        "webRequest"
     ],
-    "browser_action": {
-        "default_icon": "icons/32/grey.png",
-        "default_title": "Privacy Pass",
-        "default_popup": "popup.html"
-    }
+    "action": {
+        "default_icon": "icons/32/gold.png"
+    },
+    "host_permissions": [
+        "<all_urls>"
+    ]
 }

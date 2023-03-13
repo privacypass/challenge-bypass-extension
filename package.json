@@ -1,6 +1,6 @@
 {
     "name": "privacy-pass",
-    "version": "3.0.5",
+    "version": "4.0.0",
     "contributors": [
         "Suphanat Chunhapanya <pop@cloudflare.com>",
         "Armando Faz <armfazh@cloudflare.com>"
@@ -15,6 +15,7 @@
         "sjcl": "cd node_modules/sjcl && perl configure --without-all --with-ecc --with-convenience --with-codecBytes --with-codecHex --compress=none && make sjcl.js",
         "prebuild": "npm run sjcl",
         "build": "webpack",
+        "firefox": "npx web-ext build -s dist --overwrite-dest",
         "pretest": "npm run sjcl",
         "test": "tsc -b && node --experimental-vm-modules node_modules/jest/bin/jest.js --ci",
         "lint": "eslint .",
@@ -22,6 +23,7 @@
     },
     "dependencies": {
         "asn1-parser": "1.1.8",
+        "asn1js": "3.0.5",
         "axios": "0.23.0",
         "buffer": "6.0.3",
         "keccak": "3.0.2",
@@ -34,7 +36,7 @@
         "stream-browserify": "3.0.0"
     },
     "devDependencies": {
-        "@types/chrome": "0.0.159",
+        "@types/chrome": "0.0.217",
         "@types/jest": "27.0.2",
         "@types/qs": "6.9.6",
         "@types/react": "17.0.5",

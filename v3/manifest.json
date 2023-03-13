@@ -1,0 +1,30 @@
+{
+    "name": "EXP",
+    "manifest_version": 3,
+    "description": "Client support for Privacy Pass anonymous authorization protocol.",
+    "version": "1.0.0",
+    "background": {
+        "service_worker": "ext.js",
+        "type": "module"
+    },
+    "permissions": [
+        "activeTab",
+        "alarms",
+        "browsingData",
+        "contextMenus",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback",
+        "declarativeNetRequestWithHostAccess",
+        "notifications",
+        "scripting",
+        "storage",
+        "system.display",
+        "unlimitedStorage",
+        "webNavigation",
+        "webRequest"
+    ],
+    "host_permissions": [
+        "*://*/*",
+        "<all_urls>"
+    ]
+}

@@ -14,7 +14,7 @@ const ISSUANCE_BODY_PARAM_NAME = 'blinded-tokens';
 const COMMITMENT_URL =
     'https://raw.githubusercontent.com/privacypass/ec-commitments/master/commitments-p256.json';
 
-const QUALIFIED_BODY_PARAMS = ['md'];
+const QUALIFIED_BODY_PARAMS = ['md', 'r'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
 const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
@@ -198,6 +198,48 @@ export class CloudflareProvider implements Provider {
         this.callbacks.updateIcon(this.getBadgeText());
     }
 
+    handleHeadersReceived(
+        details: chrome.webRequest.WebResponseHeadersDetails,
+    ): chrome.webRequest.BlockingResponse | void {
+        // Don't redeem a token in the issuing website.
+        const url = new URL(details.url);
+        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
+            return;
+        }
+
+        // Check if it's the response of the request that we should insert a token.
+        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
+            return;
+        }
+        const hasSupportHeader = details.responseHeaders.some((header) => {
+            return (
+                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
+                header.value !== undefined &&
+                +header.value === CloudflareProvider.ID
+            );
+        });
+        if (!hasSupportHeader) {
+            return;
+        }
+
+        // Let's try to redeem.
+
+        // Get one token.
+        const tokens = this.getStoredTokens();
+        const oneToken = tokens.shift();
+        this.setStoredTokens(tokens);
+
+        if (oneToken === undefined) {
+            return;
+        }
+
+        this.redeemInfo = { requestId: details.requestId, token: oneToken };
+        // Redirect to resend the request attached with the token.
+        return {
+            redirectUrl: details.url,
+        };
+    }
+
     handleBeforeSendHeaders(
         details: chrome.webRequest.WebRequestHeadersDetails,
     ): chrome.webRequest.BlockingResponse | void {
@@ -310,47 +352,5 @@ export class CloudflareProvider implements Provider {
         }
 
         this.issueInfo = { requestId: details.requestId, formData: flattenFormData };
-    }
-
-    handleHeadersReceived(
-        details: chrome.webRequest.WebResponseHeadersDetails,
-    ): chrome.webRequest.BlockingResponse | void {
-        // Don't redeem a token in the issuing website.
-        const url = new URL(details.url);
-        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
-            return;
-        }
-
-        // Check if it's the response of the request that we should insert a token.
-        if (details.statusCode !== 403 || details.responseHeaders === undefined) {
-            return;
-        }
-        const hasSupportHeader = details.responseHeaders.some((header) => {
-            return (
-                header.name.toLowerCase() === CHL_BYPASS_SUPPORT &&
-                header.value !== undefined &&
-                +header.value === CloudflareProvider.ID
-            );
-        });
-        if (!hasSupportHeader) {
-            return;
-        }
-
-        // Let's try to redeem.
-
-        // Get one token.
-        const tokens = this.getStoredTokens();
-        const oneToken = tokens.shift();
-        this.setStoredTokens(tokens);
-
-        if (oneToken === undefined) {
-            return;
-        }
-
-        this.redeemInfo = { requestId: details.requestId, token: oneToken };
-        // Redirect to resend the request attached with the token.
-        return {
-            redirectUrl: details.url,
-        };
     }
 }

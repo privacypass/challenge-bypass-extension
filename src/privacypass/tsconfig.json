@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "resolveJsonModule": true
+    },
+    "include": [
+        ".",
+        "testdata/*.json"
+    ],
+    "references": [
+        {
+            "path": "../blindrsa"
+        }
+    ]
+}

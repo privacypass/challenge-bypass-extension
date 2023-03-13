@@ -63,7 +63,7 @@ export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
     return c;
 }
 
-function incCounter(c: Uint8Array) {
+function incCounter(c: Uint8Array): void {
     c[3]++;
     if (c[3] != 0) {
         return;
@@ -77,6 +77,7 @@ function incCounter(c: Uint8Array) {
         return;
     }
     c[0]++;
+    return;
 }
 
 type MGFFn = (h: HashParams, seed: Uint8Array, mLen: number) => Promise<Uint8Array>;
