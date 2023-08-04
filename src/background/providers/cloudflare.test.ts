@@ -395,6 +395,20 @@ describe('redemption', () => {
             expect(result).toBeUndefined();
         });
 
+        test('issuance.privacypass.cloudflare.com response', () => {
+            const storage = new StorageMock();
+            const updateIcon = jest.fn();
+            const navigateUrl = jest.fn();
+
+            const provider = new CloudflareProvider(storage, { updateIcon, navigateUrl });
+            const tokens = [new Token(), new Token(), new Token()];
+            provider['setStoredTokens'](tokens);
+            const details = validDetails;
+            details.url = 'https://issuance.privacypass.cloudflare.com/';
+            const result = provider.handleHeadersReceived(details);
+            expect(result).toBeUndefined();
+        });
+
         /*
          * The response is invalid if any of the followings is true:
          * 1. The status code is not 403.

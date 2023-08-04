@@ -12,7 +12,7 @@ export function CloudflareButton(): JSX.Element {
     });
 
     const openHomePage = () => {
-        chrome.tabs.create({ url: 'https://captcha.website' });
+        chrome.tabs.create({ url: 'https://issuance.privacypass.cloudflare.com' });
     };
 
     return (

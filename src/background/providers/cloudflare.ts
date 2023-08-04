@@ -17,7 +17,7 @@ const COMMITMENT_URL =
 const QUALIFIED_BODY_PARAMS = ['md'];
 
 const CHL_BYPASS_SUPPORT = 'cf-chl-bypass';
-const DEFAULT_ISSUING_HOSTNAME = 'captcha.website';
+const ISSUING_HOSTNAMES = ['captcha.website', 'issuance.privacypass.cloudflare.com'];
 
 const REFERER_QUERY_PARAM = '__cf_chl_tk';
 const QUERY_PARAM = '__cf_chl_f_tk';
@@ -317,7 +317,7 @@ export class CloudflareProvider implements Provider {
     ): chrome.webRequest.BlockingResponse | void {
         // Don't redeem a token in the issuing website.
         const url = new URL(details.url);
-        if (url.host === DEFAULT_ISSUING_HOSTNAME) {
+        if (ISSUING_HOSTNAMES.includes(url.host)) {
             return;
         }
 

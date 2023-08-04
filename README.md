@@ -21,7 +21,7 @@ Home page: **[https://privacypass.github.io][pp-home]**
 **Privacy Pass Providers:**  🟩 [Cloudflare][cf-url]  🟩 [hCaptcha][hc-url]
 
 [pp-home]: https://privacypass.github.io/
-[cf-url]: https://captcha.website/
+[cf-url]: https://issuance.privacypass.cloudflare.com/
 [hc-url]: https://www.hcaptcha.com/privacy-pass/
 [chrome-store]: https://chrome.google.com/webstore/detail/privacy-pass/ajhmfdgkijocedmfjonnpjfojldioehi/
 [firefox-store]: https://addons.mozilla.org/firefox/addon/privacy-pass/
