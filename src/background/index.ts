@@ -113,11 +113,13 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 // TODO It's better to move this to the provider class. Let's figure out how to do it later.
 // Removes cookies for captcha.website to enable getting more tokens in the future.
 chrome.cookies.onChanged.addListener((changeInfo) => {
+    const cloudflareDomains = ['captcha.website', 'issuance.privacypass.cloudflare.com'];
+    const domain = changeInfo.cookie.domain.replace(/^\./, '');
     if (
         !changeInfo.removed &&
-        changeInfo.cookie.domain === '.captcha.website' &&
+        cloudflareDomains.includes(domain) &&
         changeInfo.cookie.name === 'cf_clearance'
     ) {
-        chrome.cookies.remove({ url: 'https://captcha.website', name: 'cf_clearance' });
+        chrome.cookies.remove({ url: `https://${domain}`, name: 'cf_clearance' });
     }
 });
