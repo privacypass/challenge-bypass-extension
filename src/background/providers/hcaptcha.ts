@@ -3,7 +3,6 @@ import * as voprf from '../voprf';
 import { Callbacks, Provider } from '.';
 import Token from '../token';
 import { Storage } from '../storage';
-import axios from 'axios';
 import qs from 'qs';
 
 const COMMITMENT_URL =
@@ -107,7 +106,7 @@ export class HcaptchaProvider implements Provider {
         }
 
         // Download the commitment
-        const { data } = await axios.get<Response>(COMMITMENT_URL);
+        const data: Response = await fetch(COMMITMENT_URL).then((r) => r.json());
         const commitment = data.HC[version as string];
         if (commitment === undefined) {
             throw new Error(`No commitment for the version ${version} is found`);
@@ -135,12 +134,13 @@ export class HcaptchaProvider implements Provider {
             'cf-chl-bypass': this.getID().toString(),
         };
 
-        const response = await axios.post<string, { data: string }>(url, requestBody, {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: requestBody,
             headers,
-            responseType: 'text',
-        });
+        }).then((r) => r.text());
 
-        const { signatures } = qs.parse(response.data);
+        const { signatures } = qs.parse(response);
         if (signatures === undefined) {
             throw new Error('There is no signatures parameter in the issuance response.');
         }
