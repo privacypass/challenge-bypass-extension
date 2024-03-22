@@ -1,3 +1,9 @@
+# Deprecated
+
+#### This version of Privacy Pass extension is not currently under active development. More [details below](#deprecation).
+
+---
+
 [![github release](https://img.shields.io/github/release/privacypass/challenge-bypass-extension.svg)](https://github.com/privacypass/challenge-bypass-extension/releases/)
 [![Privacy Pass](https://github.com/privacypass/challenge-bypass-extension/actions/workflows/action.yml/badge.svg)](https://github.com/privacypass/challenge-bypass-extension/actions)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
@@ -101,6 +107,8 @@ npm test
 **2021** -- In this [blog post](https://blog.cloudflare.com/privacy-pass-v3), we announced the [v3](https://github.com/privacypass/challenge-bypass-extension/tree/v3.0.0) version of this extension, which makes the code base more resilient, extensible, and maintainable.
 
 **2022** -- The Privacy Pass protocol can also use RSA blind signatures.
+
+<strong id="deprecation">2024</strong> -- The Privacy Pass protocol standardisation has diverged from the original PoPETS version, which this extension implements. To keep up with the protocol, CAPTCHA providers moved to this new version, and ended their support for PoPETS flavour. This repository remains as a relic of the past, but is not supported by any CAPTCHA providers. Cloudflare maintains [Silk - Privacy Pass client](https://github.com/cloudflare/pp-browser-extension) which forked this repository to provide IETF standard support.
 
 #### Acknowledgements
 
