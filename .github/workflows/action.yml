@@ -29,3 +29,22 @@ jobs:
         run: npm run build
       - name: Testing
         run: npm test
+  coverage:
+    name: Coverage Report in Node v18
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checking out
+        uses: actions/checkout@v3
+      - name: Setup Node v18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Coverage
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        with:
+          test-script: npm test
+          annotations: failed-tests
